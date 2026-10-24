@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#050505">
+  <title>ЛУКАП — собери свой лук</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=14">
+  <link rel="stylesheet" href="light.css?v=14">
+</head>
+<body>
+  <div class="page-ambient"></div>
+
+  <svg class="svg-sprite" aria-hidden="true">
+    <symbol id="i-hair" viewBox="0 0 24 24">
+      <path d="M7.5 20c-1.1-1.5-1.7-3.2-1.7-5.2C5.8 10 8.5 6.5 12 6.5s6.2 3.5 6.2 8.3c0 2-.6 3.7-1.7 5.2"/>
+      <path d="M8.2 9.6c.1-2.8 1.5-4.6 3.8-4.6 2.4 0 4 1.9 4.1 4.9-1.5-.7-2.8-1.8-3.7-3.3-1 1.4-2.4 2.4-4.2 3Z"/>
+    </symbol>
+    <symbol id="i-top" viewBox="0 0 24 24">
+      <path d="m8.4 4.5-4 2.2 2 4.2 2-1V20h7.2v-10l2 1 2-4.2-4-2.2a4 4 0 0 1-7.2 0Z"/>
+      <path d="M10 4.8a2.2 2.2 0 0 0 4 0"/>
+    </symbol>
+    <symbol id="i-hanger" viewBox="0 0 24 24">
+      <path d="M12 8.5c-2 0-3-1.2-3-2.7C9 4.2 10.3 3 12 3s3 1.1 3 2.6c0 1.1-.7 2-1.8 2.4L12 8.5Zm0 0v2.1"/>
+      <path d="M12 10.6 3.8 16c-.8.5-.4 1.7.5 1.7h15.4c.9 0 1.3-1.2.5-1.7L12 10.6Z"/>
+    </symbol>
+    <symbol id="i-jacket" viewBox="0 0 24 24">
+      <path d="M8.2 4.2 4.5 6.8 3 11l2.8 2.2L7.2 11v9.8h9.6V11l1.4 2.2L21 11l-1.5-4.2-3.7-2.6-3.8 2.1L8.2 4.2Z"/>
+      <path d="m10 4.7 2 3 2-3M12 7.7v12.7M9.2 4.9 7.8 8.2l2.2 2"/>
+    </symbol>
+    <symbol id="i-racer" viewBox="0 0 24 24">
+      <path d="M8 4.5 4.6 7 3.2 11l2.4 2 1.6-2.2V20h9.6v-9.2L18.4 13l2.4-2-1.4-4-3.4-2.5-4 1.6-4-1.6Z"/>
+      <path d="M9.5 5.1 12 8l2.5-2.9M14.4 8.2l-2.2 8.6M8.1 12.4l1.8 1.6M18 12.4l-2.7 1.7"/>
+    </symbol>
+    <symbol id="i-hoodie" viewBox="0 0 24 24">
+      <path d="M8 6.2C8 4.4 9.8 3 12 3s4 1.4 4 3.2c1.8 1.2 3 3.1 3.4 5.4l-2.7 1.2L16.2 21H7.8l-.5-8.2-2.7-1.2c.4-2.3 1.6-4.2 3.4-5.4Z"/>
+      <path d="M9 6.1c.7 1.2 1.7 1.9 3 1.9s2.3-.7 3-1.9M10 9.2v4.1M14 9.2v4.1M9.3 16.1h5.4"/>
+    </symbol>
+    <symbol id="i-cargo" viewBox="0 0 24 24">
+      <path d="M7.2 3.5h9.6l1.4 8.1-2.1 9.4h-2.7l-1.1-8.7h-.6L10.6 21H7.9L5.8 11.6 7.2 3.5Z"/>
+      <path d="M8.4 8.7h7.2M9.1 11.2h2.4v2.5H9.1zM15.3 11.2h2.4v2.5h-2.4z"/>
+    </symbol>
+    <symbol id="i-wide" viewBox="0 0 24 24">
+      <path d="M7.6 3.5h8.8l1.2 8-2.1 9.5h-2.9L12 11.7l-.6 9.3H8.5L6.4 11.5l1.2-8Z"/>
+      <path d="M8.8 8.4h6.4M9 18.2h1.9M13.1 18.2h1.9"/>
+    </symbol>
+    <symbol id="i-boot" viewBox="0 0 24 24">
+      <path d="M8 3.8h7.2l.7 9.8 3.3 3.2v3.7H5.2v-3.7l2.8-3.1V3.8Z"/>
+      <path d="M8.6 6.5h6.1M9.1 9.2h5.2M8.7 13.5h6.7M5.2 18h14"/>
+    </symbol>
+    <symbol id="i-sneaker" viewBox="0 0 24 24">
+      <path d="M3 16.2c2.7 0 4.4-1 5.7-3.3l1.5-2.6 3.1 2.3c1.6 1.2 3.2 1.7 5.2 1.7h1.2c1.1 0 1.8.8 1.8 1.8v1.7H3.2C2.6 17.8 2.4 16.2 3 16.2Z"/>
+      <path d="M8.1 12.2 11 9.9M9.7 13.8l2.9-2.3M14.7 13.9h4.9"/>
+    </symbol>
+    <symbol id="i-visor" viewBox="0 0 24 24">
+      <path d="M3.5 11.2c4.8-2.4 12.2-2.4 17 0l-.7 3.1c-2.6 1.2-5.2 1.7-7.8 1.7s-5.2-.5-7.8-1.7l-.7-3.1Z"/>
+      <path d="M6.5 11.5c3.5-1 7.5-1 11 0M5.3 14.7 4 17.8M18.7 14.7l1.3 3.1"/>
+    </symbol>
+    <symbol id="i-hair-curls" viewBox="0 0 24 24">
+      <path d="M6.2 14c-1.7-3.2-.6-7.6 2.8-9.4 3.3-1.8 7.8-.5 9.2 3 1.1 2.8.2 5.8-1.8 7.2-1.2.9-2.4.3-2.3-1 .1-1 .8-1.9 1.6-2.5-2-1.4-4.6-1.7-7-1.1-1.1.3-1.8 1.3-1.5 2.4.2.9.1 1.7-.4 2.1-.4.3-.8-.1-1.1-.7Z"/>
+      <path d="M8 20c-.6-1.7-.3-3.2.9-4.5M12 20c-.3-1.5.1-2.9 1.2-4M16 20c-.1-1.3.3-2.4 1.2-3.4"/>
+    </symbol>
+    <symbol id="i-hair-mohawk" viewBox="0 0 24 24">
+      <path d="M4.8 15.2c-.5-3.6 1.5-7.4 4.8-8.8 1.2-.5 2.6-.7 4-.5-1.2 1.1-1.8 2.5-1.7 4.1.1 2.1 1.1 3.4 2.4 4.2 1.2.8 2.6.9 4.2.4-.4 2.7-2.5 4.7-5.3 5.1-3.5.5-7.2-1.4-8.4-4.5Z"/>
+      <path d="M9.6 6.4c-.5-2.3.3-3.9 2.2-4.4 1.4-.4 2.7.2 3.4 1.5M13.4 8.1c.3-1.3 1-2.2 2-2.6M16.7 10.8c.7-1 1.6-1.5 2.7-1.6"/>
+    </symbol>
+    <symbol id="i-bottom" viewBox="0 0 24 24">
+      <path d="M8 3.5h8l1.2 8.2-2 9.3h-2.6l-1.2-8.4h-1.2L8.8 21H6.2l-2-9.3L5.5 3.5Z"/>
+      <path d="M6 8.2h12M7.5 12.6h2.2M14.3 12.6h2.2"/>
+    </symbol>
+    <symbol id="i-shoe" viewBox="0 0 24 24">
+      <path d="M4 16.5c3.2 0 4.2-1.6 5.2-4.5l.5-1.5 3.1 2.1c1.8 1.2 3.3 1.7 5.1 1.7h2.7c.8 0 1.4.6 1.4 1.4v1.8H3.8c-.7 0-1.2-.5-1.2-1.2s.5-1.1 1.4-1.1Z"/>
+      <path d="M9.2 10.5 12 8.2M10.6 12.2l2.8-2.3M15 12.8h4.4"/>
+    </symbol>
+    <symbol id="i-acc" viewBox="0 0 24 24">
+      <circle cx="7.2" cy="12" r="3.3"/><circle cx="16.8" cy="12" r="3.3"/>
+      <path d="M10.5 11.6c.8-.8 2.2-.8 3 0M3.9 11.1 1.8 9.7M20.1 11.1l2.1-1.4"/>
+    </symbol>
+    <symbol id="i-coin" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="8.4"/>
+      <path d="M9.4 8.4h5.2M9.4 15.6h5.2M12.8 8.4v7.2M8.9 12h4.7"/>
+    </symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7.8a4 4 0 0 1 8 0V10M12 14v2.4"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.4 5.1L18 10l-4.6 1.9L12 17l-1.4-5.1L6 10l4.6-1.9L12 3ZM19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7L19 15Z"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.4"/><circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="19" r="2.4"/><path d="m8.2 10.8 7.6-4.5M8.2 13.2l7.6 4.5"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.1"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.2h-4v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3v-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V3h4v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.1v4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7"/></symbol>
+    <symbol id="i-diamond" viewBox="0 0 24 24"><path d="m12 3 7.2 6.2L12 21 4.8 9.2 12 3Z"/><path d="M4.8 9.2h14.4M12 3v18"/></symbol>
+    <symbol id="i-crown" viewBox="0 0 24 24"><path d="m4 8 4 3 4-5 4 5 4-3-1.5 10h-13L4 8Z"/><path d="M6.5 18h11"/></symbol>
+  </svg>
+
+  <div class="app-frame" id="appFrame">
+    <header class="topbar">
+      <button class="brand" id="brandBtn" aria-label="ЛУКАП — на главную">
+        <span class="brand-mark">
+          <svg viewBox="0 0 34 34" aria-hidden="true">
+            <path d="M17 12.5c0-3 2.1-5.1 5-5.1 2.7 0 4.8 1.8 4.8 4.3 0 2-1.2 3.5-3.1 4.3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M17 12.5 3.5 22.6h27L17 12.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M17 12.5V8.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="17" cy="7.1" r="1.8" fill="#ff3b30"/>
+          </svg>
+        </span>
+        <span class="brand-name">ЛУКАП</span>
+        <span class="brand-stage">PROTO</span>
+      </button>
+      <button class="balance-pill" id="balanceBtn" aria-label="Монеты и бонусы">
+        <span class="coin-mark"><svg class="icon"><use href="#i-diamond"></use></svg></span>
+        <span class="balance-value" id="balanceVal">10 000</span>
+        <span class="balance-plus"><svg class="icon"><use href="#i-plus"></use></svg></span>
+      </button>
+    </header>
+
+    <main class="screens" id="screens">
+      <section class="screen is-active" data-screen="look">
+        <div class="live-line">
+          <span class="live-dot"></span>
+          <span class="live-label">LIVE</span>
+          <span class="live-text" id="dropStrip">@mira выбила «Минус» · NOIRÉ · ИКОНА</span>
+          <span class="live-tail"><svg class="icon"><use href="#i-chevron"></use></svg></span>
+        </div>
+
+        <div class="look-head">
+          <div class="score-readout">
+            <span class="eyebrow">ГАРМОНИЯ</span>
+            <div class="score-number"><span id="scoreValue">92</span><span class="score-total">/100</span></div>
+            <div class="score-status" id="scoreStatus">ВЫСОКАЯ ГАРМОНИЯ</div>
+          </div>
+          <div class="set-readout">
+            <div class="set-line"><span id="setCollection">NOIRÉ</span><b id="setCount">4/5</b></div>
+            <div class="rarity-pips" id="rarityPips" aria-label="Редкость надетых вещей"></div>
+            <div class="set-hint" id="setHint">До 100 — аксессуар NOIRÉ</div>
+          </div>
+        </div>
+
+        <div class="avatar-stage" id="avatarStage">
+          <span class="stage-corner tl"></span><span class="stage-corner tr"></span>
+          <span class="stage-corner bl"></span><span class="stage-corner br"></span>
+          <span class="stage-serial">LK / 001</span>
+          <span class="stage-mode">3D · 360°</span>
+          <div class="stage-halo"></div>
+          <div class="stage-orbit"></div>
+          <div class="perfect-aura" id="perfectAura"></div>
+          <div class="avatar-3d" id="avatar3d" aria-hidden="true"></div>
+
+          <svg id="avatarSvg" class="avatar-svg" viewBox="0 0 320 540" role="img" aria-label="Аватар в образе NOIRÉ" data-hair="slick" data-top="blazer" data-bottom="tailored" data-shoes="loafer" data-acc="glasses">
+            <g id="bodyScale" class="body-scale">
+              <ellipse cx="160" cy="514" rx="82" ry="11" fill="#000" opacity=".75"/>
+
+              <g class="hair-variant hair-back hair-curls">
+                <path d="M121 83c-18 21-20 52-10 78 5 13 16 22 25 22 7 0 5-17-1-28-10-18-8-42 6-57 13-14 36-18 50-2 17 19 17 43 7 61-5 10-3 26 5 26 10 0 20-14 22-29 4-30-6-62-28-78-23-17-60-17-76 7Z" fill="var(--hair-main)"/>
+              </g>
+
+              <g class="body-base">
+                <path d="M145 136h30v31c-4 6-10 9-15 9s-11-3-15-9Z" fill="var(--skin)"/>
+                <path d="M145 146c5 7 11 10 15 10s10-3 15-10v22c-4 6-10 9-15 9s-11-3-15-9Z" fill="var(--skin-shadow)" opacity=".75"/>
+                <g class="base-top-group">
+                  <path d="M115 174c-12 8-19 26-21 52-2 27 0 54 5 76l12 3 8-4 1-45 5-63Z" fill="var(--skin)"/>
+                  <path d="M205 174c12 8 19 26 21 52 2 27 0 54-5 76l-12 3-8-4-1-45-5-63Z" fill="var(--skin)"/>
+                  <path d="M112 166c13-9 35-12 48-12s35 3 48 12l-7 26-4 104h-74l-4-104Z" fill="#eee5d8"/>
+                  <path d="M136 158c7 8 15 12 24 12s17-4 24-12l-3 18c-6 6-13 9-21 9s-15-3-21-9Z" fill="var(--skin)"/>
+                  <path d="M120 188c9 4 18 6 27 6M200 188c-9 4-18 6-27 6" fill="none" stroke="#c8bca9" stroke-width=".8" opacity=".8"/>
+                  <path d="M125 300h70M124 206h72" fill="none" stroke="#d3c6b4" stroke-width=".8" opacity=".55"/>
+                  <path d="M93 301c4 3 8 4 13 3M227 301c-4 3-8 4-13 3" fill="none" stroke="#bca98f" stroke-width=".8" opacity=".55"/>
+                </g>
+              </g>
+
+              <g class="base-bottom-group">
+                <path d="M124 288c2 48-3 94-4 136l-1 42h28l4-97 3-65 3 65 4 97h28l-1-42c-1-42-6-88-4-136Z" fill="var(--skin)"/>
+                <path d="M122 288h76l-2 23-8 19h-56l-8-19Z" fill="#eee5d8"/>
+                <path d="M122 288h76v5h-76Z" fill="#d7cbb8"/>
+                <path d="M160 292v38M132 303c4 3 8 4 13 4M188 303c-4 3-8 4-13 4" fill="none" stroke="#d1c4b1" stroke-width=".9" opacity=".75"/>
+                <path d="M128 323c4 3 8 4 12 4M192 323c-4 3-8 4-12 4" fill="none" stroke="#cdbfaa" stroke-width=".8" opacity=".55"/>
+              </g>
+
+              <g class="bottom-variant bottom-tailored">
+                <path d="M121 278h78l-2 45-6 155h-28l-4-112-2-20-2 20-4 112h-28l-6-155Z" fill="var(--bottom-main)"/>
+                <path d="M121 300h78v9h-78Z" fill="#09090b"/>
+                <path d="M152 302h16v5h-16Z" fill="var(--top-metal)" opacity=".82"/>
+                <path d="M129 300v9M191 300v9" stroke="#35353a" stroke-width="1.2" opacity=".85"/>
+                <path d="M136 320l-2 126M184 320l2 126" fill="none" stroke="var(--bottom-hi)" stroke-width=".9" opacity=".38"/>
+                <path d="M128 322l-3 136M192 322l3 136" fill="none" stroke="var(--bottom-shadow)" stroke-width="1.1" opacity=".55"/>
+                <path d="M158 314l-2 26-1 28M162 314l2 26 1 28" fill="none" stroke="var(--bottom-shadow)" stroke-width="1.3" opacity=".6"/>
+                <path d="M130 337c4 3 8 4 13 4M190 337c-4 3-8 4-13 4" fill="none" stroke="var(--bottom-shadow)" stroke-width="1" opacity=".4"/>
+                <path d="M138 383c3 4 7 6 12 7M182 383c-3 4-7 6-12 7M135 428c3 3 7 5 11 6M185 428c-3 3-7 5-11 6" fill="none" stroke="var(--bottom-shadow)" stroke-width=".9" opacity=".42"/>
+                <path d="M128 453h22M172 453h22" fill="none" stroke="var(--bottom-hi)" stroke-width="1.1" opacity=".45"/>
+                <path d="M121 278h78" fill="none" stroke="var(--bottom-hi)" stroke-width="1" opacity=".35"/>
+                <path d="M133 322v36" stroke="var(--bottom-hi)" stroke-width=".7" opacity=".18"/>
+              </g>
+
+              <g class="bottom-variant bottom-cargo">
+                <path d="M116 276h88l-4 99-8 87h-28l-3-113-2-30-2 30-3 113H126l-8-87Z" fill="var(--bottom-main)"/>
+                <path d="M128 281h26l-3 62-6-26-6 26Z" fill="var(--bottom-hi)" opacity=".28"/>
+                <path d="M159 281h4l-2 59-1 32-1-32Z" fill="var(--bottom-shadow)" opacity=".8"/>
+                <path d="M123 298h30v30h-30zM167 298h30v30h-30z" fill="none" stroke="var(--bottom-hi)" stroke-width="1" opacity=".55"/>
+                <path d="M128 300v26M172 300v26" fill="none" stroke="var(--bottom-shadow)" stroke-width="2" opacity=".55"/>
+                <path d="M118 283h84" fill="none" stroke="var(--bottom-hi)" stroke-width="1.2" opacity=".5"/>
+                <path d="M130 346h24M166 346h24" fill="none" stroke="var(--bottom-shadow)" stroke-width="5" opacity=".22"/>
+              </g>
+
+              <g class="bottom-variant bottom-wide">
+                <path d="M119 276h82l-7 86-13 97h-24l-2-108-3-43-3 43-2 108h-24l-13-97Z" fill="var(--bottom-main)"/>
+                <path d="M133 279h26l-4 67-4-26-5 26Z" fill="var(--bottom-hi)" opacity=".3"/>
+                <path d="M158 279h4l-2 66-1 34-1-34Z" fill="var(--bottom-shadow)" opacity=".8"/>
+                <path d="M121 300h76M124 318h70" fill="none" stroke="var(--bottom-hi)" stroke-width=".8" opacity=".35"/>
+                <path d="M126 454h20M174 454h20" fill="none" stroke="var(--bottom-hi)" stroke-width="1" opacity=".35"/>
+              </g>
+
+              <g class="shoe-variant shoe-loafer">
+                <path d="M129 454h27l2 25c5 6 4 15-5 15h-26c-8 0-10-8-5-13Z" fill="var(--shoe-main)"/>
+                <path d="M164 454h27l7 27c4 5 3 13-5 13h-26c-9 0-10-9-4-15Z" fill="var(--shoe-main)"/>
+                <path d="M127 480h32c6 0 10 3 10 7 0 5-4 7-10 7h-27c-9 0-12-7-5-14ZM164 480h30c6 0 10 3 10 7 0 5-4 7-10 7h-26c-9 0-12-7-4-14Z" fill="#08080a"/>
+                <path d="M139 465h17M174 465h17" stroke="var(--shoe-accent)" stroke-width="2.4"/>
+                <ellipse cx="147" cy="469" rx="5" ry="2.2" fill="var(--shoe-accent)"/>
+                <ellipse cx="182" cy="469" rx="5" ry="2.2" fill="var(--shoe-accent)"/>
+                <path d="M125 488h42M164 488h42" stroke="#3a3a3f" stroke-width="1" opacity=".9"/>
+              </g>
+
+              <g class="shoe-variant shoe-boot">
+                <path d="M132 427h24l1 38-4 16h-18l-4-16Z" fill="var(--shoe-main)"/>
+                <path d="M164 427h24l1 38-4 16h-18l-4-16Z" fill="var(--shoe-main)"/>
+                <path d="M124 472h33l-3 21c-1 6-6 9-12 9h-27c-8 0-12-5-9-11Z" fill="var(--shoe-main)"/>
+                <path d="M163 472h33l9 19c3 6-1 11-9 11h-27c-6 0-11-3-12-9Z" fill="var(--shoe-main)"/>
+                <path d="M111 493h34c7 0 12 2 12 6 0 4-5 6-12 6h-28c-9 0-14-5-6-12ZM175 493h34c9 7 3 12-6 12h-28c-7 0-12-2-12-6 0-4 5-6 12-6Z" fill="#060607"/>
+                <path d="M134 432h18v34h-18Z" fill="var(--shoe-accent)" opacity=".075"/>
+                <path d="M168 432h18v34h-18Z" fill="var(--shoe-accent)" opacity=".075"/>
+                <path d="M148 438l4 30M172 438l-4 30" stroke="var(--shoe-accent)" stroke-width=".7" opacity=".35"/>
+                <path d="M145 442l3 2M146 448l3 2M147 454l3 2M175 442l-3 2M174 448l-3 2M173 454l-3 2" stroke="var(--shoe-accent)" stroke-width=".7" opacity=".35"/>
+                <path d="M132 459h22M166 459h22" stroke="var(--shoe-accent)" stroke-width=".9" opacity=".28"/>
+                <path d="M151 457h6v6h-6Z" fill="var(--shoe-accent)" opacity=".35"/>
+                <path d="M169 457h6v6h-6Z" fill="var(--shoe-accent)" opacity=".35"/>
+                <path d="M117 477h17l-2 7h-15Z" fill="var(--shoe-accent)" opacity=".22"/>
+                <path d="M186 477h17l-2 7h-15Z" fill="var(--shoe-accent)" opacity=".22"/>
+                <path d="M115 499h32M175 499h32" stroke="#2a2b30" stroke-width="1.1" opacity=".9"/>
+                <path d="M135 428h18M167 428h18" stroke="var(--shoe-accent)" stroke-width=".9" opacity=".45"/>
+              </g>
+
+              <g class="shoe-variant shoe-sneaker">
+                <path d="M126 451h27l3 22c8 5 11 16 0 20h-29c-9 0-12-9-7-16Z" fill="var(--shoe-main)"/>
+                <path d="M164 451h27l7 25c5 7 2 17-8 17h-27c-11-4-8-15 0-20Z" fill="var(--shoe-main)"/>
+                <path d="M126 490h35c8 0 11 3 11 6 0 4-4 6-11 6h-31c-10 0-14-7-4-12ZM164 490h35c8 0 11 3 11 6 0 4-4 6-11 6h-31c-10 0-14-7-4-12Z" fill="#e9e5db"/>
+                <path d="M130 455h24M169 455h24" stroke="var(--shoe-accent)" stroke-width="3"/>
+                <path d="m136 461 15 16M141 458l15 16M172 461l15 16M177 458l15 16" stroke="#f1eee7" stroke-width="1.4" opacity=".85"/>
+                <path d="M158 483h6M197 483h6" stroke="var(--shoe-accent)" stroke-width="3"/>
+                <path d="M123 498h45M164 498h45" stroke="#19191c" stroke-width="1.2" opacity=".7"/>
+              </g>
+
+              <g class="bare-feet">
+                <path d="M126 474h28l-1 24c-1 7-6 11-13 11h-19c-7 0-10-5-8-11Z" fill="var(--skin)"/>
+                <path d="M166 474h28l13 24c2 6-1 11-8 11h-19c-7 0-12-4-13-11Z" fill="var(--skin)"/>
+                <path d="M127 506h21M167 506h21" stroke="var(--skin-shadow)" stroke-width="1" opacity=".65"/>
+                <path d="M142 478v-3M150 478v-3M174 475v-3M182 475v-3" stroke="var(--skin-shadow)" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
+              </g>
+
+              <g class="top-variant top-blazer">
+                <path d="M111 174c11-11 31-17 49-17s38 6 49 17l13 35-16 78-11 3-10-71-4 82h-42l-4-82-10 71-11-3-16-78Z" fill="var(--top-main)"/>
+                <path d="M120 173c-17 7-27 26-30 52-3 28-1 58 5 82l15 4 10-5 2-53 8-64Z" fill="var(--top-main)"/>
+                <path d="M200 173c17 7 27 26 30 52 3 28 1 58-5 82l-15 4-10-5-2-53-8-64Z" fill="var(--top-main)"/>
+                <path d="M88 298c-3 8-2 14 1 18l12 3 4-18Z" fill="var(--top-shadow)"/>
+                <path d="M232 298c3 8 2 14-1 18l-12 3-4-18Z" fill="var(--top-shadow)"/>
+                <path d="M92 301c4 3 8 4 13 3M228 301c-4 3-8 4-13 3" fill="none" stroke="var(--top-metal)" stroke-width=".8" opacity=".55"/>
+                <path d="M107 190c-7 12-11 27-12 44-1 16 0 31 2 45M213 190c7 12 11 27 12 44 1 16 0 31-2 45" fill="none" stroke="var(--top-hi)" stroke-width="1" opacity=".3"/>
+                <path d="M109 174c-2 12-4 22-9 31M211 174c2 12 4 22 9 31" fill="none" stroke="var(--top-hi)" stroke-width="1.2" opacity=".55"/>
+                <path d="M142 165 160 207l19-42c-6-3-12-5-19-5s-13 2-18 5Z" fill="#ece4d7"/>
+                <path d="m142 165-17 19 22 23-8 54 13 3 8-75Z" fill="var(--top-hi)" opacity=".46"/>
+                <path d="m178 165 17 19-22 23 8 54-13 3-8-75Z" fill="var(--top-hi)" opacity=".46"/>
+                <path d="M128 292h13v2h-13ZM179 292h13v2h-13Z" fill="var(--top-detail)" opacity=".82"/>
+                <path d="M130 296h60" stroke="var(--top-metal)" stroke-width=".7" opacity=".4"/>
+                <path d="M121 182c-1 22 0 45 3 64M199 182c1 22 0 45-3 64" fill="none" stroke="var(--top-metal)" stroke-width=".65" opacity=".35" stroke-dasharray="2 3"/>
+                <path d="M138 171 132 184M182 171l6 13" stroke="var(--top-metal)" stroke-width=".8" opacity=".5"/>
+                <path d="M196 195l8 8-8 8" fill="none" stroke="var(--top-detail)" stroke-width="1.2" opacity=".8"/>
+                <path d="M160 215v68" stroke="var(--top-hi)" stroke-width=".9" opacity=".38"/>
+                <circle cx="160" cy="232" r="2.4" fill="var(--top-metal)"/>
+                <circle cx="160" cy="252" r="2.4" fill="var(--top-metal)"/>
+                <circle cx="160" cy="272" r="2.4" fill="var(--top-metal)"/>
+                <path d="M128 190c9 7 14 17 16 28M192 190c-9 7-14 17-16 28" fill="none" stroke="var(--top-metal)" stroke-width=".9" opacity=".35"/>
+                <path d="M196 216h13v9h-13z" fill="var(--top-detail)"/>
+                <path d="m198 216 4-6 5 6" fill="none" stroke="#e9dfcd" stroke-width="1.2"/>
+                <path d="M118 220c1 24 1 44-2 61M202 220c-1 24-1 44 2 61" fill="none" stroke="#000" stroke-width="1" opacity=".35"/>
+                <path d="M112 174c10-8 26-14 42-16M208 174c-10-8-26-14-42-16" fill="none" stroke="var(--top-metal)" stroke-width=".8" opacity=".38"/>
+              </g>
+
+              <g class="top-variant top-racer">
+                <path d="M113 174c11-10 30-16 47-16s36 6 47 16l10 28-13 58-12 4-7-54-5 57h-40l-5-57-7 54-12-4-13-58Z" fill="var(--top-main)"/>
+                <path d="M113 178c-7 8-10 20-12 32-3 17-3 38 2 52l9 5 7-62Z" fill="var(--top-main)"/>
+                <path d="M207 178c7 8 10 20 12 32 3 17 3 38-2 52l-9 5-7-62Z" fill="var(--top-main)"/>
+                <path d="M147 166h26l-4 16h-18Z" fill="#0a0a0b"/>
+                <path d="m157 183-2 70 10 2 2-72Z" fill="var(--top-metal)"/>
+                <path d="M145 165 134 190l23 26-5 44h17l-4-45 24-25-11-25Z" fill="var(--top-hi)" opacity=".34"/>
+                <path d="M120 252h24l-1 9h-22ZM176 252h24l1 9h-24Z" fill="var(--top-detail)"/>
+                <path d="M119 260h20M181 260h20" stroke="#0b0b0c" stroke-width="2" opacity=".6"/>
+                <path d="M108 191c4 12 8 20 15 26M212 191c-4 12-8 20-15 26M103 229c3 9 7 15 12 19M217 229c-3 9-7 15-12 19" stroke="var(--top-accent)" stroke-width="2.2" opacity=".9"/>
+                <path d="M128 286h64" stroke="var(--top-metal)" stroke-width="1" opacity=".55"/>
+                <path d="M192 190h8v20h-8z" fill="#e9e4da" opacity=".8"/>
+                <path d="M136 208c8 3 14 8 18 15" fill="none" stroke="var(--top-metal)" stroke-width=".8" opacity=".5"/>
+              </g>
+
+              <g class="top-variant top-hoodie">
+                <path d="M115 177c-10 14-18 34-20 57-2 25 2 46 9 53l17-2 4-60 9 46h52l9-46 4 60 17 2c7-7 11-28 9-53-2-23-10-43-20-57-13-9-29-13-45-13s-32 4-45 13Z" fill="var(--top-main)"/>
+                <path d="M133 169c2-14 12-24 27-24s25 10 27 24c-8 8-17 12-27 12s-19-4-27-12Z" fill="var(--top-shadow)"/>
+                <path d="M140 169c3 7 10 11 20 11s17-4 20-11c-6-4-12-6-20-6s-14 2-20 6Z" fill="var(--top-main)"/>
+                <path d="M143 180c-6 11-8 25-7 36M177 180c6 11 8 25 7 36" fill="none" stroke="var(--top-metal)" stroke-width="2.4"/>
+                <circle cx="143" cy="219" r="2.2" fill="var(--top-metal)"/><circle cx="177" cy="219" r="2.2" fill="var(--top-metal)"/>
+                <path d="M121 250c7 10 16 15 27 17M199 250c-7 10-16 15-27 17" fill="none" stroke="var(--top-hi)" stroke-width="1" opacity=".45"/>
+                <path d="M132 231h56v38h-56z" fill="var(--top-shadow)" opacity=".45"/>
+                <path d="M136 235h48v30h-48z" fill="none" stroke="var(--top-hi)" stroke-width="1" opacity=".4"/>
+                <path d="M108 249c-7 8-11 22-10 37 1 11 6 19 13 21l9-4-4-54ZM212 249c7 8 11 22 10 37-1 11-6 19-13 21l-9-4 4-54Z" fill="var(--top-main)"/>
+                <path d="M100 271c-4 15-2 30 4 38M220 271c4 15 2 30-4 38" fill="none" stroke="var(--top-hi)" stroke-width="1.2" opacity=".45"/>
+                <path d="M120 271h80" stroke="var(--top-detail)" stroke-width="1.2" opacity=".55"/>
+              </g>
+
+              <g class="hands-group">
+                <path d="M80 298c-6 8-7 20-2 28 4 6 13 6 18-1 4-6 2-17-3-24Z" fill="var(--skin)"/>
+                <path d="M244 298c6 8 7 20 2 28-4 6-13 6-18-1-4-6-2-17 3-24Z" fill="var(--skin)"/>
+                <path d="M82 308c3 5 7 8 12 9M81 316c3 4 6 6 10 7M83 324c2 3 4 4 7 5M238 308c-3 5-7 8-12 9M239 316c-3 4-6 6-10 7M237 324c-2 3-4 4-7 5" fill="none" stroke="var(--skin-shadow)" stroke-width="1.1" stroke-linecap="round" opacity=".75"/>
+                <path d="M88 299c2 2 4 3 6 3M232 299c-2 2-4 3-6 3" fill="none" stroke="var(--skin-shadow)" stroke-width=".9" opacity=".5"/>
+              </g>
+              <g class="head-group">
+                <path d="M126 92c0-25 14-44 34-44s34 19 34 44c0 17-6 32-16 40-5 4-11 6-18 6s-13-2-18-6c-10-8-16-23-16-40Z" fill="var(--skin)"/>
+                <path d="M130 80c4-16 16-26 30-26s26 10 30 26c-7-3-13-8-17-15-8 8-25 15-43 15Z" fill="var(--skin-shadow)" opacity=".12"/>
+                <path d="M131 93c0-23 12-43 29-43s29 20 29 43c0 16-5 31-14 39-5 5-10 7-15 7s-10-2-15-7c-9-8-14-23-14-39Z" fill="var(--skin)"/>
+                <path d="M132 91c-5 0-8 4-8 9s4 9 9 9M188 91c5 0 8 4 8 9s-4 9-9 9" fill="var(--skin)"/>
+                <path d="M137 98c3-1 6-1 9 0M174 98c3-1 6-1 9 0" fill="none" stroke="var(--skin-shadow)" stroke-width="1.7" stroke-linecap="round"/>
+                <path d="M139 106c2 2 5 2 7 0M174 106c2 2 5 2 7 0" fill="none" stroke="#20140f" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M160 102v10l-3 3" fill="none" stroke="var(--skin-shadow)" stroke-width="1.2" stroke-linecap="round"/>
+                <path d="M154 122c4 2 8 2 12 0" fill="none" stroke="#5e3026" stroke-width="1.7" stroke-linecap="round"/>
+                <path d="M137 88c4-3 9-4 13-2M170 86c5-2 10-1 13 2" fill="none" stroke="#231712" stroke-width="2.2" stroke-linecap="round"/>
+                <path d="M125 88c1-20 14-35 35-35 19 0 33 13 35 35-7-3-13-9-17-17-8 8-22 14-39 17Z" fill="var(--skin-shadow)" opacity=".22"/>
+              </g>
+
+              <g class="hair-variant hair-slick">
+                <path d="M122 88c-2-25 12-43 38-43 25 0 39 18 38 45-8-4-15-12-19-23-10 10-30 19-57 21Z" fill="var(--hair-main)"/>
+                <path d="M124 82c4-20 16-33 36-33 17 0 29 9 34 26-10-6-17-14-21-23-8 12-25 23-49 30Z" fill="var(--hair-hi)" opacity=".65"/>
+                <path d="M130 73c10-11 20-16 33-17M143 63c8-5 17-6 25-4" fill="none" stroke="var(--hair-hi)" stroke-width="1.2" stroke-linecap="round" opacity=".6"/>
+                <path d="M121 84c-2 9-1 21 2 27 2 4 5 2 5-2 0-9 1-16 4-24Z" fill="var(--hair-main)"/>
+                <path d="M198 84c2 9 1 21-2 27-2 4-5 2-5-2 0-9-1-16-4-24Z" fill="var(--hair-main)"/>
+              </g>
+
+              <g class="hair-variant hair-curls">
+                <path d="M120 86c-2-17 5-33 18-41 15-9 35-7 48 5 14 13 18 33 10 50-6 13-13 15-17 7-3-6 0-15 4-23-11 1-18-4-25-12-9 6-20 9-32 8 2 7 1 13-2 17-4 5-4-4-4-11Z" fill="var(--hair-main)"/>
+                <path d="M125 74c4-13 15-22 28-23 11-1 23 3 30 11-9-2-17 0-23 5-8-7-21-7-35 7Z" fill="var(--hair-hi)" opacity=".62"/>
+                <path d="M123 84c3 4 7 7 11 7M196 84c-3 4-7 7-11 7" fill="none" stroke="var(--hair-hi)" stroke-width="1.1" opacity=".55"/>
+                <path d="M132 60c6-5 13-7 20-6M154 55c8-1 15 2 20 7" fill="none" stroke="var(--hair-hi)" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+              </g>
+
+              <g class="hair-variant hair-mohawk">
+                <path d="M122 92c-2-18 4-35 16-43 9-6 22-8 34-4l-3 13c-9-2-18 0-24 5-6 5-9 13-9 22-2 5-10 9-14 7Z" fill="var(--hair-main)"/>
+                <path d="M185 47c7 6 11 14 13 24 2 10 1 18-2 24-4 5-8 2-9-4-1-9-4-16-10-23Z" fill="var(--hair-main)"/>
+                <path d="M138 54c-2-15 2-25 10-31 4-3 10-5 15-4 9 1 16 6 20 15-5-2-10-1-14 3-4-8-12-11-20-6-6 3-9 9-8 17Z" fill="var(--hair-main)"/>
+                <path d="M143 45c0-9 4-16 10-20M157 36c5-2 10 0 14 4" fill="none" stroke="var(--hair-hi)" stroke-width="1.1" opacity=".6"/>
+                <path d="M124 91c-4 1-7 5-7 9 0 5 4 8 9 8M188 90c4 1 7 4 7 8 0 5-3 8-8 8" fill="none" stroke="var(--hair-shadow)" stroke-width="2" opacity=".5"/>
+              </g>
+
+              <g class="acc-variant acc-glasses">
+                <path d="M137 99c7-2 13-2 18 0M165 99c5-2 11-2 18 0" fill="none" stroke="var(--acc-main)" stroke-width="1.5"/>
+                <rect x="130" y="96" width="25" height="13" rx="6.5" fill="#0f1114" stroke="var(--acc-main)" stroke-width="1.4" opacity=".95"/>
+                <rect x="165" y="96" width="25" height="13" rx="6.5" fill="#0f1114" stroke="var(--acc-main)" stroke-width="1.4" opacity=".95"/>
+                <path d="M155 101h10M130 100l-9-4M190 100l9-4" fill="none" stroke="var(--acc-main)" stroke-width="1.1"/>
+                <path d="M190 102c11 12 17 26 14 39M130 102c-11 12-17 26-14 39" fill="none" stroke="var(--acc-main)" stroke-width="1.1" opacity=".8"/>
+                <path d="M188 114c7 2 11 7 12 13M132 114c-7 2-11 7-12 13" fill="none" stroke="var(--acc-accent)" stroke-width="1" opacity=".55"/>
+                <path d="M145 102h7M180 102h7" stroke="#77808c" stroke-width="1" opacity=".6"/>
+                <path d="M139 184c6 7 13 12 21 16M181 184c-6 7-13 12-21 16" fill="none" stroke="var(--acc-main)" stroke-width="1.3"/>
+                <path d="M145 196c5 5 10 8 15 9 5-1 10-4 15-9" fill="none" stroke="var(--acc-main)" stroke-width="1.3"/>
+                <path d="M151 204c3 2 6 3 9 3s6-1 9-3" fill="none" stroke="var(--acc-accent)" stroke-width="2.2" opacity=".9"/>
+                <path d="M160 211v3" stroke="var(--acc-main)" stroke-width="1.1"/>
+                <circle cx="82" cy="328" r="3.3" fill="none" stroke="var(--acc-main)" stroke-width="1.4"/>
+                <path d="M78 322h8" stroke="var(--acc-main)" stroke-width="1.2"/>
+              </g>
+
+              <g class="acc-variant acc-gold">
+                <circle cx="143" cy="102" r="10.5" fill="#0f1114" stroke="var(--acc-main)" stroke-width="1.4"/>
+                <circle cx="177" cy="102" r="10.5" fill="#0f1114" stroke="var(--acc-main)" stroke-width="1.4"/>
+                <path d="M153.5 102h13M132.5 100l-9-3M187.5 100l9-3" fill="none" stroke="var(--acc-main)" stroke-width="1.2"/>
+                <path d="M143 96c4 1 7 3 9 7M177 96c-4 1-7 3-9 7" fill="none" stroke="var(--acc-accent)" stroke-width="1" opacity=".65"/>
+                <path d="M160 211v4" stroke="var(--acc-main)" stroke-width="1.2"/>
+                <circle cx="160" cy="218" r="3" fill="var(--acc-main)"/>
+                <path d="M146 205c4 7 9 11 14 12 5-1 10-5 14-12" fill="none" stroke="var(--acc-main)" stroke-width="1.2" opacity=".8"/>
+                <path d="M151 216c3 2 6 3 9 3s6-1 9-3" fill="none" stroke="var(--acc-main)" stroke-width="1.2"/>
+                <path d="M225 309c4 2 7 6 8 11M228 309c0 9-4 15-10 18" fill="none" stroke="var(--acc-main)" stroke-width="1.2" opacity=".85"/>
+                <circle cx="227" cy="326" r="4.2" fill="#0f1114" stroke="var(--acc-main)" stroke-width="1.4"/>
+                <path d="M227 325v3" stroke="var(--acc-accent)" stroke-width=".9"/>
+                <circle cx="83" cy="321" r="3.1" fill="none" stroke="var(--acc-main)" stroke-width="1.4"/>
+                <circle cx="78" cy="330" r="2.5" fill="none" stroke="var(--acc-main)" stroke-width="1.1"/>
+                <path d="M80 326c-1 2-1 4 0 5" stroke="var(--acc-main)" stroke-width="1"/>
+                <path d="M128 101c-1-3 2-5 5-4M134 95c2-2 5-2 7 0" fill="none" stroke="var(--acc-accent)" stroke-width="1" opacity=".55"/>
+                <path d="M190 114c5 2 8 6 9 11" fill="none" stroke="var(--acc-accent)" stroke-width=".8" opacity=".55"/>
+              </g>
+
+              <g class="acc-variant acc-visor">
+                <path d="M128 97c15-7 48-7 64 0l-2 15c-8 5-17 7-30 7s-22-2-30-7Z" fill="#101114" stroke="var(--acc-main)" stroke-width="1.3"/>
+                <path d="M132 102c15-5 40-5 56 0l-2 8c-12 3-29 4-42 1l-10-3Z" fill="var(--acc-detail)" opacity=".7"/>
+                <path d="M136 105c12-3 33-3 46 0M138 109c10-2 29-2 41 0" fill="none" stroke="var(--acc-accent)" stroke-width=".8" opacity=".55"/>
+                <path d="M128 101l-9-4M192 101l9-4M127 106l-7 7M193 106l7 7" stroke="var(--acc-main)" stroke-width="1.2"/>
+                <path d="M139 187c6 6 13 10 21 13M181 187c-6 6-13 10-21 13" fill="none" stroke="var(--acc-main)" stroke-width="1.2"/>
+                <path d="M150 202c4 2 7 3 10 3 4 0 7-1 11-3" fill="none" stroke="var(--acc-metal, #d2d7de)" stroke-width="2" opacity=".7"/>
+                <path d="M160 213v4" stroke="var(--acc-main)" stroke-width="1.1"/>
+                <path d="M222 309c5 4 8 10 7 17M228 312c-1 8-5 14-11 17" fill="none" stroke="var(--acc-main)" stroke-width="1.1" opacity=".8"/>
+                <path d="M224 317h9M225 322h7" stroke="var(--acc-accent)" stroke-width="1.2" opacity=".7"/>
+              </g>
+            </g>
+          </svg>
+
+          <div class="stage-floor"></div>
+          <div class="avatar-hotspots" id="avatarHotspots" aria-label="Быстрое управление деталями">
+            <button class="avatar-hotspot hs-hair" data-slot="hair" aria-label="Волосы"><svg class="icon"><use href="#i-hair"></use></svg></button>
+            <button class="avatar-hotspot hs-acc" data-slot="accessory" aria-label="Аксессуар"><svg class="icon"><use href="#i-acc"></use></svg></button>
+            <button class="avatar-hotspot hs-top" data-slot="top" aria-label="Верх"><svg class="icon"><use href="#i-top"></use></svg></button>
+            <button class="avatar-hotspot hs-bottom" data-slot="bottom" aria-label="Низ"><svg class="icon"><use href="#i-bottom"></use></svg></button>
+            <button class="avatar-hotspot hs-shoes" data-slot="shoes" aria-label="Обувь"><svg class="icon"><use href="#i-shoe"></use></svg></button>
+          </div>
+          <div class="zoom-controls" id="zoomControls" aria-label="Масштаб 3D">
+            <button data-zoom="in" aria-label="Приблизить">+</button>
+            <button data-zoom="out" aria-label="Отдалить">−</button>
+          </div>
+          <span class="stage-tap-hint">СВАЙП — 360° · ЩИПОК — ЗУМ · ТАП — ШКАФ · ВНИЗ — СНЯТЬ</span>
+          <div class="stage-plaque" id="stagePlaque">
+            <span class="plaque-mark"><svg class="icon"><use href="#i-diamond"></use></svg></span>
+            <span class="plaque-text"><b id="plaqueSet">NOIRÉ</b><small id="plaqueItem">МИНУС · ИКОНА</small></span>
+          </div>
+          <div class="perfect-badge" id="perfectBadge">
+            <svg class="icon"><use href="#i-crown"></use></svg>
+            <span>ИДЕАЛЬНЫЙ ЛУК</span>
+          </div>
+        </div>
+
+        <div class="slot-rail" id="slotRail"></div>
+        <div class="rail-hint">Слот — шкаф · искра — прокрут · аватар — снять или надеть</div>
+
+        <div class="spin-zone">
+          <div class="spin-caption">
+            <span id="focusName">ВСЕ ВЕЩИ</span><span class="dot-sep"></span>
+            <span id="selectedSlotLabel">АКСЕССУАР</span>
+            <b id="spinCostLabel">100</b>
+          </div>
+          <button class="primary-btn spin-main" id="openSpinBtn">
+            <span>КРУТИТЬ</span>
+            <i class="spin-glyph"><svg class="icon"><use href="#i-spark"></use></svg></i>
+          </button>
+        </div>
+        <p class="harmony-note">Пять случайных Икон — 80. Полный сет — 100.</p>
+        <button class="bonus-strip" id="bonusBtn">
+          <span class="bonus-icon"><svg class="icon"><use href="#i-spark"></use></svg></span>
+          <span><b>БОНУС ДНЯ</b><small>+500 монет к балансу</small></span>
+          <em id="bonusLabel">ЗАБРАТЬ</em>
+        </button>
+      </section>
+
+      <section class="screen" data-screen="wardrobe">
+        <div class="screen-head">
+          <div>
+            <span class="eyebrow">КОЛЛЕКЦИЯ</span>
+            <h1>Гардероб</h1>
+          </div>
+          <div class="owned-counter"><b id="ownedCounter">21</b> / <span id="catalogCounter">177</span></div>
+        </div>
+        <div class="filter-scroll" id="slotFilters"></div>
+        <div class="filter-scroll collections-row" id="wardrobeCollections"></div>
+        <div class="progress-strip" id="collectionProgress"></div>
+        <p class="wardrobe-hint">Тап по вещи — сразу надеть или снять. Пустой слот показывает базовый слой.</p>
+        <div class="wardrobe-grid" id="wardrobeGrid"></div>
+      </section>
+
+      <section class="screen" data-screen="leaders">
+        <div class="screen-head">
+          <div>
+            <span class="eyebrow">РЕЙТИНГ</span>
+            <h1>Лидеры</h1>
+          </div>
+          <button class="mini-action" id="compareTopBtn">СРАВНИТЬ</button>
+        </div>
+        <div class="segmented" id="leaderTabs">
+          <button class="is-active" data-period="week">Неделя</button>
+          <button data-period="all">Всё время</button>
+          <button data-period="friends">Друзья</button>
+        </div>
+        <div class="podium" id="podium"></div>
+        <div class="leader-list" id="leaderList"></div>
+      </section>
+
+      <section class="screen" data-screen="profile">
+        <div class="screen-head">
+          <div>
+            <span class="eyebrow">ПРОФИЛЬ</span>
+            <h1>@lukap_user</h1>
+          </div>
+          <button class="icon-btn" id="settingsBtn" aria-label="Настройки"><svg class="icon"><use href="#i-settings"></use></svg></button>
+        </div>
+        <div class="profile-card">
+          <div class="profile-portrait" id="profilePortrait"></div>
+          <div class="profile-card-copy">
+            <span class="profile-title" id="profileTitle">4/5 NOIRÉ · 92</span>
+            <p>Лучший лук недели</p>
+            <div class="profile-pips" id="profilePips"></div>
+          </div>
+          <span class="profile-rank" id="profileRank">#4</span>
+        </div>
+        <div class="profile-stats">
+          <div><b id="statBest">92</b><span>лучший лук</span></div>
+          <div><b id="statOwned">16</b><span>предметов</span></div>
+          <div><b id="statSets">1</b><span>сет</span></div>
+        </div>
+        <button class="primary-btn share-main" id="shareLookBtn">
+          <svg class="icon"><use href="#i-share"></use></svg>
+          <span>ПОДЕЛИТЬСЯ ЛУКОМ</span>
+        </button>
+        <div class="profile-actions" id="profileActions">
+          <button data-profile-action="history">ИСТОРИЯ</button>
+          <button data-profile-action="achievements">ДОСТИЖЕНИЯ</button>
+          <button data-profile-action="customize">КАСТОМИЗАЦИЯ</button>
+          <button data-profile-action="invite">ПРИГЛАСИТЬ</button>
+        </div>
+        <div class="panel" id="profileBasePanel">
+          <div class="panel-head"><span class="eyebrow">БАЗА</span><span class="panel-note">без влияния на score</span></div>
+          <div class="custom-row">
+            <span class="custom-label">Тон кожи</span>
+            <div class="swatches" id="skinSwatches"></div>
+          </div>
+          <div class="custom-row">
+            <span class="custom-label">Телосложение</span>
+            <div class="segmented compact" id="bodyTabs">
+              <button data-body="slim">Стройное</button>
+              <button class="is-active" data-body="average">Среднее</button>
+              <button data-body="strong">Плотное</button>
+            </div>
+          </div>
+          <div class="custom-row">
+            <span class="custom-label">Текстура волос</span>
+            <div class="segmented compact hair-texture-tabs" id="hairTextureTabsProfile" role="group" aria-label="Текстура волос"></div>
+          </div>
+          <div class="panel-head watch-head"><span class="eyebrow">ЧАСЫ</span><span class="panel-note">для аксессуара «Часы»</span></div>
+          <div class="custom-row">
+            <span class="custom-label">Циферблат</span>
+            <div class="segmented compact watch-dial-tabs" id="watchDialTabs" role="group" aria-label="Циферблат часов"></div>
+          </div>
+          <div class="custom-row">
+            <span class="custom-label">Ремешок</span>
+            <div class="swatches watch-straps" id="watchStrapSwatches" role="group" aria-label="Ремешок часов"></div>
+          </div>
+          <div class="custom-row">
+            <span class="custom-label">Скоро в кастомизации</span>
+            <div class="soon-chips"><span>Макияж</span><span>Тату</span><span>Пирсинг</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span class="eyebrow">МОНЕТЫ</span><span class="panel-note">без пополнения</span></div>
+          <div class="wallet-row">
+            <div><span class="wallet-label">В кошельке</span><b id="walletProfile">10 000</b></div>
+            <button class="mini-action solid" id="profileTopup">БОНУСЫ</button>
+          </div>
+          <div class="custom-row">
+            <span class="custom-label">Лишние копии</span>
+            <button class="mini-action" id="profileSellDupes">ПРОДАТЬ ДУБЛИ</button>
+          </div>
+          <p class="panel-foot">Только игровые монеты. Пополнение не нужно, вывода в деньги нет.</p>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span class="eyebrow">СЕРВИС</span></div>
+          <div class="custom-row">
+            <span class="custom-label">Звук и отклик</span>
+            <button class="toggle is-on" id="soundToggle" aria-label="Звук и отклик"><span></span></button>
+          </div>
+          <div class="custom-row">
+            <span class="custom-label">Сбросить демо</span>
+            <button class="mini-action" id="resetBtn">СБРОСИТЬ</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Навигация">
+      <button class="nav-btn is-active" data-tab="look">
+        <span class="nav-icon"><svg class="icon"><use href="#i-hanger"></use></svg></span>
+        <span>Лук</span>
+      </button>
+      <button class="nav-btn" data-tab="wardrobe">
+        <span class="nav-icon"><svg class="icon"><use href="#i-top"></use></svg></span>
+        <span>Гардероб</span>
+      </button>
+      <button class="nav-btn" data-tab="leaders">
+        <span class="nav-icon"><svg class="icon"><use href="#i-crown"></use></svg></span>
+        <span>Лидеры</span>
+      </button>
+      <button class="nav-btn" data-tab="profile">
+        <span class="nav-icon"><svg class="icon"><use href="#i-diamond"></use></svg></span>
+        <span>Профиль</span>
+      </button>
+    </nav>
+
+    <div class="backdrop" id="backdrop"></div>
+
+    <section class="sheet spin-sheet" id="spinSheet" aria-hidden="true">
+      <div class="sheet-grab"></div>
+      <div class="sheet-head">
+        <div>
+          <span class="eyebrow">ПРОКРУТ</span>
+          <h2 id="spinSheetTitle">АКСЕССУАР</h2>
+        </div>
+        <button class="icon-btn sheet-close" data-close="spinSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+      </div>
+      <div class="pool-info" id="spinPool">
+        <span class="pool-info-mark"><svg class="icon"><use href="#i-spark"></use></svg></span>
+        <span><b>ОДИН ПРОКРУТ</b><small>ВСЕ 6 РЕДКОСТЕЙ · ЛЮБАЯ КОЛЛЕКЦИЯ</small></span>
+      </div>
+      <div class="reel-panel">
+        <div class="reel-topline">
+          <span>ПОСЛЕДНИЕ ДРОПЫ</span>
+          <span id="reelTier">6 РЕДКОСТЕЙ · 100</span>
+        </div>
+        <div class="reel-viewport">
+          <div class="reel-pointer"></div>
+          <div class="reel-track" id="reelTrack"></div>
+          <div class="reel-fade left"></div><div class="reel-fade right"></div>
+        </div>
+      </div>
+      <div class="spin-odds" id="spinOdds" aria-label="Шансы редкостей на один прокрут"></div>
+      <div class="spin-sheet-meta">
+        <div class="sheet-meta-actions">
+          <button class="text-action" id="oddsBtn"><svg class="icon"><use href="#i-diamond"></use></svg> ШАНСЫ</button>
+          <button class="text-action" id="slotWardrobeBtn"><svg class="icon"><use href="#i-hanger"></use></svg> ШКАФ</button>
+        </div>
+        <span id="sheetBalance">Монеты 10 000</span>
+      </div>
+      <button class="primary-btn spin-main sheet-spin" id="spinBtn"><span id="spinBtnLabel">КРУТИТЬ · 100</span></button>
+      <button class="skip-btn" id="skipBtn" hidden>ПРОПУСТИТЬ АНИМАЦИЮ</button>
+    </section>
+
+    <section class="tryon-tray" id="slotSheet" aria-hidden="true">
+      <div class="tryon-grab"></div>
+      <div class="tryon-topbar">
+        <div>
+          <span class="eyebrow">ПРИМЕРОЧНАЯ · 3D</span>
+          <h2 id="slotSheetTitle">ВЕРХ</h2>
+        </div>
+        <button class="icon-btn" data-close="slotSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+      </div>
+      <div class="tryon-status" id="slotSheetCount">Базовый слой</div>
+      <div class="hair-texture-panel" id="hairTexturePanel" hidden>
+        <span class="hair-texture-label">ТЕКСТУРА ВОЛОС</span>
+        <div class="segmented compact hair-texture-tabs" id="hairTextureTabs" role="group" aria-label="Текстура волос"></div>
+      </div>
+      <div class="slot-owned-grid" id="slotOwnedGrid"></div>
+      <div class="tryon-actions">
+        <button class="secondary-btn" id="removeSlotBtn">СНЯТЬ</button>
+        <button class="secondary-btn" id="slotSpinBtn"><span>КРУТИТЬ · 100</span></button>
+        <button class="primary-btn" id="slotDoneBtn">ГОТОВО</button>
+      </div>
+    </section>
+
+    <section class="sheet topup-sheet" id="topupSheet" aria-hidden="true">
+      <div class="sheet-grab"></div>
+      <div class="sheet-head">
+        <div>
+          <span class="eyebrow">БАЛАНС</span>
+          <h2>Бонусы</h2>
+        </div>
+        <button class="icon-btn sheet-close" data-close="topupSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+      </div>
+      <div class="wallet-hero">
+        <span>У ТЕБЯ</span>
+        <b id="topupBalance">10 000</b>
+        <small>Монеты тратятся только на прокруты</small>
+      </div>
+      <div class="bonus-methods">
+        <div class="bonus-method">
+          <div class="bonus-method-icon"><svg class="icon"><use href="#i-spark"></use></svg></div>
+          <div class="bonus-method-copy"><b>Бонус дня</b><span>+500 монет за вход</span></div>
+          <button class="mini-action solid" id="bonusClaimSheet">ЗАБРАТЬ</button>
+        </div>
+        <div class="bonus-method">
+          <div class="bonus-method-icon"><svg class="icon"><use href="#i-diamond"></use></svg></div>
+          <div class="bonus-method-copy"><b>Лишние копии</b><span>Верни дубли в оборот</span></div>
+          <button class="mini-action" id="sellDupesSheet">ПРОДАТЬ</button>
+        </div>
+      </div>
+      <div class="rtp-note">
+        <span>ВОЗВРАТ В МОНЕТАХ</span>
+        <b>≈ 100%</b>
+        <small>На дистанции дубли возвращают стоимость прокрутов. Это не деньги и не вывод.</small>
+      </div>
+      <p class="panel-foot">Пополнение не требуется. Монетизация — отдельным слоем после запуска ядра.</p>
+    </section>
+
+    <section class="sheet odds-sheet" id="oddsSheet" aria-hidden="true">
+      <div class="sheet-grab"></div>
+      <div class="sheet-head">
+        <div>
+          <span class="eyebrow">ОТКРЫТЫЕ ДАННЫЕ</span>
+          <h2>Шансы</h2>
+        </div>
+        <button class="icon-btn sheet-close" data-close="oddsSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+      </div>
+      <div class="odds-content" id="oddsContent"></div>
+      <p class="panel-foot">Шансы фиксированы для коллекции и слота. Результат каждого прокрута определяет сервер; в прототипе — локальный демо-ролл.</p>
+    </section>
+
+    <section class="sheet item-sheet" id="itemSheet" aria-hidden="true">
+      <div class="sheet-grab"></div>
+      <div class="item-sheet-art" id="itemSheetArt"></div>
+      <div class="sheet-head item-sheet-head">
+        <div>
+          <span class="eyebrow" id="itemSheetRarity">ИКОНА</span>
+          <h2 id="itemSheetName">«Минус»</h2>
+          <span class="item-sheet-meta" id="itemSheetMeta">NOIRÉ · АКСЕССУАР</span>
+        </div>
+        <button class="icon-btn sheet-close" data-close="itemSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+      </div>
+      <div class="item-facts">
+        <div><span>К гармонии</span><b id="itemSheetPoints">+16</b></div>
+        <div><span>В монетах</span><b id="itemSheetPrice">1 000</b></div>
+        <div><span>В коллекции</span><b id="itemSheetOwned">1 / 1</b></div>
+      </div>
+      <div class="item-actions" id="itemSheetActions"></div>
+    </section>
+
+    <section class="sheet compare-sheet" id="compareSheet" aria-hidden="true">
+      <div class="sheet-grab"></div>
+      <div class="sheet-head">
+        <div>
+          <span class="eyebrow">СРАВНЕНИЕ</span>
+          <h2>Кто круче</h2>
+        </div>
+        <button class="icon-btn sheet-close" data-close="compareSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+      </div>
+      <div class="compare-grid" id="compareGrid"></div>
+      <p class="panel-foot">Разница считается по гармонии, затем по редкости пяти слотов.</p>
+    </section>
+
+    <section class="sheet share-sheet" id="shareSheet" aria-hidden="true">
+      <div class="sheet-grab"></div>
+      <div class="sheet-head">
+        <div>
+          <span class="eyebrow">КАРТОЧКА</span>
+          <h2>Поделиться луком</h2>
+        </div>
+        <button class="icon-btn sheet-close" data-close="shareSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+      </div>
+      <div class="share-card" id="shareCard">
+        <div class="share-card-top"><span class="share-brand">ЛУКАП</span><span class="share-serial">LK / 001</span></div>
+        <div class="share-score"><span id="shareScore">92</span><em>/100</em></div>
+        <div class="share-set" id="shareSet">NOIRÉ · 4/5</div>
+        <div class="share-avatar" id="shareAvatar"></div>
+        <div class="share-bottom"><span>@lukap_user</span><span>СОБЕРИ СВОЙ ЛУК</span></div>
+      </div>
+      <button class="primary-btn" id="shareActionBtn"><svg class="icon"><use href="#i-share"></use></svg><span>ПОДЕЛИТЬСЯ</span></button>
+    </section>
+
+    <section class="sheet info-sheet" id="historySheet" aria-hidden="true">
+      <div class="sheet-grab"></div>
+      <div class="sheet-head">
+        <div>
+          <span class="eyebrow">ПРОФИЛЬ</span>
+          <h2>История дропов</h2>
+        </div>
+        <button class="icon-btn sheet-close" data-close="historySheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+      </div>
+      <div class="history-list" id="historyList"></div>
+      <p class="panel-foot">Предметы остаются в гардеробе. Продать лишние копии можно в профиле.</p>
+    </section>
+
+    <section class="sheet info-sheet" id="achievementsSheet" aria-hidden="true">
+      <div class="sheet-grab"></div>
+      <div class="sheet-head">
+        <div>
+          <span class="eyebrow">ПРОФИЛЬ</span>
+          <h2>Достижения</h2>
+        </div>
+        <button class="icon-btn sheet-close" data-close="achievementsSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+      </div>
+      <div id="achievementsContent"></div>
+    </section>
+
+    <div class="drop-modal" id="dropModal" aria-hidden="true">
+      <div class="drop-noise"></div>
+      <div class="drop-glow" id="dropGlow"></div>
+      <div class="drop-content">
+        <div class="drop-topline"><span class="eyebrow" id="dropRarity">ИКОНА</span><span class="drop-index" id="dropIndex">№ 047</span></div>
+        <div class="drop-art" id="dropArt"></div>
+        <h2 class="drop-name" id="dropName">«Минус»</h2>
+        <div class="drop-meta" id="dropMeta">NOIRÉ · АКСЕССУАР</div>
+        <div class="drop-value" id="dropValue">1000 <span>МОНЕТ</span></div>
+        <div class="drop-delta" id="dropDelta">ОСТАВЛЕНО В ГАРДЕРОБЕ</div>
+        <div class="drop-actions" id="dropActions"></div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <script src="item-art.js?v=14"></script>
+  <script src="vendor/three.min.js"></script>
+  <script src="app.js?v=14"></script>
+  <script src="avatar3d.js?v=14"></script>
+</body>
+</html>

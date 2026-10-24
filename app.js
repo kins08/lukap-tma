@@ -1,0 +1,2632 @@
+'use strict';
+
+const $ = (id) => document.getElementById(id);
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+const SLOTS = [
+  { id: 'hair', label: 'Волосы', icon: 'i-hair' },
+  { id: 'top', label: 'Верх', icon: 'i-top' },
+  { id: 'bottom', label: 'Низ', icon: 'i-bottom' },
+  { id: 'shoes', label: 'Обувь', icon: 'i-shoe' },
+  { id: 'accessory', label: 'Аксессуар', icon: 'i-acc' }
+];
+const SLOT_KEYS = SLOTS.map((slot) => slot.id);
+const SLOT_BY_ID = Object.fromEntries(SLOTS.map((slot) => [slot.id, slot]));
+
+const RARITIES = [
+  { id: 'base', label: 'База', color: '#69645D', points: 6, sell: 50 },
+  { id: 'norm', label: 'Норма', color: '#14834A', points: 8, sell: 100 },
+  { id: 'trend', label: 'Тренд', color: '#6C8300', points: 10, sell: 180 },
+  { id: 'couture', label: 'Кутюр', color: '#C95300', points: 12, sell: 600 },
+  { id: 'legend', label: 'Легенда', color: '#986000', points: 14, sell: 2000 },
+  { id: 'icon', label: 'Икона', color: '#C92318', points: 16, sell: 30000 }
+];
+const RARITY_META = Object.fromEntries(RARITIES.map((rarity) => [rarity.id, rarity]));
+const RARITY_ORDER = Object.fromEntries(RARITIES.map((rarity, index) => [rarity.id, index]));
+
+const COLLECTIONS = {
+  noir: {
+    id: 'noir',
+    name: 'NOIRÉ',
+    tier: 'icon',
+    tierLabel: 'ИКОНА',
+    cost: 399,
+    title: 'ПОЛНАЯ ТИШИНА',
+    tagline: 'Минимализм · чёрный · серебро',
+    rarities: ['base', 'norm', 'trend', 'couture', 'legend', 'icon'],
+    palettes: [
+      { main: '#34343a', accent: '#a4a4ae', detail: '#7f201c', metal: '#c4c6cc', hair: '#1c1c1f', hairHi: '#3d3d43' },
+      { main: '#28282e', accent: '#b9b9c3', detail: '#96221d', metal: '#d0d2d8', hair: '#18181b', hairHi: '#38383e' },
+      { main: '#1d1d22', accent: '#c8c8d0', detail: '#ab241e', metal: '#d8dade', hair: '#141416', hairHi: '#303036' },
+      { main: '#151519', accent: '#d6d6dd', detail: '#b72a22', metal: '#e0e1e4', hair: '#111113', hairHi: '#2a2a2f' },
+      { main: '#0f0f12', accent: '#e4e0d8', detail: '#c52d24', metal: '#e8e9ec', hair: '#0e0e10', hairHi: '#27272b' },
+      { main: '#08080a', accent: '#f0e7d6', detail: '#d9342a', metal: '#f0f1f3', hair: '#0a0a0c', hairHi: '#242428' }
+    ]
+  },
+  old: {
+    id: 'old',
+    name: 'OLD MANOR',
+    tier: 'atelier',
+    tierLabel: 'АТЕЛЬЕ',
+    cost: 249,
+    title: 'НАСЛЕДИЕ',
+    tagline: 'Крем · камель · золото',
+    rarities: ['base', 'norm', 'trend', 'couture', 'legend'],
+    palettes: [
+      { main: '#8d765b', accent: '#d3b178', detail: '#5a3d2a', metal: '#c79b51', hair: '#3a2a1f', hairHi: '#6a4b31' },
+      { main: '#9d8567', accent: '#ddbd84', detail: '#61432d', metal: '#d0a55a', hair: '#3f2d20', hairHi: '#735133' },
+      { main: '#b39a76', accent: '#e5c58e', detail: '#6b4b31', metal: '#d8b268', hair: '#463224', hairHi: '#7d5a39' },
+      { main: '#cab28d', accent: '#e7cc9b', detail: '#755335', metal: '#dfbd7e', hair: '#4d3827', hairHi: '#866341' },
+      { main: '#e3d1b0', accent: '#caa05e', detail: '#6e4c31', metal: '#e5bd72', hair: '#4f3928', hairHi: '#896543' }
+    ]
+  },
+  street: {
+    id: 'street',
+    name: 'STREET CØDE',
+    tier: 'street',
+    tierLabel: 'УЛИЦА',
+    cost: 149,
+    title: 'КОД УЛИЦ',
+    tagline: 'Бетон · трафик · красный',
+    rarities: ['base', 'norm', 'trend', 'couture'],
+    palettes: [
+      { main: '#3e3e45', accent: '#a8a8b2', detail: '#b72c24', metal: '#c5c7cd', hair: '#151517', hairHi: '#34343a' },
+      { main: '#2c2c32', accent: '#b9b9c2', detail: '#d02f27', metal: '#d0d2d7', hair: '#121214', hairHi: '#303036' },
+      { main: '#202025', accent: '#c7c7cf', detail: '#ee3d32', metal: '#d9dbe0', hair: '#101012', hairHi: '#2d2d32' },
+      { main: '#271a1a', accent: '#ff6257', detail: '#ff6a00', metal: '#d3d5db', hair: '#0d0d0f', hairHi: '#2b2b30' }
+    ]
+  },
+  muse: {
+    id: 'muse',
+    name: 'MUZE',
+    tier: 'studio',
+    tierLabel: 'СТУДИЯ',
+    cost: 299,
+    title: 'ТИХИЙ БЛЕСК',
+    tagline: 'Бордо · пудра · жемчуг',
+    rarities: ['base', 'norm', 'trend', 'couture', 'legend'],
+    palettes: [
+      { main: '#5d3a3a', accent: '#d8b7a8', detail: '#7c3f44', metal: '#c8a46b', hair: '#2c1d1c', hairHi: '#543833' },
+      { main: '#7b4448', accent: '#e7c9b9', detail: '#4d2529', metal: '#d8b17b', hair: '#34211f', hairHi: '#5f3c36' },
+      { main: '#a8676b', accent: '#f0d8cb', detail: '#6b3035', metal: '#e0bc83', hair: '#3d2622', hairHi: '#70483e' },
+      { main: '#d3a49f', accent: '#f7e6dc', detail: '#8f4b50', metal: '#e8c99b', hair: '#4a2d28', hairHi: '#7c5347' },
+      { main: '#c9978d', accent: '#a84e59', detail: '#57282d', metal: '#d8ae68', hair: '#3a2723', hairHi: '#68493e' }
+    ]
+  },
+  sport: {
+    id: 'sport',
+    name: 'SPORT DEPT.',
+    tier: 'street',
+    tierLabel: 'СПОРТ',
+    cost: 199,
+    title: 'ДВИЖЕНИЕ',
+    tagline: 'Трибуна · сетка · скорость',
+    rarities: ['base', 'norm', 'trend', 'couture', 'legend', 'icon'],
+    palettes: [
+      { main: '#e7dfd0', accent: '#c83a2f', detail: '#2b2a28', metal: '#b9bcc2', hair: '#2b211b', hairHi: '#5c4130' },
+      { main: '#34383a', accent: '#9aa63a', detail: '#c83a2f', metal: '#c6c8cc', hair: '#171514', hairHi: '#3b3632' },
+      { main: '#1c1c1f', accent: '#e8e3d9', detail: '#d23a2f', metal: '#d2d4d8', hair: '#101012', hairHi: '#302d2b' },
+      { main: '#2c3f36', accent: '#e6dbc5', detail: '#c85a32', metal: '#cbb27a', hair: '#231c16', hairHi: '#4c3b2c' },
+      { main: '#9e2f2a', accent: '#f0e6d6', detail: '#2a2522', metal: '#d6b26b', hair: '#2a1e18', hairHi: '#583c2c' },
+      { main: '#d9d2c4', accent: '#242426', detail: '#b8342a', metal: '#bfc2c7', hair: '#241d18', hairHi: '#513c2d' }
+    ]
+  }
+};
+
+const DROP_TABLE = { base: 60.62, norm: 27, trend: 10, couture: 2, legend: 0.35, icon: 0.03 };
+const SPIN_COST = 100;
+
+const NAME_BANK = {
+  noir: {
+    hair: ['Полночь', 'Пробор', 'Тень', 'Глянец', 'Волна', 'Сталь'],
+    top: ['Тишина', 'Ателье', 'Контур', 'Каркас', 'Пиджак', 'Минус'],
+    bottom: ['Лезвие', 'Стрелка', 'Свод', 'Жёсткость', 'Линия', 'Сгиб'],
+    shoes: ['Свинец', 'Груз', 'Шаг', 'Острие', 'Подошва', 'Полночь'],
+    accessory: ['Минус', 'Оправа', 'Сталь', 'Печать', 'Игла', 'Холод']
+  },
+  old: {
+    hair: ['Наследие', 'Волна', 'Пробор', 'Клуб', 'Сезон'],
+    top: ['Клуб', 'Камея', 'Герб', 'Пиджак', 'Наследие'],
+    bottom: ['Камея', 'Стрелка', 'Клуб', 'Галс', 'Сезон'],
+    shoes: ['Яхта', 'Клуб', 'Наследие', 'Галс', 'Старый свет'],
+    accessory: ['Аукцион', 'Печать', 'Герб', 'Клуб', 'Цепь']
+  },
+  street: {
+    hair: ['Код', 'Двор', 'Бетон', 'Ветер'],
+    top: ['Код', 'Двор', 'Сетка', 'Бетон'],
+    bottom: ['Двор', 'Карго', 'Бетон', 'Поток'],
+    shoes: ['Бетон', 'Прыжок', 'Двор', 'След'],
+    accessory: ['Провод', 'Код', 'Двор', 'Бетон']
+  },
+  muse: {
+    hair: ['Волна', 'Пробор', 'Боб', 'Флоу', 'Пикси'],
+    top: ['Кроп', 'Лонгслив', 'Рубашка', 'Бомбер', 'Жилет'],
+    bottom: ['Юбка-мини', 'Клёш', 'Бэгги', 'Парашют', 'Карго-макси'],
+    shoes: ['Балетки', 'Мюли', 'Платформы', 'Ботильоны', 'Лоферы'],
+    accessory: ['Кольца', 'Серьги', 'Жемчуг', 'Очки', 'Цепь']
+  },
+  sport: {
+    hair: ['Фейд', 'Флоу', 'Кудри', 'Боб', 'Пикси', 'Маллет'],
+    top: ['Спорт-ти', 'Лонгслив', 'Ветровка', 'Худи', 'Жилет', 'Джерси'],
+    bottom: ['Джоггеры', 'Бэгги', 'Парашют', 'Клёш', 'Джорты', 'Трек'],
+    shoes: ['Раннеры', 'Кроссовки', 'Темпо', 'Платформы', 'Бутсы', 'Марафон'],
+    accessory: ['Вайзор', 'Хроно', 'Цепь', 'Кольца', 'Таймер', 'Очки']
+  }
+};
+
+const START_OWNED = [
+  'noir-hair-extra-crop',
+  'noir-top-extra-longsleeve-1',
+  'old-bottom-extra-flare-1',
+  'street-shoes-base',
+  'street-accessory-base',
+  'street-hair-extra-flow',
+  'noir-hair-norm',
+  'old-hair-base',
+  'noir-top-norm',
+  'street-top-norm',
+  'old-top-base',
+  'noir-bottom-norm',
+  'old-bottom-base',
+  'street-bottom-base',
+  'noir-shoes-norm',
+  'street-shoes-norm',
+  'old-shoes-norm',
+  'muse-accessory-extra-rings-1',
+  'noir-accessory-norm',
+  'old-accessory-norm',
+  'street-accessory-norm'
+];
+
+const DEFAULT_EQUIPPED = {
+  hair: 'noir-hair-extra-crop',
+  top: 'noir-top-extra-longsleeve-1',
+  bottom: 'old-bottom-extra-flare-1',
+  shoes: 'street-shoes-base',
+  accessory: 'muse-accessory-extra-rings-1'
+};
+
+const SKINS = [
+  { name: 'Тёплый', skin: '#c68b63', shadow: '#815038' },
+  { name: 'Глубокий', skin: '#8e5a3e', shadow: '#593624' },
+  { name: 'Светлый', skin: '#e0af88', shadow: '#a87554' }
+];
+
+const HAIR_TEXTURES = [
+  { id: 'straight', label: 'Прямые' },
+  { id: 'wavy', label: 'Волнистые' },
+  { id: 'curly', label: 'Кудрявые' }
+];
+
+function hairTextureLabel(id = state.hairTexture) {
+  const texture = HAIR_TEXTURES.find((entry) => entry.id === id) || HAIR_TEXTURES[0];
+  return texture.label;
+}
+
+const WATCH_DIALS = [
+  { id: 'classic', label: 'Классик', face: '#f3e7d2', ink: '#2a2520', accent: '#a88855', style: 'classic' },
+  { id: 'minimal', label: 'Минимал', face: '#f8f2e6', ink: '#322c26', accent: '#9e8d70', style: 'minimal' },
+  { id: 'chrono', label: 'Хроно', face: '#1a1a1c', ink: '#e8d6b2', accent: '#c75542', style: 'chrono' },
+  { id: 'digital', label: 'Диджитал', face: '#111417', ink: '#9fd8b4', accent: '#6fbf8c', style: 'digital' },
+  { id: 'guilloche', label: 'Гийош', face: '#ddd3c0', ink: '#3a332b', accent: '#ad8b55', style: 'guilloche' },
+  { id: 'roman', label: 'Римский', face: '#f1e6d2', ink: '#2c2721', accent: '#a17f4d', style: 'roman' },
+  { id: 'moon', label: 'Луна', face: '#1e2420', ink: '#e9ddc4', accent: '#c9a45c', style: 'moon' },
+  { id: 'gmt', label: 'GMT', face: '#203027', ink: '#f0e6d3', accent: '#c44536', style: 'gmt' },
+  { id: 'skeleton', label: 'Скелетон', face: '#272321', ink: '#e5d6bd', accent: '#b98d4e', style: 'skeleton' },
+  { id: 'panda', label: 'Панда', face: '#f4efe5', ink: '#1f1d1b', accent: '#242424', style: 'panda' },
+  { id: 'meteorite', label: 'Метеорит', face: '#6d655b', ink: '#f2e9d8', accent: '#c9a45c', style: 'meteorite' },
+  { id: 'sunburst', label: 'Солнце', face: '#8d2b25', ink: '#f3e7d2', accent: '#e0b36b', style: 'sunburst' }
+];
+const WATCH_STRAPS = [
+  { id: 'leather', label: 'Кожа', color: '#65402d', metalness: 0.04, roughness: 0.62 },
+  { id: 'steel', label: 'Сталь', color: '#b9bcc2', metalness: 0.64, roughness: 0.32 },
+  { id: 'black', label: 'Чёрный', color: '#242428', metalness: 0.08, roughness: 0.48 },
+  { id: 'gold', label: 'Золото', color: '#c9a45c', metalness: 0.7, roughness: 0.3 },
+  { id: 'rubber', label: 'Каучук', color: '#313739', metalness: 0.02, roughness: 0.82 },
+  { id: 'suede', label: 'Замша', color: '#8a6a4f', metalness: 0.02, roughness: 0.9 },
+  { id: 'twotone', label: 'Двухтон', color: '#b9bcc2', metalness: 0.62, roughness: 0.32 },
+  { id: 'nato', label: 'NATO', color: '#4f5c45', metalness: 0.02, roughness: 0.86 }
+];
+window.LUKAP_WATCH_DIALS = WATCH_DIALS;
+window.LUKAP_WATCH_STRAPS = WATCH_STRAPS;
+
+const WATCH_FAMILY_LABELS = {
+  dress: 'КОСТЮМНЫЕ',
+  diver: 'ДАЙВЕР',
+  chrono: 'ХРОНОГРАФ',
+  gmt: 'GMT',
+  field: 'ПОЛЕВЫЕ',
+  digital: 'ЦИФРОВЫЕ'
+};
+
+function watchDialLabel(id = state.watchDial) {
+  const dial = WATCH_DIALS.find((entry) => entry.id === id) || WATCH_DIALS[0];
+  return dial.label;
+}
+
+function watchStrapLabel(id = state.watchStrap) {
+  const strap = WATCH_STRAPS.find((entry) => entry.id === id) || WATCH_STRAPS[0];
+  return strap.label;
+}
+
+const STORAGE_KEY = 'lukap_stage1_v13';
+const SET_BONUS = { 5: 20, 4: 14, 3: 7, 2: 2 };
+
+const LEADERBOARDS = {
+  week: [
+    { name: '@mira', title: 'ПОЛНАЯ ТИШИНА', score: 100, set: 'NOIRÉ', pips: ['icon', 'icon', 'icon', 'icon', 'icon'], accent: '#e9bd74' },
+    { name: '@kolt', title: 'НАСЛЕДИЕ', score: 98, set: 'OLD MANOR', pips: ['icon', 'icon', 'icon', 'legend', 'legend'], accent: '#c9a45c' },
+    { name: '@zero', title: 'КОД УЛИЦ', score: 96, set: 'STREET CØDE', pips: ['icon', 'icon', 'legend', 'legend', 'legend'], accent: '#ff5b4f' },
+    { name: '@nord', title: 'ПОЧТИ ИДЕАЛЬНО', score: 91, set: 'NOIRÉ', pips: ['icon', 'legend', 'legend', 'legend', 'legend'], accent: '#b8bcc5' },
+    { name: '@aya', title: 'СИЛЬНЫЙ ЛУК', score: 88, set: 'OLD MANOR', pips: ['legend', 'legend', 'legend', 'couture', 'couture'], accent: '#d6b574' },
+    { name: '@vlad', title: 'КОД УЛИЦ', score: 85, set: 'STREET CØDE', pips: ['legend', 'couture', 'couture', 'couture', 'couture'], accent: '#ff756b' },
+    { name: '@ten', title: 'ЕСТЬ ХАРАКТЕР', score: 82, set: 'NOIRÉ', pips: ['couture', 'couture', 'couture', 'couture', 'legend'], accent: '#73737d' },
+    { name: '@sonya', title: 'КОД УЛИЦ', score: 80, set: 'STREET CØDE', pips: ['couture', 'couture', 'couture', 'couture', 'couture'], accent: '#9f9aa3' }
+  ],
+  all: [
+    { name: '@mira', title: 'ПОЛНАЯ ТИШИНА', score: 100, set: 'NOIRÉ', pips: ['icon', 'icon', 'icon', 'icon', 'icon'], accent: '#e9bd74' },
+    { name: '@zero', title: 'КОД УЛИЦ', score: 99, set: 'STREET CØDE', pips: ['icon', 'icon', 'legend', 'legend', 'legend'], accent: '#ff5b4f' },
+    { name: '@kolt', title: 'НАСЛЕДИЕ', score: 97, set: 'OLD MANOR', pips: ['icon', 'icon', 'icon', 'legend', 'legend'], accent: '#c9a45c' },
+    { name: '@aya', title: 'СИЛЬНЫЙ ЛУК', score: 93, set: 'OLD MANOR', pips: ['legend', 'legend', 'legend', 'couture', 'couture'], accent: '#d6b574' },
+    { name: '@nord', title: 'ПОЧТИ ИДЕАЛЬНО', score: 91, set: 'NOIRÉ', pips: ['icon', 'legend', 'legend', 'legend', 'legend'], accent: '#b8bcc5' },
+    { name: '@vlad', title: 'КОД УЛИЦ', score: 87, set: 'STREET CØDE', pips: ['legend', 'couture', 'couture', 'couture', 'couture'], accent: '#ff756b' },
+    { name: '@ten', title: 'ЕСТЬ ХАРАКТЕР', score: 83, set: 'NOIRÉ', pips: ['couture', 'couture', 'couture', 'couture', 'legend'], accent: '#73737d' }
+  ],
+  friends: [
+    { name: '@mira', title: 'ПОЛНАЯ ТИШИНА', score: 100, set: 'NOIRÉ', pips: ['icon', 'icon', 'icon', 'icon', 'icon'], accent: '#e9bd74' },
+    { name: '@nord', title: 'ПОЧТИ ИДЕАЛЬНО', score: 91, set: 'NOIRÉ', pips: ['icon', 'legend', 'legend', 'legend', 'legend'], accent: '#b8bcc5' },
+    { name: '@aya', title: 'СИЛЬНЫЙ ЛУК', score: 88, set: 'OLD MANOR', pips: ['legend', 'legend', 'legend', 'couture', 'couture'], accent: '#d6b574' }
+  ]
+};
+
+function shade(hex, percent) {
+  const value = hex.replace('#', '');
+  const full = value.length === 3 ? value.split('').map((char) => char + char).join('') : value;
+  const number = parseInt(full, 16);
+  const target = percent < 0 ? 0 : 255;
+  const amount = Math.abs(percent) / 100;
+  const channels = [16, 8, 0].map((shift) => {
+    const channel = (number >> shift) & 255;
+    return Math.round((target - channel) * amount + channel);
+  });
+  return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat('ru-RU').format(value);
+}
+
+function formatCoins(value) {
+  return formatNumber(value);
+}
+
+function formatCoinsLong(value) {
+  return `${formatNumber(value)} монет`;
+}
+
+function formatChance(value) {
+  return `${value.toFixed(2).replace('.', ',').replace(/,00$/, '')}%`;
+}
+
+function chanceDenominator(value) {
+  return value > 0 ? Math.round(100 / value) : 0;
+}
+
+function estimatedDropValue() {
+  return RARITIES.reduce((sum, rarity) => sum + (DROP_TABLE[rarity.id] / 100) * rarity.sell, 0);
+}
+
+function estimatedRtp() {
+  return (estimatedDropValue() / SPIN_COST) * 100;
+}
+
+let oddsRendered = false;
+function renderSpinOdds() {
+  const host = $('spinOdds');
+  if (!host || oddsRendered) return;
+  host.innerHTML = `
+    <span class="spin-odds-title"><span>ШАНСЫ НА ПРОКРУТ</span><span>ОДИН ПРЕДМЕТ · БЕЗ СКРЫТЫХ ПОРОГОВ</span></span>
+    ${RARITIES.map((rarity) => `<span class="spin-odds-chip" style="--rarity:${rarity.color}"><i></i>${rarity.label.toUpperCase()}<b>${formatChance(DROP_TABLE[rarity.id])}</b></span>`).join('')}`;
+  oddsRendered = true;
+}
+
+function pipColor(rarityId) {
+  return (RARITY_META[rarityId] && RARITY_META[rarityId].color) || '#d6cdbf';
+}
+
+function todayKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function itemLabel(item) {
+  const label = item.brand && !item.name.startsWith(item.brand) ? `${item.brand} ${item.name}` : item.name;
+  return `«${label}»`;
+}
+
+function itemIcon(item) {
+  if (item.slot === 'hair') {
+    if (item.variant === 'curls') return 'i-hair-curls';
+    if (item.variant === 'mohawk') return 'i-hair-mohawk';
+    return 'i-hair';
+  }
+  if (item.slot === 'top') {
+    if (item.variant === 'hoodie') return 'i-hoodie';
+    if (item.variant === 'racer') return 'i-racer';
+    return 'i-jacket';
+  }
+  if (item.slot === 'bottom') {
+    if (item.variant === 'cargo') return 'i-cargo';
+    if (item.variant === 'wide') return 'i-wide';
+    return 'i-bottom';
+  }
+  if (item.slot === 'shoes') {
+    if (item.variant === 'boot') return 'i-boot';
+    if (item.variant === 'sneaker') return 'i-sneaker';
+    return 'i-shoe';
+  }
+  if (item.variant === 'visor') return 'i-visor';
+  return 'i-acc';
+}
+
+function variantFor(collectionId, slotId, rarityIndex) {
+  if (collectionId === 'sport') {
+    if (slotId === 'hair') return ['crop', 'flow', 'curls', 'bob', 'pixie', 'mullet'][rarityIndex];
+    if (slotId === 'top') return ['tee', 'longsleeve', 'bomber', 'hoodie', 'vest', 'shirt'][rarityIndex];
+    if (slotId === 'bottom') return ['track', 'baggy', 'parachute', 'flare', 'jorts', 'wide'][rarityIndex];
+    if (slotId === 'shoes') return ['runner', 'sneaker', 'runner', 'platform', 'boot', 'runner'][rarityIndex];
+    return ['glasses', 'watch', 'chain', 'rings', 'watch', 'visor'][rarityIndex];
+  }
+  if (collectionId === 'muse') {
+    if (slotId === 'hair') return ['curls', 'slick', 'bob', 'flow', 'pixie'][rarityIndex];
+    if (slotId === 'top') return ['tee', 'longsleeve', 'shirt', 'bomber', 'vest'][rarityIndex];
+    if (slotId === 'bottom') return ['skirt', 'flare', 'baggy', 'parachute', 'skirt'][rarityIndex];
+    if (slotId === 'shoes') return ['ballet', 'mule', 'platform', 'boot', 'loafer'][rarityIndex];
+    return ['rings', 'earrings', 'pearls', 'glasses', 'chain'][rarityIndex];
+  }
+  if (slotId === 'hair') {
+    if (collectionId === 'street') return rarityIndex > 1 ? 'mohawk' : 'slick';
+    return rarityIndex >= 2 && rarityIndex <= 3 ? 'curls' : 'slick';
+  }
+  if (slotId === 'top') {
+    if (collectionId === 'street') return 'hoodie';
+    return rarityIndex >= 2 && rarityIndex <= 3 ? 'racer' : 'blazer';
+  }
+  if (slotId === 'bottom') {
+    if (collectionId === 'street') return 'cargo';
+    if (collectionId === 'old') return rarityIndex >= 3 ? 'wide' : 'tailored';
+    return 'tailored';
+  }
+  if (slotId === 'shoes') {
+    if (collectionId === 'street') return 'sneaker';
+    return rarityIndex >= 4 ? 'boot' : 'loafer';
+  }
+  if (collectionId === 'old') return 'gold';
+  if (collectionId === 'street') return 'visor';
+  return 'glasses';
+}
+
+const COLLECTION_STYLES = { noir: 'МИНИМАЛ', old: 'ОЛД-МАНИ', street: 'СТРИТ', muse: 'СТУДИЯ', sport: 'СПОРТ' };
+const TOP_FIT_LABELS = { tailored: 'ПО ФИГУРЕ', oversize: 'ОВЕРСАЙЗ', slim: 'СЛИМ', regular: 'РЕГУЛЯР', cropped: 'КРОП', boxy: 'БОКСИ' };
+const RISE_LABELS = { high: 'ВЫСОКАЯ ПОСАДКА', mid: 'СРЕДНЯЯ ПОСАДКА', low: 'НИЗКАЯ ПОСАДКА' };
+const CUT_LABELS = { straight: 'ПРЯМЫЕ', cargo: 'КАРГО', wide: 'ШИРОКИЕ', flare: 'КЛЁШ', baggy: 'БЭГГИ', parachute: 'ПАРАШЮТ', track: 'ДЖОГГЕРЫ', skirt: 'ЮБКА', jorts: 'ШОРТЫ' };
+const SHOE_LABELS = { loafer: 'ЛОФЕРЫ', boot: 'БОТИНКИ', sneaker: 'КРОССОВКИ', platform: 'ПЛАТФОРМЫ', mule: 'МЮЛИ', ballet: 'БАЛЕТКИ', runner: 'РАННЕРЫ', derby: 'ДЕРБИ' };
+const SOLE_LABELS = { low: 'НИЗКАЯ ПОДОШВА', mid: 'СРЕДНЯЯ ПОДОШВА', high: 'ВЫСОКАЯ ПОДОШВА', max: 'МАКСИ-ПОДОШВА' };
+const UPPER_LABELS = { mesh: 'СЕТКА', suede: 'ЗАМША', leather: 'КОЖА', nubuck: 'НУБУК', canvas: 'КАНВАС', knit: 'ТРИКОТАЖ', satin: 'САТИН' };
+const ACC_LABELS = { glasses: 'ОЧКИ', gold: 'ЦЕПЬ И ЧАСЫ', visor: 'ВАЙЗОР', rings: 'КОЛЬЦА', chain: 'ЦЕПЬ', pearls: 'ЖЕМЧУГ', earrings: 'СЕРЬГИ', watch: 'ЧАСЫ' };
+
+function defaultFitFor(item) {
+  if (item.slot === 'top') {
+    if (item.variant === 'hoodie' || item.variant === 'bomber' || item.variant === 'tank') return 'oversize';
+    if (item.variant === 'racer' || item.variant === 'longsleeve') return 'slim';
+    if (item.variant === 'blazer' || item.variant === 'vest') return 'tailored';
+    return 'regular';
+  }
+  if (item.slot === 'bottom') {
+    if (item.variant === 'flare' || item.variant === 'skirt') return 'high';
+    if (item.variant === 'baggy' || item.variant === 'jorts') return 'low';
+    return 'mid';
+  }
+  return null;
+}
+
+function defaultCutFor(item) {
+  if (item.slot !== 'bottom') return null;
+  if (item.variant === 'tailored') return 'straight';
+  return CUT_LABELS[item.variant] ? item.variant : null;
+}
+
+function itemFitLabel(item) {
+  if (item.slot === 'bottom') {
+    return [RISE_LABELS[item.fit], CUT_LABELS[item.cut]].filter(Boolean).join(' · ');
+  }
+  if (item.slot === 'top') return TOP_FIT_LABELS[item.fit] || '';
+  if (item.slot === 'shoes') {
+    return [SHOE_LABELS[item.variant] || '', SOLE_LABELS[item.sole] || '', UPPER_LABELS[item.upper] || ''].filter(Boolean).join(' · ');
+  }
+  if (item.slot === 'accessory') {
+    if (item.variant === 'glasses' && item.shape === 'cat') return 'ОЧКИ-КИСКИ';
+    if (item.variant === 'glasses' && item.shape === 'rect') return 'ОЧКИ-РЕТРО';
+    if (item.variant === 'watch' && item.watchFamily) return `${WATCH_FAMILY_LABELS[item.watchFamily] || ''} · ${ACC_LABELS.watch}`;
+    return ACC_LABELS[item.variant] || '';
+  }
+  return '';
+}
+
+function finalizeItem(item) {
+  if (!item.fit) item.fit = defaultFitFor(item);
+  if (!item.cut) item.cut = defaultCutFor(item);
+  const lowerName = item.name.toLowerCase();
+  if (item.variant === 'skirt') {
+    if (!item.length) item.length = lowerName.includes('мини') ? 'mini' : lowerName.includes('макси') ? 'maxi' : 'midi';
+    if (item.cargo === undefined) item.cargo = lowerName.includes('карго');
+  }
+  if (item.variant === 'glasses' && !item.shape) {
+    item.shape = lowerName.includes('киск') ? 'cat' : lowerName.includes('ретро') ? 'rect' : 'round';
+  }
+  if (!item.brand && item.slot !== 'hair') {
+    const houses = HOUSE_ASSIGN[item.collection] || [];
+    let hash = 0;
+    for (let index = 0; index < item.id.length; index += 1) hash = (hash * 31 + item.id.charCodeAt(index)) % 997;
+    if (houses.length && hash % 10 < 9) item.brand = houses[hash % houses.length];
+  }
+  if (item.brand && !item.mark) item.mark = CAPSULE_BRANDS[item.brand]?.mark || null;
+  item.style = item.style || COLLECTION_STYLES[item.collection] || '';
+  item.fitLabel = itemFitLabel(item);
+  item.metaLine = `${COLLECTIONS[item.collection].name} · ${SLOT_BY_ID[item.slot].label.toUpperCase()}${item.fitLabel ? ` · ${item.fitLabel}` : ''}${item.brand ? ` · ${item.brand}` : ''}`;
+}
+
+const ITEMS = [];
+for (const collection of Object.values(COLLECTIONS)) {
+  for (const slot of SLOTS) {
+    collection.rarities.forEach((rarityId, index) => {
+      const rarity = RARITY_META[rarityId];
+      ITEMS.push({
+        id: `${collection.id}-${slot.id}-${rarityId}`,
+        collection: collection.id,
+        slot: slot.id,
+        rarity: rarityId,
+        name: NAME_BANK[collection.id][slot.id][index],
+        variant: variantFor(collection.id, slot.id, index),
+        palette: collection.palettes[index],
+        points: rarity.points,
+        sell: rarity.sell,
+        index: ITEMS.length + 1
+      });
+    });
+  }
+}
+
+const EXTRA_HAIR = [
+  { collection: 'noir', rarity: 'norm', name: 'Кроп', variant: 'crop', paletteIndex: 1 },
+  { collection: 'noir', rarity: 'trend', name: 'Флоу', variant: 'flow', paletteIndex: 2 },
+  { collection: 'noir', rarity: 'couture', name: 'Штора', variant: 'curtain', paletteIndex: 3 },
+  { collection: 'old', rarity: 'norm', name: 'Флоу', variant: 'flow', paletteIndex: 1 },
+  { collection: 'old', rarity: 'trend', name: 'Кроп', variant: 'crop', paletteIndex: 2 },
+  { collection: 'old', rarity: 'couture', name: 'Фейд', variant: 'fade', paletteIndex: 3 },
+  { collection: 'street', rarity: 'base', name: 'Кроп', variant: 'crop', paletteIndex: 0 },
+  { collection: 'street', rarity: 'norm', name: 'Флоу', variant: 'flow', paletteIndex: 1 },
+  { collection: 'street', rarity: 'trend', name: 'Фейд', variant: 'fade', paletteIndex: 2 }
+];
+
+EXTRA_HAIR.forEach((entry) => {
+  const collection = COLLECTIONS[entry.collection];
+  const rarity = RARITY_META[entry.rarity];
+  ITEMS.push({
+    id: `${entry.collection}-hair-extra-${entry.variant}`,
+    collection: entry.collection,
+    slot: 'hair',
+    rarity: entry.rarity,
+    name: entry.name,
+    variant: entry.variant,
+    palette: collection.palettes[entry.paletteIndex],
+    points: rarity.points,
+    sell: rarity.sell,
+    index: ITEMS.length + 1
+  });
+});
+
+const CAPSULE_BRANDS = {
+  VELOX: { mark: 'wing', line: 'RUN DIVISION' },
+  KINETIQ: { mark: 'slash', line: 'COURT CLUB' },
+  TERREN: { mark: 'peak', line: 'OUTDOOR UNIT' },
+  MERIDIAN: { mark: 'orbit', line: 'MAISON 1908' },
+  AUREL: { mark: 'sun', line: 'ATELIER' },
+  VANTA: { mark: 'monogram', line: 'STUDIO 01' },
+  KOVA: { mark: 'bolt', line: 'SYSTEMS' },
+  SABLE: { mark: 'diamond', line: 'MAISON' },
+  CAELUM: { mark: 'arc', line: 'ATELIER' },
+  RIVE: { mark: 'wave', line: 'GALERIE' }
+};
+const HOUSE_ASSIGN = {
+  noir: ['VANTA', 'KOVA'],
+  old: ['SABLE', 'AUREL', 'MERIDIAN'],
+  street: ['RIVE', 'VELOX', 'KINETIQ', 'TERREN'],
+  muse: ['CAELUM', 'SABLE', 'AUREL'],
+  sport: ['VELOX', 'KINETIQ', 'TERREN']
+};
+window.LUKAP_BRANDS = CAPSULE_BRANDS;
+
+const EXTRA_ITEMS = [
+  // NOIR · минимал / архив / техно
+  { collection: 'noir', slot: 'top', rarity: 'base', name: 'Кроп-ти', variant: 'tee', paletteIndex: 0, fit: 'cropped', style: 'МИНИМАЛ' },
+  { collection: 'noir', slot: 'top', rarity: 'norm', name: 'Лонгслив', variant: 'longsleeve', paletteIndex: 1, fit: 'slim', style: 'АРХИВ' },
+  { collection: 'noir', slot: 'top', rarity: 'trend', name: 'Бомбер', variant: 'bomber', paletteIndex: 2, fit: 'oversize', style: 'ТЕХНО' },
+  { collection: 'noir', slot: 'top', rarity: 'couture', name: 'Жилет', variant: 'vest', paletteIndex: 3, fit: 'tailored', style: 'АРХИВ' },
+  { collection: 'noir', slot: 'bottom', rarity: 'base', name: 'Джоггеры', variant: 'track', paletteIndex: 0, fit: 'mid', style: 'ТЕХНО' },
+  { collection: 'noir', slot: 'bottom', rarity: 'norm', name: 'Клёш', variant: 'flare', paletteIndex: 1, fit: 'high', style: 'МИНИМАЛ' },
+  { collection: 'noir', slot: 'bottom', rarity: 'trend', name: 'Парашют', variant: 'parachute', paletteIndex: 2, fit: 'mid', style: 'ТЕХНО' },
+  { collection: 'noir', slot: 'bottom', rarity: 'couture', name: 'Юбка-миди', variant: 'skirt', paletteIndex: 3, fit: 'high', length: 'midi', style: 'МИНИМАЛ' },
+  { collection: 'noir', slot: 'shoes', rarity: 'base', name: 'Платформы', variant: 'platform', paletteIndex: 0, style: 'ТЕХНО' },
+  { collection: 'noir', slot: 'shoes', rarity: 'norm', name: 'Мюли', variant: 'mule', paletteIndex: 1, style: 'МИНИМАЛ' },
+  { collection: 'noir', slot: 'shoes', rarity: 'trend', name: 'Раннеры', variant: 'runner', paletteIndex: 2, style: 'ТЕХНО' },
+  { collection: 'noir', slot: 'accessory', rarity: 'base', name: 'Кольца', variant: 'rings', paletteIndex: 0, style: 'МИНИМАЛ' },
+  { collection: 'noir', slot: 'accessory', rarity: 'norm', name: 'Цепь', variant: 'chain', paletteIndex: 1, style: 'АРХИВ' },
+  { collection: 'noir', slot: 'accessory', rarity: 'trend', name: 'Серьги', variant: 'earrings', paletteIndex: 2, style: 'ТЕХНО' },
+  { collection: 'noir', slot: 'accessory', rarity: 'couture', name: 'Очки-ретро', variant: 'glasses', paletteIndex: 3, shape: 'rect', style: 'АРХИВ' },
+  { collection: 'noir', slot: 'hair', rarity: 'trend', name: 'Боб', variant: 'bob', paletteIndex: 2, style: 'МИНИМАЛ' },
+
+  // OLD MONEY · олд-мани / регата / наследие
+  { collection: 'old', slot: 'top', rarity: 'base', name: 'Рубашка', variant: 'shirt', paletteIndex: 0, fit: 'oversize', style: 'ОЛД-МАНИ' },
+  { collection: 'old', slot: 'top', rarity: 'norm', name: 'Поло', variant: 'tee', paletteIndex: 1, fit: 'regular', style: 'РЕГАТА' },
+  { collection: 'old', slot: 'top', rarity: 'trend', name: 'Лонгслив', variant: 'longsleeve', paletteIndex: 2, fit: 'slim', style: 'ОЛД-МАНИ' },
+  { collection: 'old', slot: 'top', rarity: 'legend', name: 'Шёлк', variant: 'shirt', paletteIndex: 4, fit: 'oversize', style: 'НАСЛЕДИЕ' },
+  { collection: 'old', slot: 'bottom', rarity: 'base', name: 'Бэгги', variant: 'baggy', paletteIndex: 0, fit: 'mid', style: 'ОЛД-МАНИ' },
+  { collection: 'old', slot: 'bottom', rarity: 'norm', name: 'Клёш', variant: 'flare', paletteIndex: 1, fit: 'high', style: 'ОЛД-МАНИ' },
+  { collection: 'old', slot: 'bottom', rarity: 'trend', name: 'Шорты', variant: 'jorts', paletteIndex: 2, fit: 'mid', style: 'РЕГАТА' },
+  { collection: 'old', slot: 'bottom', rarity: 'legend', name: 'Юбка', variant: 'skirt', paletteIndex: 4, fit: 'high', length: 'midi', style: 'НАСЛЕДИЕ' },
+  { collection: 'old', slot: 'shoes', rarity: 'base', name: 'Дерби', variant: 'derby', paletteIndex: 0, style: 'ОЛД-МАНИ' },
+  { collection: 'old', slot: 'shoes', rarity: 'norm', name: 'Балетки', variant: 'ballet', paletteIndex: 1, style: 'РЕГАТА' },
+  { collection: 'old', slot: 'shoes', rarity: 'legend', name: 'Ботильоны', variant: 'boot', paletteIndex: 4, style: 'НАСЛЕДИЕ' },
+  { collection: 'old', slot: 'accessory', rarity: 'base', name: 'Кольца', variant: 'rings', paletteIndex: 0, style: 'ОЛД-МАНИ' },
+  { collection: 'old', slot: 'accessory', rarity: 'norm', name: 'Жемчуг', variant: 'pearls', paletteIndex: 1, style: 'РЕГАТА' },
+  { collection: 'old', slot: 'accessory', rarity: 'trend', name: 'Серьги', variant: 'earrings', paletteIndex: 2, style: 'ОЛД-МАНИ' },
+  { collection: 'old', slot: 'accessory', rarity: 'legend', name: 'Очки', variant: 'glasses', paletteIndex: 4, shape: 'round', style: 'НАСЛЕДИЕ' },
+  { collection: 'old', slot: 'hair', rarity: 'trend', name: 'Волчок', variant: 'wolf', paletteIndex: 2, style: 'ОЛД-МАНИ' },
+
+  // STREET CODE · стрит / Y2K
+  { collection: 'street', slot: 'top', rarity: 'base', name: 'Лонгслив', variant: 'longsleeve', paletteIndex: 0, fit: 'oversize', style: 'СТРИТ' },
+  { collection: 'street', slot: 'top', rarity: 'norm', name: 'Майка', variant: 'tank', paletteIndex: 1, fit: 'oversize', style: 'Y2K' },
+  { collection: 'street', slot: 'top', rarity: 'trend', name: 'Зип-худи', variant: 'hoodie', paletteIndex: 2, fit: 'oversize', zip: true, style: 'СТРИТ' },
+  { collection: 'street', slot: 'top', rarity: 'couture', name: 'Бомбер', variant: 'bomber', paletteIndex: 3, fit: 'oversize', style: 'Y2K' },
+  { collection: 'street', slot: 'bottom', rarity: 'base', name: 'Бэгги', variant: 'baggy', paletteIndex: 0, fit: 'low', style: 'СТРИТ' },
+  { collection: 'street', slot: 'bottom', rarity: 'norm', name: 'Парашют', variant: 'parachute', paletteIndex: 1, fit: 'low', style: 'Y2K' },
+  { collection: 'street', slot: 'bottom', rarity: 'trend', name: 'Джорты', variant: 'jorts', paletteIndex: 2, fit: 'low', style: 'СТРИТ' },
+  { collection: 'street', slot: 'bottom', rarity: 'couture', name: 'Клёш', variant: 'flare', paletteIndex: 3, fit: 'low', style: 'Y2K' },
+  { collection: 'street', slot: 'shoes', rarity: 'base', name: 'Раннеры', variant: 'runner', paletteIndex: 0, style: 'СТРИТ' },
+  { collection: 'street', slot: 'shoes', rarity: 'norm', name: 'Платформы', variant: 'platform', paletteIndex: 1, style: 'Y2K' },
+  { collection: 'street', slot: 'shoes', rarity: 'couture', name: 'Ботинки', variant: 'boot', paletteIndex: 3, style: 'СТРИТ' },
+  { collection: 'street', slot: 'accessory', rarity: 'base', name: 'Кольца', variant: 'rings', paletteIndex: 0, style: 'СТРИТ' },
+  { collection: 'street', slot: 'accessory', rarity: 'norm', name: 'Цепь', variant: 'chain', paletteIndex: 1, style: 'СТРИТ' },
+  { collection: 'street', slot: 'accessory', rarity: 'trend', name: 'Серьги', variant: 'earrings', paletteIndex: 2, style: 'Y2K' },
+  { collection: 'street', slot: 'accessory', rarity: 'couture', name: 'Очки', variant: 'glasses', paletteIndex: 3, shape: 'cat', style: 'Y2K' },
+  { collection: 'street', slot: 'hair', rarity: 'base', name: 'Маллет', variant: 'mullet', paletteIndex: 0, style: 'СТРИТ' },
+
+  // MUSE · клин-герл / балеткор / тихая роскошь
+  { collection: 'muse', slot: 'top', rarity: 'base', name: 'Кроп-топ', variant: 'tee', paletteIndex: 0, fit: 'cropped', style: 'КЛИН-ГЕРЛ' },
+  { collection: 'muse', slot: 'top', rarity: 'norm', name: 'Лонгслив', variant: 'longsleeve', paletteIndex: 1, fit: 'slim', style: 'БАЛЕТКОР' },
+  { collection: 'muse', slot: 'top', rarity: 'trend', name: 'Рубашка', variant: 'shirt', paletteIndex: 2, fit: 'oversize', style: 'ТИХАЯ РОСКОШЬ' },
+  { collection: 'muse', slot: 'top', rarity: 'couture', name: 'Бомбер', variant: 'bomber', paletteIndex: 3, fit: 'cropped', style: 'КУТЮР' },
+  { collection: 'muse', slot: 'top', rarity: 'legend', name: 'Жилет', variant: 'vest', paletteIndex: 4, fit: 'tailored', style: 'ПОДИУМ' },
+  { collection: 'muse', slot: 'bottom', rarity: 'base', name: 'Юбка-мини', variant: 'skirt', paletteIndex: 0, fit: 'high', length: 'mini', style: 'КЛИН-ГЕРЛ' },
+  { collection: 'muse', slot: 'bottom', rarity: 'norm', name: 'Бэгги', variant: 'baggy', paletteIndex: 1, fit: 'low', style: 'Y2K' },
+  { collection: 'muse', slot: 'bottom', rarity: 'trend', name: 'Клёш', variant: 'flare', paletteIndex: 2, fit: 'high', style: 'ТИХАЯ РОСКОШЬ' },
+  { collection: 'muse', slot: 'bottom', rarity: 'couture', name: 'Карго-макси', variant: 'skirt', paletteIndex: 3, fit: 'high', length: 'maxi', cargo: true, style: 'КУТЮР' },
+  { collection: 'muse', slot: 'bottom', rarity: 'legend', name: 'Юбка-миди', variant: 'skirt', paletteIndex: 4, fit: 'high', length: 'midi', style: 'ПОДИУМ' },
+  { collection: 'muse', slot: 'shoes', rarity: 'base', name: 'Балетки', variant: 'ballet', paletteIndex: 0, style: 'БАЛЕТКОР' },
+  { collection: 'muse', slot: 'shoes', rarity: 'norm', name: 'Мюли', variant: 'mule', paletteIndex: 1, style: 'КЛИН-ГЕРЛ' },
+  { collection: 'muse', slot: 'shoes', rarity: 'couture', name: 'Платформы', variant: 'platform', paletteIndex: 2, style: 'Y2K' },
+  { collection: 'muse', slot: 'shoes', rarity: 'legend', name: 'Ботильоны', variant: 'boot', paletteIndex: 4, style: 'ПОДИУМ' },
+  { collection: 'muse', slot: 'accessory', rarity: 'base', name: 'Кольца', variant: 'rings', paletteIndex: 0, style: 'КЛИН-ГЕРЛ' },
+  { collection: 'muse', slot: 'accessory', rarity: 'norm', name: 'Серьги', variant: 'earrings', paletteIndex: 1, style: 'БАЛЕТКОР' },
+  { collection: 'muse', slot: 'accessory', rarity: 'trend', name: 'Жемчуг', variant: 'pearls', paletteIndex: 2, style: 'ТИХАЯ РОСКОШЬ' },
+  { collection: 'muse', slot: 'accessory', rarity: 'couture', name: 'Очки-киски', variant: 'glasses', paletteIndex: 3, shape: 'cat', style: 'КУТЮР' },
+  { collection: 'muse', slot: 'accessory', rarity: 'legend', name: 'Серьги-люстры', variant: 'earrings', paletteIndex: 4, style: 'ПОДИУМ' },
+  { collection: 'muse', slot: 'hair', rarity: 'couture', name: 'Пикси', variant: 'pixie', paletteIndex: 3, style: 'ПОДИУМ' },
+
+  // CAPSULE 2 · NOIRÉ
+  { collection: 'noir', slot: 'top', rarity: 'base', name: 'Сетка', variant: 'tee', paletteIndex: 0, fit: 'cropped', style: 'МИНИМАЛ' },
+  { collection: 'noir', slot: 'top', rarity: 'trend', name: 'Стойка', variant: 'bomber', paletteIndex: 2, fit: 'oversize', style: 'ТЕХНО' },
+  { collection: 'noir', slot: 'top', rarity: 'couture', name: 'Кромка', variant: 'shirt', paletteIndex: 3, fit: 'slim', style: 'АРХИВ' },
+  { collection: 'noir', slot: 'bottom', rarity: 'base', name: 'Шов', variant: 'track', paletteIndex: 0, fit: 'mid', style: 'ТЕХНО' },
+  { collection: 'noir', slot: 'bottom', rarity: 'trend', name: 'Пласт', variant: 'flare', paletteIndex: 2, fit: 'high', style: 'МИНИМАЛ' },
+  { collection: 'noir', slot: 'bottom', rarity: 'legend', name: 'Сгиб', variant: 'skirt', paletteIndex: 4, fit: 'high', length: 'midi', style: 'АРХИВ' },
+  { collection: 'noir', slot: 'shoes', rarity: 'base', name: 'Постамент', variant: 'platform', paletteIndex: 1, style: 'ТЕХНО' },
+  { collection: 'noir', slot: 'shoes', rarity: 'legend', name: 'Ботинок', variant: 'boot', paletteIndex: 4, style: 'АРХИВ' },
+  { collection: 'noir', slot: 'accessory', rarity: 'norm', name: 'Хроно', variant: 'watch', paletteIndex: 1, style: 'ТЕХНО' },
+  { collection: 'noir', slot: 'accessory', rarity: 'trend', name: 'Гвоздь', variant: 'earrings', paletteIndex: 2, style: 'МИНИМАЛ' },
+  { collection: 'noir', slot: 'hair', rarity: 'base', name: 'Пикси', variant: 'pixie', paletteIndex: 0, style: 'МИНИМАЛ' },
+
+  // CAPSULE 2 · OLD MANOR
+  { collection: 'old', slot: 'top', rarity: 'base', name: 'Лён', variant: 'shirt', paletteIndex: 0, fit: 'oversize', style: 'ОЛД-МАНИ' },
+  { collection: 'old', slot: 'top', rarity: 'norm', name: 'Плед', variant: 'vest', paletteIndex: 1, fit: 'tailored', style: 'РЕГАТА' },
+  { collection: 'old', slot: 'top', rarity: 'couture', name: 'Костюм', variant: 'blazer', paletteIndex: 3, fit: 'tailored', style: 'НАСЛЕДИЕ' },
+  { collection: 'old', slot: 'bottom', rarity: 'base', name: 'Складка', variant: 'wide', paletteIndex: 0, fit: 'mid', style: 'ОЛД-МАНИ' },
+  { collection: 'old', slot: 'bottom', rarity: 'norm', name: 'Прямая', variant: 'tailored', paletteIndex: 1, fit: 'mid', style: 'РЕГАТА' },
+  { collection: 'old', slot: 'bottom', rarity: 'legend', name: 'Атлас', variant: 'skirt', paletteIndex: 4, fit: 'high', length: 'maxi', style: 'НАСЛЕДИЕ' },
+  { collection: 'old', slot: 'shoes', rarity: 'base', name: 'Оксфорд', variant: 'derby', paletteIndex: 0, style: 'ОЛД-МАНИ' },
+  { collection: 'old', slot: 'shoes', rarity: 'trend', name: 'Мюли', variant: 'mule', paletteIndex: 2, style: 'РЕГАТА' },
+  { collection: 'old', slot: 'accessory', rarity: 'base', name: 'Часы', variant: 'watch', paletteIndex: 0, style: 'ОЛД-МАНИ' },
+  { collection: 'old', slot: 'accessory', rarity: 'trend', name: 'Печать', variant: 'rings', paletteIndex: 2, style: 'НАСЛЕДИЕ' },
+  { collection: 'old', slot: 'hair', rarity: 'base', name: 'Боб', variant: 'bob', paletteIndex: 0, style: 'ОЛД-МАНИ' },
+
+  // CAPSULE 2 · STREET CØDE
+  { collection: 'street', slot: 'top', rarity: 'base', name: 'Трафик', variant: 'tee', paletteIndex: 0, fit: 'oversize', style: 'СТРИТ' },
+  { collection: 'street', slot: 'top', rarity: 'norm', name: 'Сет', variant: 'tank', paletteIndex: 1, fit: 'oversize', style: 'Y2K' },
+  { collection: 'street', slot: 'top', rarity: 'couture', name: 'Каркас', variant: 'bomber', paletteIndex: 3, fit: 'oversize', style: 'СТРИТ' },
+  { collection: 'street', slot: 'bottom', rarity: 'base', name: 'Пыль', variant: 'baggy', paletteIndex: 0, fit: 'low', style: 'СТРИТ' },
+  { collection: 'street', slot: 'bottom', rarity: 'norm', name: 'Асфальт', variant: 'track', paletteIndex: 1, fit: 'mid', style: 'Y2K' },
+  { collection: 'street', slot: 'bottom', rarity: 'couture', name: 'Разрыв', variant: 'jorts', paletteIndex: 3, fit: 'low', style: 'СТРИТ' },
+  { collection: 'street', slot: 'shoes', rarity: 'base', name: 'Кросс', variant: 'sneaker', paletteIndex: 0, style: 'СТРИТ' },
+  { collection: 'street', slot: 'shoes', rarity: 'norm', name: 'Груз', variant: 'boot', paletteIndex: 1, style: 'Y2K' },
+  { collection: 'street', slot: 'accessory', rarity: 'trend', name: 'Таймер', variant: 'watch', paletteIndex: 2, style: 'СТРИТ' },
+  { collection: 'street', slot: 'accessory', rarity: 'base', name: 'Пирсинг', variant: 'earrings', paletteIndex: 0, style: 'Y2K' },
+  { collection: 'street', slot: 'hair', rarity: 'trend', name: 'Ирокез', variant: 'mohawk', paletteIndex: 2, style: 'СТРИТ' },
+
+  // CAPSULE 2 · MUZE
+  { collection: 'muse', slot: 'top', rarity: 'base', name: 'Пудра', variant: 'tee', paletteIndex: 0, fit: 'cropped', style: 'КЛИН-ГЕРЛ' },
+  { collection: 'muse', slot: 'top', rarity: 'norm', name: 'Атлас', variant: 'longsleeve', paletteIndex: 1, fit: 'slim', style: 'БАЛЕТКОР' },
+  { collection: 'muse', slot: 'top', rarity: 'trend', name: 'Корсет', variant: 'vest', paletteIndex: 2, fit: 'tailored', style: 'ТИХАЯ РОСКОШЬ' },
+  { collection: 'muse', slot: 'bottom', rarity: 'base', name: 'Складка', variant: 'skirt', paletteIndex: 0, fit: 'high', length: 'mini', style: 'КЛИН-ГЕРЛ' },
+  { collection: 'muse', slot: 'bottom', rarity: 'norm', name: 'Пыль', variant: 'flare', paletteIndex: 1, fit: 'high', style: 'Y2K' },
+  { collection: 'muse', slot: 'bottom', rarity: 'couture', name: 'Каскад', variant: 'skirt', paletteIndex: 3, fit: 'high', length: 'maxi', style: 'КУТЮР' },
+  { collection: 'muse', slot: 'shoes', rarity: 'base', name: 'Пуанты', variant: 'ballet', paletteIndex: 0, style: 'БАЛЕТКОР' },
+  { collection: 'muse', slot: 'shoes', rarity: 'norm', name: 'Слинг', variant: 'mule', paletteIndex: 1, style: 'КЛИН-ГЕРЛ' },
+  { collection: 'muse', slot: 'accessory', rarity: 'couture', name: 'Цифер', variant: 'watch', paletteIndex: 3, style: 'КУТЮР' },
+  { collection: 'muse', slot: 'accessory', rarity: 'trend', name: 'Камея', variant: 'pearls', paletteIndex: 2, style: 'ТИХАЯ РОСКОШЬ' },
+  { collection: 'muse', slot: 'hair', rarity: 'norm', name: 'Боб', variant: 'bob', paletteIndex: 1, style: 'БАЛЕТКОР' },
+
+  // CAPSULE 3 · SPORT DEPT. / VELOX
+  { collection: 'sport', slot: 'top', rarity: 'base', name: 'VELOX Aero', variant: 'tee', paletteIndex: 0, fit: 'regular', brand: 'VELOX', model: 'Aero' },
+  { collection: 'sport', slot: 'top', rarity: 'norm', name: 'VELOX Tempo', variant: 'longsleeve', paletteIndex: 2, fit: 'slim', brand: 'VELOX', model: 'Tempo' },
+  { collection: 'sport', slot: 'top', rarity: 'trend', name: 'VELOX Windrunner', variant: 'bomber', paletteIndex: 1, fit: 'oversize', brand: 'VELOX', model: 'Windrunner' },
+  { collection: 'sport', slot: 'top', rarity: 'couture', name: 'VELOX Storm Shell', variant: 'bomber', paletteIndex: 3, fit: 'oversize', brand: 'VELOX', model: 'Storm Shell' },
+  { collection: 'sport', slot: 'bottom', rarity: 'base', name: 'VELOX Split', variant: 'track', paletteIndex: 0, fit: 'mid', brand: 'VELOX', model: 'Split' },
+  { collection: 'sport', slot: 'bottom', rarity: 'norm', name: 'VELOX Stride', variant: 'track', paletteIndex: 2, fit: 'mid', brand: 'VELOX', model: 'Stride' },
+  { collection: 'sport', slot: 'bottom', rarity: 'trend', name: 'VELOX Pace', variant: 'flare', paletteIndex: 1, fit: 'high', brand: 'VELOX', model: 'Pace' },
+  { collection: 'sport', slot: 'shoes', rarity: 'base', name: 'VELOX Dart', variant: 'runner', paletteIndex: 0, brand: 'VELOX', model: 'Dart', sole: 'low', soleType: 'waffle', upper: 'mesh' },
+  { collection: 'sport', slot: 'shoes', rarity: 'norm', name: 'VELOX Vector', variant: 'runner', paletteIndex: 2, brand: 'VELOX', model: 'Vector', sole: 'mid', soleType: 'foam', upper: 'knit' },
+  { collection: 'sport', slot: 'shoes', rarity: 'couture', name: 'VELOX Apex', variant: 'runner', paletteIndex: 4, brand: 'VELOX', model: 'Apex', sole: 'max', soleType: 'carbon', upper: 'mesh' },
+  { collection: 'sport', slot: 'accessory', rarity: 'norm', name: 'VELOX Chrono', variant: 'watch', paletteIndex: 2, brand: 'VELOX', watchFamily: 'chrono' },
+  { collection: 'sport', slot: 'accessory', rarity: 'base', name: 'VELOX Shield', variant: 'visor', paletteIndex: 2, brand: 'VELOX' },
+
+  // CAPSULE 3 · SPORT DEPT. / KINETIQ
+  { collection: 'sport', slot: 'top', rarity: 'base', name: 'KINETIQ Court', variant: 'tee', paletteIndex: 4, fit: 'regular', brand: 'KINETIQ', model: 'Court' },
+  { collection: 'sport', slot: 'top', rarity: 'norm', name: 'KINETIQ Rally', variant: 'longsleeve', paletteIndex: 3, fit: 'slim', brand: 'KINETIQ', model: 'Rally' },
+  { collection: 'sport', slot: 'top', rarity: 'trend', name: 'KINETIQ Baseline', variant: 'bomber', paletteIndex: 2, fit: 'oversize', brand: 'KINETIQ', model: 'Baseline' },
+  { collection: 'sport', slot: 'top', rarity: 'couture', name: 'KINETIQ Ace', variant: 'vest', paletteIndex: 0, fit: 'tailored', brand: 'KINETIQ', model: 'Ace' },
+  { collection: 'sport', slot: 'bottom', rarity: 'base', name: 'KINETIQ Serve', variant: 'track', paletteIndex: 4, fit: 'mid', brand: 'KINETIQ', model: 'Serve' },
+  { collection: 'sport', slot: 'bottom', rarity: 'norm', name: 'KINETIQ Rally', variant: 'baggy', paletteIndex: 2, fit: 'low', brand: 'KINETIQ', model: 'Rally' },
+  { collection: 'sport', slot: 'shoes', rarity: 'base', name: 'KINETIQ Court 88', variant: 'sneaker', paletteIndex: 0, brand: 'KINETIQ', model: 'Court 88', sole: 'low', soleType: 'cup', upper: 'leather' },
+  { collection: 'sport', slot: 'shoes', rarity: 'norm', name: 'KINETIQ Net', variant: 'sneaker', paletteIndex: 1, brand: 'KINETIQ', model: 'Net', sole: 'mid', soleType: 'cup', upper: 'suede' },
+  { collection: 'sport', slot: 'shoes', rarity: 'trend', name: 'KINETIQ Clay', variant: 'runner', paletteIndex: 3, brand: 'KINETIQ', model: 'Clay', sole: 'high', soleType: 'lug', upper: 'suede' },
+  { collection: 'sport', slot: 'accessory', rarity: 'trend', name: 'KINETIQ Timeout', variant: 'watch', paletteIndex: 4, brand: 'KINETIQ', watchFamily: 'chrono' },
+  { collection: 'sport', slot: 'accessory', rarity: 'norm', name: 'KINETIQ Linesman', variant: 'glasses', paletteIndex: 1, brand: 'KINETIQ', shape: 'rect' },
+
+  // CAPSULE 3 · SPORT DEPT. / TERREN
+  { collection: 'sport', slot: 'top', rarity: 'base', name: 'TERREN Ridge', variant: 'longsleeve', paletteIndex: 3, fit: 'regular', brand: 'TERREN', model: 'Ridge' },
+  { collection: 'sport', slot: 'top', rarity: 'norm', name: 'TERREN Summit', variant: 'bomber', paletteIndex: 1, fit: 'oversize', brand: 'TERREN', model: 'Summit' },
+  { collection: 'sport', slot: 'top', rarity: 'trend', name: 'TERREN Storm', variant: 'bomber', paletteIndex: 2, fit: 'oversize', brand: 'TERREN', model: 'Storm' },
+  { collection: 'sport', slot: 'top', rarity: 'legend', name: 'TERREN Alpine', variant: 'vest', paletteIndex: 3, fit: 'tailored', brand: 'TERREN', model: 'Alpine' },
+  { collection: 'sport', slot: 'bottom', rarity: 'base', name: 'TERREN Trail', variant: 'parachute', paletteIndex: 3, fit: 'mid', brand: 'TERREN', model: 'Trail' },
+  { collection: 'sport', slot: 'bottom', rarity: 'norm', name: 'TERREN Scout', variant: 'jorts', paletteIndex: 1, fit: 'mid', brand: 'TERREN', model: 'Scout' },
+  { collection: 'sport', slot: 'bottom', rarity: 'couture', name: 'TERREN Ridge Cargo', variant: 'wide', paletteIndex: 4, fit: 'mid', cargo: true, brand: 'TERREN', model: 'Ridge Cargo' },
+  { collection: 'sport', slot: 'shoes', rarity: 'base', name: 'TERREN Rock', variant: 'runner', paletteIndex: 1, brand: 'TERREN', model: 'Rock', sole: 'high', soleType: 'lug', upper: 'nubuck' },
+  { collection: 'sport', slot: 'shoes', rarity: 'norm', name: 'TERREN Summit', variant: 'boot', paletteIndex: 3, brand: 'TERREN', model: 'Summit', sole: 'mid', soleType: 'cup', upper: 'leather' },
+  { collection: 'sport', slot: 'shoes', rarity: 'trend', name: 'TERREN Grip', variant: 'runner', paletteIndex: 4, brand: 'TERREN', model: 'Grip', sole: 'max', soleType: 'tread', upper: 'suede' },
+  { collection: 'sport', slot: 'shoes', rarity: 'legend', name: 'TERREN Alpine', variant: 'boot', paletteIndex: 2, brand: 'TERREN', model: 'Alpine', sole: 'high', soleType: 'lug', upper: 'nubuck' },
+  { collection: 'sport', slot: 'accessory', rarity: 'base', name: 'TERREN Field', variant: 'watch', paletteIndex: 3, brand: 'TERREN', watchFamily: 'field' },
+  { collection: 'sport', slot: 'accessory', rarity: 'couture', name: 'TERREN Peak', variant: 'glasses', paletteIndex: 4, brand: 'TERREN', shape: 'round' },
+
+  // CAPSULE 3 · ЧАСОВЫЕ ДОМА
+  { collection: 'sport', slot: 'accessory', rarity: 'norm', name: 'MERIDIAN Diver 300', variant: 'watch', paletteIndex: 0, brand: 'MERIDIAN', watchFamily: 'diver' },
+  { collection: 'sport', slot: 'accessory', rarity: 'couture', name: 'MERIDIAN GMT 24', variant: 'watch', paletteIndex: 1, brand: 'MERIDIAN', watchFamily: 'gmt' },
+  { collection: 'sport', slot: 'accessory', rarity: 'legend', name: 'MERIDIAN Perpetual', variant: 'watch', paletteIndex: 2, brand: 'MERIDIAN', watchFamily: 'dress' },
+  { collection: 'sport', slot: 'accessory', rarity: 'icon', name: 'MERIDIAN Grand Chrono', variant: 'watch', paletteIndex: 3, brand: 'MERIDIAN', watchFamily: 'chrono' },
+  { collection: 'sport', slot: 'accessory', rarity: 'couture', name: 'AUREL Slim 1962', variant: 'watch', paletteIndex: 4, brand: 'AUREL', watchFamily: 'dress' },
+  { collection: 'sport', slot: 'accessory', rarity: 'legend', name: 'AUREL Sun', variant: 'glasses', paletteIndex: 3, brand: 'AUREL', shape: 'round' },
+
+  // CAPSULE 3 · SPORT DEPT. / HAIR
+  { collection: 'sport', slot: 'hair', rarity: 'base', name: 'Фейд', variant: 'crop', paletteIndex: 0, style: 'СПОРТ' },
+  { collection: 'sport', slot: 'hair', rarity: 'norm', name: 'Флоу', variant: 'flow', paletteIndex: 1, style: 'СПОРТ' },
+  { collection: 'sport', slot: 'hair', rarity: 'trend', name: 'Кудри', variant: 'curls', paletteIndex: 2, style: 'СПОРТ' },
+  { collection: 'sport', slot: 'hair', rarity: 'couture', name: 'Боб', variant: 'bob', paletteIndex: 3, style: 'СПОРТ' }
+];
+
+const HOUSE_LINES = [
+  {
+    brand: 'VANTA',
+    collection: 'noir',
+    tops: [
+      { name: 'Aero', variant: 'tee', fit: 'regular' },
+      { name: 'Null', variant: 'longsleeve', fit: 'slim' },
+      { name: 'Forma', variant: 'bomber', fit: 'oversize' },
+      { name: 'Slate', variant: 'shirt', fit: 'tailored' }
+    ],
+    bottoms: [
+      { name: 'Line', variant: 'tailored', fit: 'mid' },
+      { name: 'Plane', variant: 'wide', fit: 'mid' },
+      { name: 'Cut', variant: 'track', fit: 'mid' }
+    ],
+    shoes: [
+      { name: 'Slab', variant: 'platform' },
+      { name: 'Point', variant: 'derby' },
+      { name: 'Trace', variant: 'runner', sole: 'low', soleType: 'waffle', upper: 'mesh' }
+    ],
+    accessories: [
+      { name: 'Halo', variant: 'rings' },
+      { name: 'Mark', variant: 'glasses', shape: 'rect' }
+    ]
+  },
+  {
+    brand: 'KOVA',
+    collection: 'street',
+    tops: [
+      { name: 'Vector', variant: 'tee', fit: 'regular' },
+      { name: 'Relay', variant: 'longsleeve', fit: 'slim' },
+      { name: 'Shell', variant: 'bomber', fit: 'oversize' },
+      { name: 'Grid', variant: 'vest', fit: 'tailored' }
+    ],
+    bottoms: [
+      { name: 'Sector', variant: 'track', fit: 'mid' },
+      { name: 'Rail', variant: 'parachute', fit: 'mid' },
+      { name: 'Node', variant: 'baggy', fit: 'low' }
+    ],
+    shoes: [
+      { name: 'Grip', variant: 'runner', sole: 'high', soleType: 'lug', upper: 'nubuck' },
+      { name: 'Drive', variant: 'sneaker', sole: 'mid', soleType: 'cup', upper: 'leather' },
+      { name: 'Stride', variant: 'platform' }
+    ],
+    accessories: [
+      { name: 'Pulse', variant: 'watch', watchFamily: 'chrono' },
+      { name: 'Code', variant: 'chain' }
+    ]
+  },
+  {
+    brand: 'SABLE',
+    collection: 'old',
+    tops: [
+      { name: 'Heir', variant: 'shirt', fit: 'oversize' },
+      { name: 'Cameo', variant: 'vest', fit: 'tailored' },
+      { name: 'Crest', variant: 'bomber', fit: 'oversize' },
+      { name: 'Silk', variant: 'longsleeve', fit: 'slim' }
+    ],
+    bottoms: [
+      { name: 'Drape', variant: 'wide', fit: 'high' },
+      { name: 'Pleat', variant: 'tailored', fit: 'mid' },
+      { name: 'Levee', variant: 'flare', fit: 'high' }
+    ],
+    shoes: [
+      { name: 'Derby', variant: 'derby', sole: 'low', soleType: 'cup', upper: 'leather' },
+      { name: 'Slipper', variant: 'loafer' },
+      { name: 'Boot', variant: 'boot', sole: 'mid', soleType: 'cup', upper: 'suede' }
+    ],
+    accessories: [
+      { name: 'Signet', variant: 'rings' },
+      { name: 'Seal', variant: 'pearls' }
+    ]
+  },
+  {
+    brand: 'CAELUM',
+    collection: 'muse',
+    tops: [
+      { name: 'Cloud', variant: 'tee', fit: 'cropped' },
+      { name: 'Veil', variant: 'longsleeve', fit: 'slim' },
+      { name: 'Aura', variant: 'shirt', fit: 'oversize' },
+      { name: 'Wing', variant: 'bomber', fit: 'oversize' }
+    ],
+    bottoms: [
+      { name: 'Mist', variant: 'flare', fit: 'high' },
+      { name: 'Sweep', variant: 'wide', fit: 'high' },
+      { name: 'Fall', variant: 'parachute', fit: 'mid' }
+    ],
+    shoes: [
+      { name: 'Pointe', variant: 'ballet' },
+      { name: 'Mule', variant: 'mule' },
+      { name: 'Satin', variant: 'boot', sole: 'mid', soleType: 'cup', upper: 'suede' }
+    ],
+    accessories: [
+      { name: 'Lumen', variant: 'earrings' },
+      { name: 'Drop', variant: 'glasses', shape: 'round' }
+    ]
+  },
+  {
+    brand: 'RIVE',
+    collection: 'street',
+    tops: [
+      { name: 'Current', variant: 'tee', fit: 'regular' },
+      { name: 'Drift', variant: 'longsleeve', fit: 'regular' },
+      { name: 'Break', variant: 'hoodie', fit: 'oversize' },
+      { name: 'Court', variant: 'bomber', fit: 'oversize' }
+    ],
+    bottoms: [
+      { name: 'Tide', variant: 'baggy', fit: 'low' },
+      { name: 'Flux', variant: 'track', fit: 'mid' },
+      { name: 'Swell', variant: 'jorts', fit: 'low' }
+    ],
+    shoes: [
+      { name: 'Wave', variant: 'runner', sole: 'mid', soleType: 'foam', upper: 'mesh' },
+      { name: 'Curb', variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'suede' },
+      { name: 'Run', variant: 'runner', sole: 'high', soleType: 'tread', upper: 'knit' }
+    ],
+    accessories: [
+      { name: 'Signal', variant: 'visor' },
+      { name: 'Shade', variant: 'watch', watchFamily: 'field' }
+    ]
+  }
+];
+const MORE_RARITIES = ['base', 'norm', 'trend', 'couture', 'legend', 'norm', 'trend', 'couture', 'legend', 'base', 'trend', 'couture'];
+const MORE_ITEMS = [];
+HOUSE_LINES.forEach((house, houseIndex) => {
+  const collection = COLLECTIONS[house.collection];
+  let order = 0;
+  const addHouseItem = (slot, spec) => {
+    const rarity = MORE_RARITIES[order % MORE_RARITIES.length];
+    MORE_ITEMS.push({
+      collection: house.collection,
+      slot,
+      rarity,
+      name: `${house.brand} ${spec.name}`,
+      variant: spec.variant,
+      fit: spec.fit || null,
+      shape: spec.shape || null,
+      sole: spec.sole || null,
+      soleType: spec.soleType || null,
+      upper: spec.upper || null,
+      watchFamily: spec.watchFamily || null,
+      brand: house.brand,
+      model: spec.name,
+      paletteIndex: (houseIndex * 2 + order) % collection.palettes.length
+    });
+    order += 1;
+  };
+  house.tops.forEach((spec) => addHouseItem('top', spec));
+  house.bottoms.forEach((spec) => addHouseItem('bottom', spec));
+  house.shoes.forEach((spec) => addHouseItem('shoes', spec));
+  house.accessories.forEach((spec) => addHouseItem('accessory', spec));
+});
+EXTRA_ITEMS.push(...MORE_ITEMS);
+
+/* ---------- ARCHIVE LINES · 10 original houses × 20 = 200 ---------- */
+const ARCHIVE_MODELS = {
+  top: ['Arc', 'Static', 'Rally', 'Circuit', 'Frame', 'Echo', 'Prism', 'North', 'Motion', 'Trajectory'],
+  bottom: ['Path', 'Cut', 'Volume', 'Drift', 'Sweep'],
+  shoes: ['Dash', 'Court', 'Tempo', 'Trail', 'Vector'],
+  accessory: ['Halo', 'Signal', 'Orbit', 'Mark']
+};
+const ARCHIVE_TOP_SPECS = [
+  { variant: 'tee', fit: 'regular' },
+  { variant: 'tank', fit: 'oversize' },
+  { variant: 'longsleeve', fit: 'slim' },
+  { variant: 'shirt', fit: 'regular' },
+  { variant: 'vest', fit: 'tailored' },
+  { variant: 'bomber', fit: 'oversize' }
+];
+const ARCHIVE_BOTTOM_SPECS = [
+  { variant: 'track', fit: 'mid' },
+  { variant: 'jorts', fit: 'low' },
+  { variant: 'baggy', fit: 'low' },
+  { variant: 'parachute', fit: 'mid' },
+  { variant: 'flare', fit: 'high' }
+];
+const ARCHIVE_SHOE_SPECS = [
+  { variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'suede' },
+  { variant: 'sneaker', sole: 'mid', soleType: 'cup', upper: 'leather' },
+  { variant: 'runner', sole: 'mid', soleType: 'foam', upper: 'mesh' },
+  { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'nubuck' },
+  { variant: 'sneaker', sole: 'high', soleType: 'cup', upper: 'leather' }
+];
+const ARCHIVE_ACCESSORY_SPECS = [
+  { variant: 'visor' },
+  { variant: 'glasses', shape: 'rect' },
+  { variant: 'watch', watchFamily: 'chrono' },
+  { variant: 'rings' }
+];
+const ARCHIVE_RARITIES = ['base', 'norm', 'norm', 'trend', 'couture', 'legend', 'base', 'trend', 'couture', 'icon', 'norm', 'trend', 'couture', 'legend', 'base', 'trend', 'couture', 'legend', 'base', 'trend'];
+const ARCHIVE_HOUSES = [
+  { brand: 'VELOX', collection: 'sport' },
+  { brand: 'KINETIQ', collection: 'sport' },
+  { brand: 'TERREN', collection: 'sport' },
+  { brand: 'KOVA', collection: 'street' },
+  { brand: 'RIVE', collection: 'street' },
+  { brand: 'VANTA', collection: 'noir' },
+  { brand: 'SABLE', collection: 'old' },
+  { brand: 'AUREL', collection: 'old' },
+  { brand: 'CAELUM', collection: 'muse' },
+  { brand: 'MERIDIAN', collection: 'sport' }
+];
+ARCHIVE_HOUSES.forEach((house, houseIndex) => {
+  let serial = 0;
+  const addArchiveItem = (slot, spec, localIndex) => {
+    const rarity = ARCHIVE_RARITIES[serial];
+    const model = `${ARCHIVE_MODELS[slot][localIndex]} ${String.fromCharCode(65 + houseIndex)}${serial + 1}`;
+    EXTRA_ITEMS.push({
+      collection: house.collection,
+      slot,
+      rarity,
+      name: `${house.brand} ${model}`,
+      variant: spec.variant,
+      fit: spec.fit || null,
+      shape: spec.shape || null,
+      sole: spec.sole || null,
+      soleType: spec.soleType || null,
+      upper: spec.upper || null,
+      watchFamily: spec.watchFamily || null,
+      brand: house.brand,
+      model,
+      paletteIndex: (houseIndex * 3 + serial) % COLLECTIONS[house.collection].palettes.length,
+      style: 'АРХИВ'
+    });
+    serial += 1;
+  };
+  ARCHIVE_TOP_SPECS.forEach((spec, index) => addArchiveItem('top', spec, index));
+  ARCHIVE_BOTTOM_SPECS.forEach((spec, index) => addArchiveItem('bottom', spec, index));
+  ARCHIVE_SHOE_SPECS.forEach((spec, index) => addArchiveItem('shoes', spec, index));
+  ARCHIVE_ACCESSORY_SPECS.forEach((spec, index) => addArchiveItem('accessory', spec, index));
+});
+
+/* ---------- DROP 02 · 10 houses × 12 = 120 more branded items ---------- */
+const DROP2_MODELS = {
+  top: ['Volt', 'Nova', 'Pulse', 'Drift', 'Loop', 'Flux', 'Orbit', 'Vista', 'Tempo', 'Arc'],
+  bottom: ['Relay', 'Stride', 'Taper', 'Motion', 'Level', 'Stream', 'Fold', 'Curve', 'Path', 'Cut'],
+  shoes: ['Dash', 'Vector', 'Glide', 'Grip', 'Sprint', 'Shift', 'Cloud', 'Edge', 'Court', 'Trail'],
+  accessory: ['Halo', 'Signal', 'Code', 'Point', 'Link', 'Time', 'Frame', 'Shade', 'Mark', 'Orbit']
+};
+const DROP2_TOP_SETS = {
+  sport: [
+    { variant: 'tee', fit: 'regular' },
+    { variant: 'tank', fit: 'oversize' },
+    { variant: 'bomber', fit: 'oversize' },
+    { variant: 'hoodie', fit: 'oversize' }
+  ],
+  street: [
+    { variant: 'tee', fit: 'regular' },
+    { variant: 'tank', fit: 'oversize' },
+    { variant: 'bomber', fit: 'oversize' },
+    { variant: 'hoodie', fit: 'oversize' }
+  ],
+  noir: [
+    { variant: 'longsleeve', fit: 'slim' },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'vest', fit: 'tailored' },
+    { variant: 'bomber', fit: 'oversize' }
+  ],
+  old: [
+    { variant: 'longsleeve', fit: 'slim' },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'vest', fit: 'tailored' },
+    { variant: 'bomber', fit: 'oversize' }
+  ],
+  muse: [
+    { variant: 'tee', fit: 'cropped' },
+    { variant: 'longsleeve', fit: 'slim' },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'bomber', fit: 'oversize' }
+  ]
+};
+const DROP2_BOTTOM_SETS = {
+  sport: [
+    { variant: 'track', fit: 'mid' },
+    { variant: 'baggy', fit: 'low' },
+    { variant: 'parachute', fit: 'mid' }
+  ],
+  street: [
+    { variant: 'track', fit: 'mid' },
+    { variant: 'baggy', fit: 'low' },
+    { variant: 'jorts', fit: 'low' }
+  ],
+  noir: [
+    { variant: 'tailored', fit: 'mid' },
+    { variant: 'wide', fit: 'mid' },
+    { variant: 'flare', fit: 'high' }
+  ],
+  old: [
+    { variant: 'tailored', fit: 'mid' },
+    { variant: 'wide', fit: 'high' },
+    { variant: 'flare', fit: 'high' }
+  ],
+  muse: [
+    { variant: 'flare', fit: 'high' },
+    { variant: 'wide', fit: 'high' },
+    { variant: 'parachute', fit: 'mid' }
+  ]
+};
+const DROP2_SHOE_SETS = {
+  sport: [
+    { variant: 'runner', sole: 'mid', soleType: 'foam', upper: 'mesh' },
+    { variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'suede' },
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'nubuck' }
+  ],
+  street: [
+    { variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'canvas' },
+    { variant: 'runner', sole: 'mid', soleType: 'foam', upper: 'knit' },
+    { variant: 'boot', sole: 'mid', soleType: 'cup', upper: 'leather' }
+  ],
+  noir: [
+    { variant: 'derby', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'platform', sole: 'high', soleType: 'lug', upper: 'leather' },
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'leather' }
+  ],
+  old: [
+    { variant: 'derby', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'loafer', sole: 'low', soleType: 'cup', upper: 'suede' },
+    { variant: 'boot', sole: 'mid', soleType: 'cup', upper: 'suede' }
+  ],
+  muse: [
+    { variant: 'ballet', sole: 'low', soleType: 'cup', upper: 'satin' },
+    { variant: 'mule', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'boot', sole: 'mid', soleType: 'cup', upper: 'suede' }
+  ]
+};
+const DROP2_ACCESSORY_BANK = [
+  { variant: 'visor' },
+  { variant: 'glasses', shape: 'rect' },
+  { variant: 'watch', watchFamily: 'chrono' },
+  { variant: 'rings' },
+  { variant: 'chain' },
+  { variant: 'earrings' },
+  { variant: 'pearls' },
+  { variant: 'glasses', shape: 'round' },
+  { variant: 'watch', watchFamily: 'field' },
+  { variant: 'visor' }
+];
+const DROP2_RARITIES = ['base', 'norm', 'trend', 'couture', 'legend', 'icon', 'base', 'norm', 'trend', 'couture', 'legend', 'trend'];
+ARCHIVE_HOUSES.forEach((house, houseIndex) => {
+  const collection = COLLECTIONS[house.collection];
+  const letter = String.fromCharCode(65 + houseIndex);
+  let serial = 0;
+  const addDropItem = (slot, spec, localIndex) => {
+    const model = `${DROP2_MODELS[slot][localIndex]} ${letter}${serial + 1}R`;
+    EXTRA_ITEMS.push({
+      collection: house.collection,
+      slot,
+      rarity: DROP2_RARITIES[serial],
+      name: `${house.brand} ${model}`,
+      variant: spec.variant,
+      fit: spec.fit || null,
+      shape: spec.shape || null,
+      sole: spec.sole || null,
+      soleType: spec.soleType || null,
+      upper: spec.upper || null,
+      watchFamily: spec.watchFamily || null,
+      brand: house.brand,
+      model,
+      paletteIndex: (houseIndex * 5 + serial) % collection.palettes.length,
+      style: 'АРХИВ'
+    });
+    serial += 1;
+  };
+  const tops = DROP2_TOP_SETS[house.collection] || DROP2_TOP_SETS.noir;
+  const bottoms = DROP2_BOTTOM_SETS[house.collection] || DROP2_BOTTOM_SETS.noir;
+  const shoes = DROP2_SHOE_SETS[house.collection] || DROP2_SHOE_SETS.noir;
+  tops.forEach((spec, index) => addDropItem('top', spec, index));
+  bottoms.forEach((spec, index) => addDropItem('bottom', spec, index));
+  shoes.forEach((spec, index) => addDropItem('shoes', spec, index));
+  [0, 1].forEach((offset) => {
+    const spec = DROP2_ACCESSORY_BANK[(houseIndex * 2 + offset) % DROP2_ACCESSORY_BANK.length];
+    addDropItem('accessory', spec, offset);
+  });
+});
+
+
+const extraVariantCounts = {};
+EXTRA_ITEMS.forEach((entry) => {
+  const key = `${entry.collection}-${entry.slot}-${entry.variant}`;
+  extraVariantCounts[key] = (extraVariantCounts[key] || 0) + 1;
+  const rarity = RARITY_META[entry.rarity];
+  const collection = COLLECTIONS[entry.collection];
+  ITEMS.push({
+    id: `${entry.collection}-${entry.slot}-extra-${entry.variant}-${extraVariantCounts[key]}`,
+    collection: entry.collection,
+    slot: entry.slot,
+    rarity: entry.rarity,
+    name: entry.name,
+    variant: entry.variant,
+    fit: entry.fit || null,
+    cut: entry.cut || null,
+    length: entry.length || null,
+    cargo: Boolean(entry.cargo),
+    zip: Boolean(entry.zip),
+    shape: entry.shape || null,
+    style: entry.style || '',
+    brand: entry.brand || null,
+    mark: entry.mark || null,
+    model: entry.model || null,
+    sole: entry.sole || null,
+    upper: entry.upper || null,
+    soleType: entry.soleType || null,
+    watchFamily: entry.watchFamily || null,
+    palette: collection.palettes[entry.paletteIndex] || collection.palettes[0],
+    points: rarity.points,
+    sell: rarity.sell,
+    index: ITEMS.length + 1
+  });
+});
+
+ITEMS.forEach(finalizeItem);
+
+const ITEM_BY_ID = Object.fromEntries(ITEMS.map((item) => [item.id, item]));
+
+function getItem(id) {
+  return ITEM_BY_ID[id];
+}
+
+function computeOutfit(equipped = state.equipped) {
+  const items = SLOT_KEYS.map((slot) => getItem(equipped[slot])).filter(Boolean);
+  const base = items.reduce((sum, item) => sum + item.points, 0);
+  const counts = {};
+  items.forEach((item) => {
+    counts[item.collection] = (counts[item.collection] || 0) + 1;
+  });
+  let setKey = null;
+  let setCount = 0;
+  Object.entries(counts).forEach(([key, count]) => {
+    if (count > setCount) {
+      setKey = key;
+      setCount = count;
+    }
+  });
+  const setBonus = SET_BONUS[setCount] || 0;
+  return {
+    items,
+    base,
+    setKey,
+    setCount,
+    setBonus,
+    score: Math.min(100, base + setBonus),
+    collection: setKey ? COLLECTIONS[setKey] : null,
+    full: items.length === 5 && setCount === 5
+  };
+}
+
+function createDefaultState() {
+  const inventory = {};
+  START_OWNED.forEach((id) => {
+    inventory[id] = 1;
+  });
+  const state = {
+    wallet: 10000,
+    inventory,
+    equipped: { ...DEFAULT_EQUIPPED },
+    selectedSlot: 'accessory',
+    skin: 0,
+    body: 'average',
+    hairTexture: 'straight',
+    watchDial: 'classic',
+    watchStrap: 'leather',
+    sound: true,
+    bestScore: 0,
+    sold: 0,
+    history: [],
+    dailyClaimed: false,
+    dailyDate: todayKey(),
+    wardrobeSlot: 'all',
+    wardrobeCollection: 'all',
+    leaderPeriod: 'week'
+  };
+  state.bestScore = computeOutfit(state.equipped).score;
+  return state;
+}
+
+function loadState() {
+  const defaults = createDefaultState();
+  let saved = null;
+  try {
+    saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+  } catch {
+    saved = null;
+  }
+  if (!saved || typeof saved !== 'object') return defaults;
+  const state = { ...defaults, ...saved };
+  state.inventory = { ...defaults.inventory, ...(saved.inventory || {}) };
+  state.equipped = { ...defaults.equipped, ...(saved.equipped || {}) };
+  state.history = Array.isArray(saved.history) ? saved.history.slice(0, 20) : [];
+  SLOT_KEYS.forEach((slot) => {
+    if (state.equipped[slot] === null) return;
+    const item = getItem(state.equipped[slot]);
+    if (!item || item.slot !== slot) state.equipped[slot] = defaults.equipped[slot];
+  });
+  SLOT_KEYS.forEach((slot) => {
+    if (state.equipped[slot] && !state.inventory[state.equipped[slot]]) state.inventory[state.equipped[slot]] = 1;
+  });
+  if (!SLOT_BY_ID[state.selectedSlot]) state.selectedSlot = 'accessory';
+  if (!SKINS[state.skin]) state.skin = 0;
+  if (!['slim', 'average', 'strong'].includes(state.body)) state.body = 'average';
+  if (!HAIR_TEXTURES.some((texture) => texture.id === state.hairTexture)) state.hairTexture = 'straight';
+  if (!WATCH_DIALS.some((dial) => dial.id === state.watchDial)) state.watchDial = 'classic';
+  if (!WATCH_STRAPS.some((strap) => strap.id === state.watchStrap)) state.watchStrap = 'leather';
+  if (!['all', ...SLOT_KEYS].includes(state.wardrobeSlot)) state.wardrobeSlot = 'all';
+  if (!['all', ...Object.keys(COLLECTIONS)].includes(state.wardrobeCollection)) state.wardrobeCollection = 'all';
+  if (!LEADERBOARDS[state.leaderPeriod]) state.leaderPeriod = 'week';
+  const today = todayKey();
+  if (state.dailyDate !== today) {
+    state.dailyClaimed = false;
+    state.dailyDate = today;
+  }
+  state.dailyClaimed = Boolean(state.dailyClaimed);
+  state.bestScore = Math.max(computeOutfit(state.equipped).score, Number(state.bestScore) || 0);
+  return state;
+}
+
+let state = loadState();
+let activeTab = 'look';
+let activeSheet = null;
+let spinInProgress = false;
+let spinTimer = null;
+let spinTargetOffset = 0;
+let pendingDrop = null;
+let toastTimer = null;
+let audioContext = null;
+let lastLeaderboard = [];
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Demo storage can be unavailable in private mode.
+  }
+}
+
+const avatarSvg = $('avatarSvg');
+const avatarStage = $('avatarStage');
+const reelTrack = $('reelTrack');
+const dropModal = $('dropModal');
+const backdrop = $('backdrop');
+
+/* ---------- ECONOMY / STATE ---------- */
+
+function updateBalance() {
+  const value = formatCoins(state.wallet);
+  $('balanceVal').textContent = value;
+  $('sheetBalance').textContent = `Монеты ${value}`;
+  $('topupBalance').textContent = value;
+  $('walletProfile').textContent = value;
+  renderBonus();
+}
+
+function renderBonus() {
+  const button = $('bonusBtn');
+  const label = $('bonusLabel');
+  const sheetButton = $('bonusClaimSheet');
+  if (button && label) {
+    button.disabled = Boolean(state.dailyClaimed);
+    label.textContent = state.dailyClaimed ? 'ПОЛУЧЕНО' : 'ЗАБРАТЬ';
+  }
+  if (sheetButton) {
+    sheetButton.disabled = Boolean(state.dailyClaimed);
+    sheetButton.textContent = state.dailyClaimed ? 'ПОЛУЧЕНО' : 'ЗАБРАТЬ';
+  }
+}
+
+function ownedUniqueCount() {
+  return ITEMS.filter((item) => (state.inventory[item.id] || 0) > 0).length;
+}
+
+function ownedCount(item) {
+  return state.inventory[item.id] || 0;
+}
+
+/* ---------- LOOK / AVATAR ---------- */
+
+function applyAvatar() {
+  const outfit = computeOutfit();
+  const hair = getItem(state.equipped.hair);
+  const top = getItem(state.equipped.top);
+  const bottom = getItem(state.equipped.bottom);
+  const shoes = getItem(state.equipped.shoes);
+  const accessory = getItem(state.equipped.accessory);
+
+  const skin = SKINS[state.skin] || SKINS[0];
+  avatarSvg.style.setProperty('--skin', skin.skin);
+  avatarSvg.style.setProperty('--skin-shadow', skin.shadow);
+
+  const fallbackTop = { tee: 'hoodie', tank: 'hoodie', longsleeve: 'hoodie', shirt: 'blazer', bomber: 'hoodie', vest: 'blazer', zip: 'hoodie' };
+  const fallbackBottom = { flare: 'wide', baggy: 'wide', parachute: 'cargo', track: 'tailored', skirt: 'wide', jorts: 'tailored' };
+  const fallbackShoes = { platform: 'loafer', mule: 'loafer', ballet: 'loafer', runner: 'sneaker', derby: 'loafer' };
+  const fallbackAcc = { rings: 'none', chain: 'gold', pearls: 'gold', earrings: 'none', watch: 'gold' };
+  avatarSvg.dataset.hair = hair ? (['crop', 'flow', 'fade', 'curtain', 'bob', 'pixie', 'mullet', 'wolf'].includes(hair.variant) ? 'slick' : hair.variant) : 'none';
+  avatarSvg.dataset.top = top ? (fallbackTop[top.variant] || top.variant) : 'none';
+  avatarSvg.dataset.bottom = bottom ? (fallbackBottom[bottom.variant] || bottom.variant) : 'none';
+  avatarSvg.dataset.shoes = shoes ? (fallbackShoes[shoes.variant] || shoes.variant) : 'none';
+  avatarSvg.dataset.acc = accessory ? (fallbackAcc[accessory.variant] || accessory.variant) : 'none';
+  avatarSvg.dataset.body = state.body;
+  avatarSvg.dataset.hairTexture = state.hairTexture;
+  window.itemArtTexture = state.hairTexture;
+  window.itemArtWatchDial = state.watchDial;
+  window.itemArtWatchStrap = state.watchStrap;
+
+  if (hair) {
+    avatarSvg.style.setProperty('--hair-main', hair.palette.hair);
+    avatarSvg.style.setProperty('--hair-hi', hair.palette.hairHi);
+    avatarSvg.style.setProperty('--hair-shadow', shade(hair.palette.hair, -48));
+  }
+  if (top) {
+    avatarSvg.style.setProperty('--top-main', top.palette.main);
+    avatarSvg.style.setProperty('--top-hi', shade(top.palette.main, 34));
+    avatarSvg.style.setProperty('--top-shadow', shade(top.palette.main, -55));
+    avatarSvg.style.setProperty('--top-detail', top.palette.detail);
+    avatarSvg.style.setProperty('--top-accent', top.palette.accent);
+    avatarSvg.style.setProperty('--top-metal', top.palette.metal);
+  }
+  if (bottom) {
+    avatarSvg.style.setProperty('--bottom-main', shade(bottom.palette.main, 10));
+    avatarSvg.style.setProperty('--bottom-hi', shade(bottom.palette.main, 46));
+    avatarSvg.style.setProperty('--bottom-shadow', shade(bottom.palette.main, -42));
+  }
+  if (shoes) {
+    avatarSvg.style.setProperty('--shoe-main', shade(shoes.palette.main, -24));
+    avatarSvg.style.setProperty('--shoe-accent', shoes.palette.metal);
+  }
+  if (accessory) {
+    avatarSvg.style.setProperty('--acc-main', accessory.palette.metal);
+    avatarSvg.style.setProperty('--acc-accent', accessory.palette.accent);
+    avatarSvg.style.setProperty('--acc-detail', accessory.palette.detail);
+  }
+
+  avatarSvg.setAttribute('aria-label', `Аватар в образе ${outfit.collection ? outfit.collection.name : 'микс'}, гармония ${outfit.score} из 100`);
+  if (window.lukap3d && typeof window.lukap3d.sync === 'function') window.lukap3d.sync();
+}
+
+function updateLook() {
+  const outfit = computeOutfit();
+  const hasSet = outfit.setCount >= 2;
+  const emptySlot = SLOT_KEYS.find((slot) => !getItem(state.equipped[slot]));
+  $('scoreValue').textContent = outfit.score;
+  $('scoreStatus').textContent = outfit.score === 100
+    ? 'ИДЕАЛЬНЫЙ ЛУК'
+    : outfit.full
+      ? 'СЕТ 5/5 · НУЖНЫ ИКОНЫ'
+      : emptySlot
+        ? 'НЕПОЛНЫЙ ЛУК'
+        : outfit.score >= 90
+          ? 'ВЫСОКАЯ ГАРМОНИЯ'
+          : outfit.score >= 80
+            ? 'СИЛЬНЫЙ ЛУК'
+            : outfit.score >= 70
+              ? 'ЕСТЬ ХАРАКТЕР'
+              : 'СОБИРАЙ СЕТ';
+  $('setCollection').textContent = hasSet ? outfit.collection.name : 'МИКС';
+  $('setCount').textContent = hasSet ? `${outfit.setCount}/5` : '—';
+  $('rarityPips').innerHTML = SLOT_KEYS.map((slot) => {
+    const item = getItem(state.equipped[slot]);
+    return `<span style="--pip-color:${pipColor(item && item.rarity)}"></span>`;
+  }).join('');
+
+  let hint = 'Собери пять вещей и один сет';
+  if (outfit.full) {
+    hint = outfit.score === 100 ? 'Идеальный сет собран' : 'Сет 5/5 · до 100 — пять икон';
+  } else if (emptySlot) {
+    hint = `Пусто: ${SLOT_BY_ID[emptySlot].label.toLowerCase()}`;
+  } else if (outfit.collection) {
+    const missing = SLOT_KEYS.find((slot) => getItem(state.equipped[slot]).collection !== outfit.setKey);
+    hint = missing ? `До 100 — ${SLOT_BY_ID[missing].label.toLowerCase()} ${outfit.collection.name}` : 'Собери пять вещей';
+  }
+  $('setHint').textContent = hint;
+
+  avatarStage.classList.toggle('is-perfect', outfit.score === 100);
+  $('perfectBadge').setAttribute('aria-hidden', outfit.score === 100 ? 'false' : 'true');
+
+  const selectedItem = getItem(state.equipped[state.selectedSlot]);
+  $('plaqueSet').textContent = outfit.collection ? outfit.collection.name : 'МИКС';
+  $('plaqueItem').textContent = selectedItem ? `${selectedItem.name.toUpperCase()} · ${RARITY_META[selectedItem.rarity].label.toUpperCase()}` : 'ПУСТО · БАЗОВЫЙ СЛОЙ';
+
+  if (outfit.score > state.bestScore) state.bestScore = outfit.score;
+  $('statBest').textContent = Math.max(state.bestScore, outfit.score);
+  $('statOwned').textContent = ownedUniqueCount();
+  $('statSets').textContent = outfit.full ? '1' : '0';
+  applyAvatar();
+}
+
+function cloneAvatar(target) {
+  if (!target) return;
+  const clone = avatarSvg.cloneNode(true);
+  clone.removeAttribute('id');
+  clone.querySelectorAll('[id]').forEach((element) => element.removeAttribute('id'));
+  clone.style.cssText = avatarSvg.style.cssText;
+  target.replaceChildren(clone);
+}
+
+function renderAvatarPortrait(target) {
+  if (!target) return;
+  if (window.lukap3d && typeof window.lukap3d.snapshot === 'function') {
+    const url = window.lukap3d.snapshot();
+    if (url) {
+      target.innerHTML = `<img class="avatar-snapshot" src="${url}" alt="Объёмный образ ЛУКАП">`;
+      return;
+    }
+  }
+  cloneAvatar(target);
+}
+
+function updateProfile() {
+  const outfit = computeOutfit();
+  const setLabel = outfit.setCount >= 2 ? `${outfit.collection.name} ${outfit.setCount}/5` : `${outfit.items.length}/5 ВЕЩЕЙ`;
+  $('profileTitle').textContent = `${setLabel} · ${outfit.score}`;
+  $('profilePips').innerHTML = SLOT_KEYS.map((slot) => {
+    const item = getItem(state.equipped[slot]);
+    return `<span style="--pip:${pipColor(item && item.rarity)}"></span>`;
+  }).join('');
+  $('statBest').textContent = Math.max(state.bestScore, outfit.score);
+  $('statOwned').textContent = ownedUniqueCount();
+  $('statSets').textContent = outfit.full ? '1' : '0';
+  const self = getLeaderboard().find((player) => player.isSelf);
+  $('profileRank').textContent = `#${self ? self.rank : 4}`;
+  updateBalance();
+  renderAvatarPortrait($('profilePortrait'));
+}
+
+/* ---------- SLOT RAIL ---------- */
+
+function renderSlotRail() {
+  const rail = $('slotRail');
+  rail.innerHTML = SLOTS.map((slot) => {
+    const item = getItem(state.equipped[slot.id]);
+    const rarity = item ? RARITY_META[item.rarity] : null;
+    const selected = state.selectedSlot === slot.id;
+    return `
+      <button class="slot-card ${selected ? 'is-selected' : ''} ${item ? '' : 'is-empty'}" data-slot="${slot.id}" data-rarity="${item ? item.rarity : 'none'}" style="--rarity-color:${rarity ? rarity.color : '#cbbfae'}" aria-pressed="${selected}" aria-label="${slot.label}: ${item ? `${itemLabel(item)}, ${rarity.label}` : 'пусто'}">
+        <span class="slot-top">
+          <span class="slot-icon"><svg class="icon"><use href="#${slot.icon}"></use></svg></span>
+          <span class="slot-spin-mark" data-spin-slot="${slot.id}" aria-hidden="true"><svg class="icon"><use href="#i-spark"></use></svg></span>
+        </span>
+        <span class="slot-label">${slot.label}</span>
+        <span class="slot-name">${item ? itemLabel(item) : 'Пусто'}</span>
+      </button>`;
+  }).join('');
+}
+
+/* ---------- QUICK SLOT WARDROBE ---------- */
+
+function openSlotSheet(slotId) {
+  state.selectedSlot = SLOT_BY_ID[slotId] ? slotId : 'accessory';
+  saveState();
+  closeSheets();
+  closeDrop();
+  renderSlotRail();
+  updateSpinChrome();
+  renderSlotSheet();
+  openTray();
+}
+
+function openTray() {
+  const tray = $('slotSheet');
+  if (!tray) return;
+  closeSheets();
+  closeDrop();
+  tray.classList.add('is-open');
+  tray.setAttribute('aria-hidden', 'false');
+  $('appFrame').classList.add('has-tray');
+}
+
+function closeTray() {
+  const tray = $('slotSheet');
+  if (!tray) return;
+  tray.classList.remove('is-open');
+  tray.setAttribute('aria-hidden', 'true');
+  $('appFrame').classList.remove('has-tray');
+}
+
+function renderSlotSheet() {
+  const slot = SLOT_BY_ID[state.selectedSlot];
+  const equippedId = state.equipped[slot.id];
+  const equipped = getItem(equippedId);
+  const owned = ITEMS
+    .filter((item) => item.slot === slot.id && ownedCount(item) > 0)
+    .sort((a, b) => RARITY_ORDER[b.rarity] - RARITY_ORDER[a.rarity] || a.index - b.index);
+
+  $('slotSheetTitle').textContent = slot.label.toUpperCase();
+  const hairPanel = $('hairTexturePanel');
+  if (hairPanel) hairPanel.hidden = slot.id !== 'hair';
+  renderHairTextures();
+  $('slotSheetCount').textContent = equipped
+    ? `${itemLabel(equipped)} · ${COLLECTIONS[equipped.collection].name} · ${RARITY_META[equipped.rarity].label}`
+    : 'Базовый слой · пусто';
+  $('removeSlotBtn').disabled = !equippedId;
+  $('removeSlotBtn').textContent = equippedId ? 'СНЯТЬ' : 'ПУСТО';
+  $('slotSpinBtn').querySelector('span').textContent = `КРУТИТЬ · ${formatCoins(SPIN_COST)}`;
+
+  $('slotOwnedGrid').innerHTML = owned.length
+    ? owned.map((item) => {
+      const rarity = RARITY_META[item.rarity];
+      const collection = COLLECTIONS[item.collection];
+      const active = equippedId === item.id;
+      return `
+        <button class="slot-item ${active ? 'is-active' : ''}" data-slot-item="${item.id}" data-rarity="${item.rarity}" style="--rarity-color:${rarity.color}">
+          <span class="slot-item-art">${itemArt(item)}</span>
+          <span class="slot-item-copy"><b>${itemLabel(item)}</b><small>${collection.name} · ${rarity.label}</small></span>
+          <span class="slot-item-state">${active ? 'НАДЕТО' : 'ПРИМЕРИТЬ'}</span>
+        </button>`;
+    }).join('')
+    : `<div class="slot-empty-note">В этом слоте пока нет вещей. Первый прокрут добавит его в гардероб.</div>`;
+}
+
+function applyEquippedItem(item) {
+  state.equipped[item.slot] = item.id;
+  state.bestScore = Math.max(state.bestScore, computeOutfit().score);
+  saveState();
+  updateAll();
+  renderSlotRail();
+  if ($('slotSheet').classList.contains('is-open')) renderSlotSheet();
+}
+
+function removeSlotSoft(slotId) {
+  if (!state.equipped[slotId]) return;
+  const item = getItem(state.equipped[slotId]);
+  state.equipped[slotId] = null;
+  saveState();
+  updateAll();
+  renderSlotRail();
+  if ($('slotSheet').classList.contains('is-open')) renderSlotSheet();
+  showToast(item ? `${itemLabel(item)} снято` : 'Деталь снята');
+}
+
+function removeSlot(slotId) {
+  if (!state.equipped[slotId]) return;
+  removeSlotSoft(slotId);
+  closeTray();
+  closeSheets();
+  switchTab('look');
+  playTone(260, 0.06, 0.016, 'triangle');
+}
+
+/* ---------- SPIN SHEET ---------- */
+
+function updateSpinChrome() {
+  const slot = SLOT_BY_ID[state.selectedSlot];
+  $('focusName').textContent = 'ВСЕ ВЕЩИ';
+  $('selectedSlotLabel').textContent = slot.label.toUpperCase();
+  $('spinCostLabel').textContent = formatCoins(SPIN_COST);
+  $('spinSheetTitle').textContent = slot.label.toUpperCase();
+  $('reelTier').textContent = `6 РЕДКОСТЕЙ · ${formatCoins(SPIN_COST)}`;
+  $('sheetBalance').textContent = `Монеты ${formatCoins(state.wallet)}`;
+  $('spinBtnLabel').textContent = spinInProgress ? 'КРУТИМ...' : `КРУТИТЬ · ${formatCoins(SPIN_COST)}`;
+  $('spinBtn').disabled = spinInProgress;
+  $('openSpinBtn').disabled = spinInProgress;
+  $('skipBtn').hidden = !spinInProgress;
+  $('openSpinBtn').querySelector('span').textContent = 'КРУТИТЬ';
+  renderSpinOdds();
+}
+
+function randomItemForSlot(slotId, excludeId = null) {
+  const pool = ITEMS.filter((item) => item.slot === slotId && item.id !== excludeId);
+  return pool[Math.floor(Math.random() * pool.length)] || ITEMS[0];
+}
+
+function reelCardHTML(item) {
+  const rarity = RARITY_META[item.rarity];
+  const collection = COLLECTIONS[item.collection];
+  const slot = SLOT_BY_ID[item.slot];
+  return `
+    <div class="reel-card" style="--reel-color:${rarity.color};--rarity-color:${rarity.color}" data-rarity="${item.rarity}" data-item-id="${item.id}">
+      <span class="reel-card-rarity">${rarity.label.toUpperCase()}</span>
+      <span class="reel-card-photo">${itemArt(item)}</span>
+      <span class="reel-card-name">${itemLabel(item)}</span>
+      <span class="reel-card-set">${collection.name}</span>
+    </div>`;
+}
+
+function buildStaticReel() {
+  const cards = [];
+  for (let index = 0; index < 18; index += 1) {
+    cards.push(reelCardHTML(randomItemForSlot(state.selectedSlot)));
+  }
+  reelTrack.style.transition = 'none';
+  reelTrack.style.transform = 'translateX(0px)';
+  reelTrack.innerHTML = cards.join('');
+}
+
+function animateReel(resultItem) {
+  const cards = [];
+  const resultIndex = 18;
+  for (let index = 0; index < 24; index += 1) {
+    const item = index === resultIndex ? resultItem : randomItemForSlot(state.selectedSlot, resultItem.id);
+    cards.push(reelCardHTML(item));
+  }
+  reelTrack.style.transition = 'none';
+  reelTrack.style.transform = 'translateX(0px)';
+  reelTrack.innerHTML = cards.join('');
+
+  const resultCard = reelTrack.children[resultIndex];
+  resultCard.dataset.result = 'true';
+  const viewport = document.querySelector('.reel-viewport');
+  reelTrack.getBoundingClientRect();
+  const viewportRect = viewport.getBoundingClientRect();
+  const cardRect = resultCard.getBoundingClientRect();
+  spinTargetOffset = (viewportRect.left + viewportRect.width / 2) - (cardRect.left + cardRect.width / 2);
+  reelTrack.dataset.spinTarget = spinTargetOffset.toFixed(2);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      reelTrack.style.transition = 'transform 3200ms cubic-bezier(.12, .86, .08, 1)';
+      reelTrack.style.transform = `translateX(${spinTargetOffset}px)`;
+    });
+  });
+}
+
+function rollRarity() {
+  const roll = Math.random() * 100;
+  let cursor = 0;
+  for (const [rarityId, chance] of Object.entries(DROP_TABLE)) {
+    cursor += chance;
+    if (roll < cursor) return rarityId;
+  }
+  return 'base';
+}
+
+function openSpinSheet(slotId = state.selectedSlot) {
+  if (spinInProgress) return;
+  state.selectedSlot = SLOT_BY_ID[slotId] ? slotId : 'accessory';
+  saveState();
+  renderSlotRail();
+  updateSpinChrome();
+  buildStaticReel();
+  openSheet('spinSheet');
+}
+
+function performSpin() {
+  if (spinInProgress) return;
+  if (state.wallet < SPIN_COST) {
+    showToast('Монеты закончились. Забери бонус дня.');
+    openSheet('topupSheet');
+    return;
+  }
+
+  state.wallet -= SPIN_COST;
+  const rarityId = rollRarity();
+  const pool = ITEMS.filter((item) => item.slot === state.selectedSlot && item.rarity === rarityId);
+  const item = pool[Math.floor(Math.random() * pool.length)] || randomItemForSlot(state.selectedSlot);
+  const hadDuplicate = ownedCount(item) > 0;
+  state.inventory[item.id] = ownedCount(item) + 1;
+  state.history.unshift({ id: item.id, duplicate: hadDuplicate, at: Date.now() });
+  state.history = state.history.slice(0, 20);
+
+  const before = computeOutfit();
+  const after = computeOutfit({ ...state.equipped, [item.slot]: item.id });
+  pendingDrop = {
+    item,
+    duplicate: hadDuplicate,
+    autoSold: false,
+    sale: 0,
+    delta: after.score - before.score,
+    scoreAfter: after.score
+  };
+
+  updateBalance();
+  saveState();
+
+  spinInProgress = true;
+  spinTimer = setTimeout(finishSpin, 3800);
+  updateSpinChrome();
+  animateReel(item);
+  $('skipBtn').hidden = false;
+  playHaptic('light');
+  playTone(210, 0.06, 0.018, 'triangle');
+}
+
+function finishSpin() {
+  if (!spinInProgress || !pendingDrop) return;
+  clearTimeout(spinTimer);
+  spinInProgress = false;
+  reelTrack.style.transition = 'none';
+  reelTrack.style.transform = `translateX(${spinTargetOffset}px)`;
+  const resultCard = reelTrack.querySelector('[data-result="true"]');
+  if (resultCard) {
+    resultCard.classList.add('is-result');
+    resultCard.setAttribute('aria-label', `Твой дроп: ${itemLabel(pendingDrop.item)}`);
+  }
+  updateSpinChrome();
+  playHaptic(pendingDrop.item.rarity === 'icon' || pendingDrop.item.rarity === 'legend' ? 'success' : 'light');
+  playTone(pendingDrop.item.rarity === 'icon' ? 620 : 360, 0.1, 0.026, 'sine');
+  const drop = pendingDrop;
+  window.setTimeout(() => openDrop(drop), 170);
+}
+
+function openDrop(data) {
+  if (!data) return;
+  const item = data.item;
+  const rarity = RARITY_META[item.rarity];
+  const collection = COLLECTIONS[item.collection];
+  const slot = SLOT_BY_ID[item.slot];
+  dropModal.dataset.rarity = item.rarity;
+  dropModal.style.setProperty('--rarity-color', rarity.color);
+  dropModal.style.setProperty('--item-color', item.palette.main);
+  dropModal.style.setProperty('--item-accent', item.palette.accent);
+  dropModal.classList.toggle('is-duplicate', data.duplicate);
+  $('dropRarity').textContent = `${data.duplicate ? 'ДУБЛЬ' : 'НОВОЕ'} · ${rarity.label.toUpperCase()}`;
+  $('dropIndex').textContent = `№ ${String(item.index).padStart(3, '0')} / ${String(ITEMS.length).padStart(3, '0')}`;
+  $('dropArt').innerHTML = itemArt(item);
+  $('dropName').textContent = itemLabel(item);
+  $('dropMeta').textContent = item.metaLine || `${collection.name} · ${slot.label.toUpperCase()}`;
+  $('dropValue').innerHTML = `${formatCoins(item.sell)} <span>МОНЕТ</span>`;
+  $('dropDelta').textContent = data.duplicate
+    ? `ДУБЛЬ В ГАРДЕРОБЕ · ×${ownedCount(item)}`
+    : 'НОВЫЙ ПРЕДМЕТ · В ГАРДЕРОБЕ';
+
+  const actions = $('dropActions');
+  actions.innerHTML = `
+    <button class="secondary-btn danger" data-drop="sell">ПРОДАТЬ ЗА ${formatCoins(item.sell)}</button>
+    <button class="primary-btn" data-drop="again"><span>ЕЩЁ</span><svg class="icon"><use href="#i-spark"></use></svg></button>`;
+
+  actions.querySelectorAll('[data-drop]').forEach((button) => {
+    button.addEventListener('click', () => handleDropAction(button.dataset.drop, data));
+  });
+
+  dropModal.classList.add('is-open');
+  dropModal.setAttribute('aria-hidden', 'false');
+  playHaptic(data.duplicate ? 'warning' : 'success');
+}
+
+function sellDropCopy(item) {
+  const count = ownedCount(item);
+  if (count <= 0) return;
+  state.inventory[item.id] = count - 1;
+  if (state.inventory[item.id] <= 0) delete state.inventory[item.id];
+  state.wallet += item.sell;
+  state.sold += 1;
+  saveState();
+  updateAll();
+  closeDrop();
+  showToast(`Продано: ${itemLabel(item)} · +${formatCoinsLong(item.sell)}`);
+  playTone(300, 0.08, 0.02, 'triangle');
+}
+
+function continueSpin() {
+  if (state.wallet < SPIN_COST) {
+    closeDrop();
+    showToast('Монеты закончились. Забери бонус дня.');
+    openSheet('topupSheet');
+    return;
+  }
+  if (activeSheet !== 'spinSheet') openSpinSheet(state.selectedSlot);
+  window.setTimeout(() => performSpin(), 150);
+}
+
+function handleDropAction(action, data) {
+  if (action === 'sell') {
+    sellDropCopy(data.item);
+    closeDrop();
+    return;
+  }
+  if (action === 'again') {
+    closeDrop();
+    continueSpin();
+  }
+}
+
+function closeDrop() {
+  dropModal.classList.remove('is-open');
+  dropModal.setAttribute('aria-hidden', 'true');
+}
+
+/* ---------- WARDROBE ---------- */
+
+function itemCardHTML(item) {
+  const rarity = RARITY_META[item.rarity];
+  const collection = COLLECTIONS[item.collection];
+  const slot = SLOT_BY_ID[item.slot];
+  const count = ownedCount(item);
+  const isLocked = count === 0;
+  const isEquipped = state.equipped[item.slot] === item.id;
+  return `
+    <button class="item-card ${isLocked ? 'is-locked' : ''} ${isEquipped ? 'is-equipped' : ''}" data-item-id="${item.id}" data-rarity="${item.rarity}" style="--rarity-color:${rarity.color}; --item-color:${item.palette.main}; --item-accent:${item.palette.accent}" aria-label="${itemLabel(item)}, ${collection.name}, ${rarity.label}${isLocked ? ', не выбит' : ''}">
+      <span class="item-thumb">
+        <span class="item-rank">${rarity.label.toUpperCase()}</span>
+        ${isLocked ? '<span class="item-lock"><svg class="icon"><use href="#i-lock"></use></svg></span>' : ''}
+        ${isEquipped ? '<span class="item-equipped">НАДЕТО</span>' : count > 1 ? `<span class="item-count">×${count}</span>` : ''}
+        <span class="item-art">${itemArt(item)}</span>
+      </span>
+      <span class="item-name">${itemLabel(item)}</span>
+      <span class="item-meta"><span>${collection.name}</span><em>${formatCoins(item.sell)}</em></span>
+    </button>`;
+}
+
+function collectionProgressHTML(collection) {
+  const collectionItems = ITEMS.filter((item) => item.collection === collection.id);
+  const owned = collectionItems.filter((item) => ownedCount(item) > 0).length;
+  const percent = Math.round((owned / collectionItems.length) * 100);
+  return `
+    <div class="progress-card">
+      <div class="progress-card-top"><b>${collection.name}</b><span>${owned}/${collectionItems.length}</span></div>
+      <div class="progress-bar"><i style="--progress:${percent}%"></i></div>
+      <small>${collection.tierLabel} · ${percent}% коллекции</small>
+    </div>`;
+}
+
+function renderWardrobe() {
+  const slotFilters = [{ id: 'all', label: 'Все' }, ...SLOTS];
+  $('slotFilters').innerHTML = slotFilters.map((slot) => `
+    <button class="filter-chip ${state.wardrobeSlot === slot.id ? 'is-active' : ''}" data-filter-slot="${slot.id}">${slot.label}</button>
+  `).join('');
+
+  $('wardrobeCollections').innerHTML = [{ id: 'all', name: 'Все коллекции' }, ...Object.values(COLLECTIONS).map((collection) => ({ id: collection.id, name: collection.name }))].map((collection) => `
+    <button class="collection-chip ${state.wardrobeCollection === collection.id ? 'is-active' : ''}" data-filter-collection="${collection.id}">${collection.name}</button>
+  `).join('');
+
+  const progressCollections = Object.values(COLLECTIONS)
+    .slice()
+    .sort((a, b) => {
+      const aOwned = ITEMS.filter((item) => item.collection === a.id && ownedCount(item) > 0).length;
+      const bOwned = ITEMS.filter((item) => item.collection === b.id && ownedCount(item) > 0).length;
+      return bOwned - aOwned;
+    })
+    .slice(0, 2);
+  $('collectionProgress').innerHTML = progressCollections.map(collectionProgressHTML).join('');
+
+  const filtered = ITEMS.filter((item) => {
+    if (state.wardrobeSlot !== 'all' && item.slot !== state.wardrobeSlot) return false;
+    if (state.wardrobeCollection !== 'all' && item.collection !== state.wardrobeCollection) return false;
+    return true;
+  }).sort((a, b) => {
+    const aEquipped = state.equipped[a.slot] === a.id ? 1 : 0;
+    const bEquipped = state.equipped[b.slot] === b.id ? 1 : 0;
+    if (aEquipped !== bEquipped) return bEquipped - aEquipped;
+    const aOwned = ownedCount(a) > 0 ? 1 : 0;
+    const bOwned = ownedCount(b) > 0 ? 1 : 0;
+    if (aOwned !== bOwned) return bOwned - aOwned;
+    return RARITY_ORDER[b.rarity] - RARITY_ORDER[a.rarity] || a.index - b.index;
+  });
+
+  $('wardrobeGrid').innerHTML = filtered.map(itemCardHTML).join('');
+  $('ownedCounter').textContent = ownedUniqueCount();
+  $('catalogCounter').textContent = ITEMS.length;
+}
+
+function openItemSheet(item) {
+  const rarity = RARITY_META[item.rarity];
+  const collection = COLLECTIONS[item.collection];
+  const slot = SLOT_BY_ID[item.slot];
+  const count = ownedCount(item);
+  const isEquipped = state.equipped[item.slot] === item.id;
+  const sheet = $('itemSheet');
+  sheet.dataset.rarity = item.rarity;
+  sheet.style.setProperty('--rarity-color', rarity.color);
+  sheet.style.setProperty('--item-color', item.palette.main);
+  sheet.style.setProperty('--item-accent', item.palette.accent);
+  $('itemSheetArt').innerHTML = itemArt(item);
+  $('itemSheetRarity').textContent = `${rarity.label.toUpperCase()} · ${item.style}`;
+  $('itemSheetName').textContent = itemLabel(item);
+  $('itemSheetMeta').textContent = `${item.metaLine || `${collection.name} · ${slot.label.toUpperCase()}`}${item.slot === 'hair' ? ` · ${hairTextureLabel().toUpperCase()}` : item.variant === 'watch' ? ` · ${watchDialLabel().toUpperCase()} · ${watchStrapLabel().toUpperCase()}` : ''}`;
+  $('itemSheetPoints').textContent = `+${item.points}`;
+  $('itemSheetPrice').textContent = formatCoins(item.sell);
+  $('itemSheetOwned').textContent = count > 0 ? `×${count}` : 'не выбит';
+
+  const actions = $('itemSheetActions');
+  if (count === 0) {
+    actions.innerHTML = `<button class="secondary-btn" data-item-action="close">ЗАКРЫТЬ</button><button class="primary-btn" data-item-action="spin"><span>КРУТИТЬ</span><svg class="icon"><use href="#i-spark"></use></svg></button>`;
+  } else if (isEquipped) {
+    actions.innerHTML = `${count > 1 ? `<button class="secondary-btn danger" data-item-action="sell">ПРОДАТЬ · ${formatCoins(item.sell)}</button>` : '<button class="secondary-btn" data-item-action="close">ЗАКРЫТЬ</button>'}<button class="primary-btn" data-item-action="remove"><span>СНЯТЬ</span><svg class="icon"><use href="#i-close"></use></svg></button>`;
+  } else {
+    actions.innerHTML = `<button class="secondary-btn danger" data-item-action="sell">ПРОДАТЬ · ${formatCoins(item.sell)}</button><button class="primary-btn" data-item-action="equip"><span>НАДЕТЬ</span><svg class="icon"><use href="#i-check"></use></svg></button>`;
+  }
+  actions.querySelectorAll('[data-item-action]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const action = button.dataset.itemAction;
+      if (action === 'close') closeSheets();
+      if (action === 'equip') equipItem(item);
+      if (action === 'remove') removeSlot(item.slot);
+      if (action === 'sell') sellItem(item);
+      if (action === 'spin') {
+        closeSheets();
+        openSpinSheet(item.slot);
+      }
+    });
+  });
+  openSheet('itemSheet');
+}
+
+function equipItem(item) {
+  applyEquippedItem(item);
+  closeTray();
+  closeSheets();
+  switchTab('look');
+  const outfit = computeOutfit();
+  showToast(outfit.score === 100 ? '100/100 · ИДЕАЛЬНЫЙ ЛУК' : `${itemLabel(item)} надет`);
+  playHaptic('success');
+}
+
+function sellItem(item) {
+  if (state.equipped[item.slot] === item.id && ownedCount(item) <= 1) {
+    showToast('Сначала смени вещь в слоте');
+    return;
+  }
+  if (ownedCount(item) <= 0) return;
+  state.inventory[item.id] -= 1;
+  if (state.inventory[item.id] <= 0) delete state.inventory[item.id];
+  state.wallet += item.sell;
+  state.sold += 1;
+  saveState();
+  closeSheets();
+  updateAll();
+  if (activeTab === 'wardrobe') renderWardrobe();
+  showToast(`Продано: ${itemLabel(item)} · +${formatCoinsLong(item.sell)}`);
+  playTone(300, 0.08, 0.02, 'triangle');
+}
+
+/* ---------- LEADERS ---------- */
+
+function slotPipsForCurrent() {
+  return SLOT_KEYS.map((slot) => {
+    const item = getItem(state.equipped[slot]);
+    return item ? item.rarity : null;
+  });
+}
+
+function initials(name) {
+  return name.replace('@', '').slice(0, 2).toUpperCase();
+}
+
+function currentUserEntry() {
+  const outfit = computeOutfit();
+  return {
+    name: '@lukap_user',
+    title: outfit.full ? outfit.collection.title : outfit.score >= 90 ? 'ПОЧТИ ИДЕАЛЬНО' : outfit.score >= 80 ? 'СИЛЬНЫЙ ЛУК' : 'ЕСТЬ ХАРАКТЕР',
+    score: outfit.score,
+    set: outfit.collection ? outfit.collection.name : 'МИКС',
+    pips: slotPipsForCurrent(),
+    accent: '#ff5b4f',
+    isSelf: true
+  };
+}
+
+function getLeaderboard(period = state.leaderPeriod) {
+  const base = LEADERBOARDS[period] || LEADERBOARDS.week;
+  const self = currentUserEntry();
+  return [...base, self].sort((a, b) => b.score - a.score).map((player, index) => ({ ...player, rank: index + 1 }));
+}
+
+function renderLeaders() {
+  const all = getLeaderboard();
+  lastLeaderboard = all;
+  const top = all.slice(0, 3);
+  const podiumOrder = [top[1], top[0], top[2]].filter(Boolean);
+  $('podium').innerHTML = podiumOrder.map((player) => `
+    <div class="podium-card rank-${player.rank}">
+      <span class="podium-rank">#${player.rank}</span>
+      <div class="podium-avatar" style="--avatar-accent:${player.accent}">${initials(player.name)}</div>
+      <div class="podium-name">${player.name}</div>
+      <div class="podium-score">${player.score}</div>
+      <div class="podium-title">${player.title}</div>
+      <div class="podium-pips">${player.pips.map((rarity) => `<span style="--pip:${pipColor(rarity)}"></span>`).join('')}</div>
+    </div>`).join('');
+
+  const rows = all.slice(3);
+  $('leaderList').innerHTML = rows.map((player) => `
+    <button class="leader-row ${player.isSelf ? 'is-self' : ''}" data-player="${player.name}">
+      <span class="leader-place">${String(player.rank).padStart(2, '0')}</span>
+      <span class="leader-mini" style="color:${player.accent}">${initials(player.name)}</span>
+      <span class="leader-copy"><b>${player.name}</b><small>${player.title} · ${player.set}</small></span>
+      <span class="leader-score"><b>${player.score}</b><small>гармония</small></span>
+    </button>`).join('');
+
+  $('leaderTabs').querySelectorAll('button').forEach((button) => {
+    button.classList.toggle('is-active', button.dataset.period === state.leaderPeriod);
+  });
+
+  const self = all.find((player) => player.isSelf);
+  $('profileRank').textContent = `#${self ? self.rank : 4}`;
+}
+
+function openCompare(player) {
+  if (!player) return;
+  if (player.isSelf) {
+    player = lastLeaderboard.find((entry) => !entry.isSelf) || lastLeaderboard[0];
+    if (!player) return;
+  }
+  const outfit = computeOutfit();
+  const userPips = slotPipsForCurrent();
+  const theirPips = player.pips || [];
+  const delta = outfit.score - player.score;
+  $('compareGrid').innerHTML = `
+    <div class="compare-card is-you">
+      <span>ТЫ</span>
+      <h3>@lukap_user</h3>
+      <div class="compare-big">${outfit.score}<em>/100</em></div>
+      <div class="compare-title">${outfit.collection ? outfit.collection.name : 'МИКС'} · ${outfit.setCount}/5</div>
+      <div class="compare-pips">${userPips.map((rarity) => `<span style="--pip:${pipColor(rarity)}"></span>`).join('')}</div>
+    </div>
+    <div class="compare-card">
+      <span>СОПЕРНИК</span>
+      <h3>${player.name}</h3>
+      <div class="compare-big">${player.score}<em>/100</em></div>
+      <div class="compare-title">${player.title} · ${player.set}</div>
+      <div class="compare-pips">${theirPips.map((rarity) => `<span style="--pip:${pipColor(rarity)}"></span>`).join('')}</div>
+    </div>
+    <div class="compare-delta" style="grid-column:1/-1">${delta === 0 ? 'НИЧЬЯ' : delta > 0 ? `ТЫ ВЫШЕ НА <b>+${delta}</b>` : `СОПЕРНИК ВЫШЕ НА <b>${Math.abs(delta)}</b>`}</div>`;
+  openSheet('compareSheet');
+}
+
+/* ---------- SHARE ---------- */
+
+function updateSharePreview() {
+  const outfit = computeOutfit();
+  $('shareScore').textContent = outfit.score;
+  $('shareSet').textContent = `${outfit.collection ? outfit.collection.name : 'МИКС'} · ${outfit.setCount}/5`;
+  renderAvatarPortrait($('shareAvatar'));
+}
+
+function shareLook() {
+  updateSharePreview();
+  openSheet('shareSheet');
+}
+
+async function executeShare() {
+  const outfit = computeOutfit();
+  const text = `Мой лук в ЛУКАП: ${outfit.score}/100 · ${outfit.collection ? outfit.collection.name : 'МИКС'} ${outfit.setCount}/5`;
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: 'ЛУКАП', text });
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      showToast('Текст лука скопирован');
+      return;
+    }
+  } catch {
+    // Share cancellation is not an error worth surfacing.
+  }
+  showToast(text);
+}
+
+/* ---------- SHEETS ---------- */
+
+function openSheet(id) {
+  closeDrop();
+  closeTray();
+  document.querySelectorAll('.sheet.is-open').forEach((sheet) => {
+    sheet.classList.remove('is-open');
+    sheet.setAttribute('aria-hidden', 'true');
+  });
+  const sheet = $(id);
+  if (!sheet) return;
+  activeSheet = id;
+  sheet.classList.add('is-open');
+  sheet.setAttribute('aria-hidden', 'false');
+  backdrop.classList.add('is-open');
+}
+
+function closeSheets() {
+  document.querySelectorAll('.sheet.is-open').forEach((sheet) => {
+    sheet.classList.remove('is-open');
+    sheet.setAttribute('aria-hidden', 'true');
+  });
+  activeSheet = null;
+  backdrop.classList.remove('is-open');
+}
+
+function closeAllOverlays() {
+  closeDrop();
+  closeSheets();
+  closeTray();
+}
+
+/* ---------- PROFILE QUICK ACTIONS ---------- */
+
+function renderHistory() {
+  const list = $('historyList');
+  if (!list) return;
+  if (!state.history.length) {
+    list.innerHTML = '<div class="slot-empty-note">История пока пуста. Прокрути первый предмет.</div>';
+    return;
+  }
+  list.innerHTML = state.history.map((entry) => {
+    const item = getItem(entry.id);
+    if (!item) return '';
+    const rarity = RARITY_META[item.rarity];
+    const collection = COLLECTIONS[item.collection];
+    return `
+      <div class="history-row" data-rarity="${item.rarity}" style="--rarity-color:${rarity.color}">
+        <span class="history-art">${itemArt(item)}</span>
+        <span class="history-copy"><b>${itemLabel(item)}</b><small>${collection.name} · ${rarity.label}${entry.duplicate ? ' · дубль' : ''}</small></span>
+        <em>${formatCoins(item.sell)}</em>
+      </div>`;
+  }).join('');
+}
+
+function renderAchievements() {
+  const content = $('achievementsContent');
+  if (!content) return;
+  const outfit = computeOutfit();
+  const owned = ownedUniqueCount();
+  const perCollection = Object.values(COLLECTIONS).map((collection) => {
+    const total = ITEMS.filter((item) => item.collection === collection.id).length;
+    const have = ITEMS.filter((item) => item.collection === collection.id && ownedCount(item) > 0).length;
+    return `
+      <div class="achievement-collection">
+        <div><b>${collection.name}</b><small>${have} / ${total}</small></div>
+        <div class="achievement-bar"><span style="width:${Math.round((have / total) * 100)}%"></span></div>
+      </div>`;
+  }).join('');
+  content.innerHTML = `
+    <div class="achievement-hero">
+      <span>ТЕКУЩАЯ ГАРМОНИЯ</span>
+      <b>${outfit.score}</b>
+      <small>${outfit.score === 100 ? 'Идеальный сет собран' : outfit.full ? 'Сет 5/5 · до 100 — пять икон' : 'До 100 — пять икон одного сета'}</small>
+    </div>
+    <div class="achievement-stats">
+      <div><b>${state.bestScore}</b><span>лучший</span></div>
+      <div><b>${owned}</b><span>предметов</span></div>
+      <div><b>${outfit.full ? 1 : 0}</b><span>сет</span></div>
+    </div>
+    <div class="achievement-panel">
+      <div class="panel-head"><span class="eyebrow">КОЛЛЕКЦИИ</span><span class="panel-note">всего ${ITEMS.length} вещей</span></div>
+      ${perCollection}
+    </div>
+    <p class="panel-foot">Икона выпадает в ${formatChance(DROP_TABLE.icon)} случаев (≈ 1 из ${formatNumber(chanceDenominator(DROP_TABLE.icon))}). Полный сет из пяти икон — самый сложный уровень.</p>`;
+}
+
+/* ---------- TOPUP / ODDS ---------- */
+
+function claimDailyBonus() {
+  if (state.dailyClaimed) return;
+  state.wallet += 500;
+  state.dailyClaimed = true;
+  state.dailyDate = todayKey();
+  saveState();
+  updateAll();
+  showToast(`Бонус дня зачислен: +${formatCoinsLong(500)}`);
+  playTone(480, 0.09, 0.022, 'sine');
+  playHaptic('success');
+}
+
+function sellAllDuplicates() {
+  let total = 0;
+  let count = 0;
+  ITEMS.forEach((item) => {
+    const quantity = state.inventory[item.id] || 0;
+    if (quantity > 1) {
+      const extras = quantity - 1;
+      state.inventory[item.id] = 1;
+      total += extras * item.sell;
+      count += extras;
+    }
+  });
+  if (!count) {
+    showToast('Лишних копий пока нет');
+    return;
+  }
+  state.wallet += total;
+  state.sold += count;
+  saveState();
+  updateAll();
+  if (activeTab === 'wardrobe') renderWardrobe();
+  showToast(`Продано ${count} дублей · +${formatCoinsLong(total)}`);
+  playTone(340, 0.09, 0.024, 'sine');
+}
+
+function openOdds() {
+  const rtp = Math.round(estimatedRtp());
+  $('oddsContent').innerHTML = `
+    <div class="odds-collection"><span>ОДИН ПРОКРУТ · ВСЕ 6 РЕДКОСТЕЙ</span><b>${formatCoins(SPIN_COST)} МОНЕТ</b></div>
+    <p class="odds-note">Шанс зависит только от редкости. Он одинаков для всех слотов, коллекций и не меняется после прошлых прокрутов. Внутри редкости вещь выбирается равномерно.</p>
+    <div class="odds-row odds-head"><span></span><b>РЕДКОСТЬ</b><span>ШАНС</span><em>ЦЕНА</em></div>
+    ${RARITIES.map((rarity) => `<div class="odds-row">
+      <span class="odds-dot" style="--rarity:${rarity.color}"></span>
+      <b>${rarity.label}</b>
+      <span>${formatChance(DROP_TABLE[rarity.id])}</span>
+      <em>${formatCoins(rarity.sell)}</em>
+    </div>`).join('')}
+    <div class="odds-collection odds-foot"><span>СРЕДНЯЯ ЦЕННОСТЬ ДРОПА</span><b>${formatCoins(Math.round(estimatedDropValue()))} МОНЕТ</b></div>
+    <p class="odds-note odds-footnote">Это ≈ ${rtp}% от цены прокрута, если продавать каждый дроп. Икона ≈ 1 из ${formatNumber(chanceDenominator(DROP_TABLE.icon))} прокрутов. Шанс глобальный, без подкрутки под игрока.</p>`;
+  openSheet('oddsSheet');
+}
+
+/* ---------- NAV / PROFILE ---------- */
+
+function switchTab(tab) {
+  if (!['look', 'wardrobe', 'leaders', 'profile'].includes(tab)) return;
+  activeTab = tab;
+  closeAllOverlays();
+  document.querySelectorAll('.screen').forEach((screen) => {
+    screen.classList.toggle('is-active', screen.dataset.screen === tab);
+  });
+  document.querySelectorAll('.nav-btn').forEach((button) => {
+    button.classList.toggle('is-active', button.dataset.tab === tab);
+  });
+  const screen = document.querySelector(`.screen[data-screen="${tab}"]`);
+  if (screen) screen.scrollTop = 0;
+  if (tab === 'wardrobe') renderWardrobe();
+  if (tab === 'leaders') renderLeaders();
+  if (tab === 'profile') updateProfile();
+}
+
+function updateAll() {
+  window.itemArtTexture = state.hairTexture;
+  window.itemArtWatchDial = state.watchDial;
+  window.itemArtWatchStrap = state.watchStrap;
+  updateBalance();
+  updateLook();
+  renderSlotRail();
+  updateSpinChrome();
+  updateProfile();
+  if (activeTab === 'wardrobe') renderWardrobe();
+  if (activeTab === 'leaders') renderLeaders();
+}
+
+function showToast(message) {
+  const toast = $('toast');
+  toast.textContent = message;
+  toast.classList.add('is-visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('is-visible'), 2600);
+}
+
+/* ---------- AUDIO / HAPTICS ---------- */
+
+function playTone(frequency, duration, volume, type = 'sine') {
+  if (!state.sound) return;
+  try {
+    if (!audioContext) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      audioContext = new AudioContext();
+    }
+    if (audioContext.state === 'suspended') audioContext.resume();
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.type = type;
+    oscillator.frequency.value = frequency;
+    gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(volume, audioContext.currentTime + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + duration);
+    oscillator.connect(gain).connect(audioContext.destination);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + duration + 0.02);
+  } catch {
+    // Audio is a progressive enhancement.
+  }
+}
+
+function playHaptic(kind = 'light') {
+  if (!state.sound) return;
+  const telegram = window.Telegram && window.Telegram.WebApp;
+  if (telegram && telegram.HapticFeedback) {
+    if (kind === 'success') telegram.HapticFeedback.notificationOccurred('success');
+    else if (kind === 'warning') telegram.HapticFeedback.notificationOccurred('warning');
+    else telegram.HapticFeedback.impactOccurred(kind);
+    return;
+  }
+  if (navigator.vibrate) {
+    if (kind === 'success') navigator.vibrate([12, 30, 18]);
+    else if (kind === 'warning') navigator.vibrate(12);
+    else navigator.vibrate(7);
+  }
+}
+
+/* ---------- INIT / EVENTS ---------- */
+
+function renderWatchControls() {
+  const dialMarkup = WATCH_DIALS.map((dial) => `
+    <button data-watch-dial="${dial.id}" class="${state.watchDial === dial.id ? 'is-active' : ''}" aria-pressed="${state.watchDial === dial.id}">${dial.label}</button>
+  `).join('');
+  const strapMarkup = WATCH_STRAPS.map((strap) => `
+    <button class="swatch watch-strap-swatch ${state.watchStrap === strap.id ? 'is-active' : ''}" data-watch-strap="${strap.id}" style="--swatch:${strap.color}" aria-label="${strap.label}" aria-pressed="${state.watchStrap === strap.id}"></button>
+  `).join('');
+  const dialHost = $('watchDialTabs');
+  const strapHost = $('watchStrapSwatches');
+  if (dialHost) dialHost.innerHTML = dialMarkup;
+  if (strapHost) strapHost.innerHTML = strapMarkup;
+}
+
+function setWatchOption(kind, id) {
+  if (kind === 'dial' && WATCH_DIALS.some((entry) => entry.id === id)) state.watchDial = id;
+  else if (kind === 'strap' && WATCH_STRAPS.some((entry) => entry.id === id)) state.watchStrap = id;
+  else return;
+  window.itemArtWatchDial = state.watchDial;
+  window.itemArtWatchStrap = state.watchStrap;
+  saveState();
+  updateAll();
+  renderWatchControls();
+  if ($('slotSheet').classList.contains('is-open')) renderSlotSheet();
+  if (activeTab === 'wardrobe') renderWardrobe();
+  playTone(420, 0.05, 0.015, 'sine');
+  showToast(kind === 'dial' ? `Циферблат: ${watchDialLabel()}` : `Ремешок: ${watchStrapLabel().toLowerCase()}`);
+}
+
+function renderHairTextures() {
+  const markup = HAIR_TEXTURES.map((texture) => `
+    <button data-hair-texture="${texture.id}" class="${state.hairTexture === texture.id ? 'is-active' : ''}" aria-pressed="${state.hairTexture === texture.id}">${texture.label}</button>
+  `).join('');
+  const dialHost = $('watchDialTabs');
+  if (dialHost && !dialHost.dataset.bound) {
+    dialHost.dataset.bound = '1';
+    dialHost.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-watch-dial]');
+      if (button) setWatchOption('dial', button.dataset.watchDial);
+    });
+  }
+  const strapHost = $('watchStrapSwatches');
+  if (strapHost && !strapHost.dataset.bound) {
+    strapHost.dataset.bound = '1';
+    strapHost.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-watch-strap]');
+      if (button) setWatchOption('strap', button.dataset.watchStrap);
+    });
+  }
+
+  ['hairTextureTabs', 'hairTextureTabsProfile'].forEach((id) => {
+    const host = $(id);
+    if (host) host.innerHTML = markup;
+  });
+}
+
+function setHairTexture(id) {
+  if (!HAIR_TEXTURES.some((texture) => texture.id === id) || state.hairTexture === id) return;
+  state.hairTexture = id;
+  window.itemArtTexture = id;
+  saveState();
+  updateAll();
+  if ($('slotSheet').classList.contains('is-open')) renderSlotSheet();
+  if (activeTab === 'wardrobe') renderWardrobe();
+  renderHairTextures();
+  playTone(410, 0.05, 0.016, 'sine');
+  showToast(`Текстура волос: ${hairTextureLabel(id).toLowerCase()}`);
+}
+
+function renderSkinSwatches() {
+  $('skinSwatches').innerHTML = SKINS.map((skin, index) => `
+    <button class="swatch ${state.skin === index ? 'is-active' : ''}" data-skin="${index}" style="--swatch:${skin.skin}" aria-label="${skin.name}"></button>
+  `).join('');
+}
+
+function renderProfileBase() {
+  $('bodyTabs').querySelectorAll('button').forEach((button) => {
+    button.classList.toggle('is-active', button.dataset.body === state.body);
+  });
+  $('soundToggle').classList.toggle('is-on', state.sound);
+}
+
+function bindEvents() {
+  document.querySelectorAll('.nav-btn').forEach((button) => {
+    button.addEventListener('click', () => switchTab(button.dataset.tab));
+  });
+  $('brandBtn').addEventListener('click', () => switchTab('look'));
+
+  $('balanceBtn').addEventListener('click', () => openSheet('topupSheet'));
+  $('profileTopup').addEventListener('click', () => openSheet('topupSheet'));
+  $('openSpinBtn').addEventListener('click', () => openSpinSheet(state.selectedSlot));
+  $('spinBtn').addEventListener('click', performSpin);
+  $('skipBtn').addEventListener('click', finishSpin);
+  reelTrack.addEventListener('transitionend', (event) => {
+    if (event.propertyName === 'transform' && spinInProgress) finishSpin();
+  });
+  dropModal.addEventListener('click', (event) => {
+    if (event.target === dropModal) closeDrop();
+  });
+  $('oddsBtn').addEventListener('click', openOdds);
+  $('slotWardrobeBtn').addEventListener('click', () => openSlotSheet(state.selectedSlot));
+  $('bonusClaimSheet').addEventListener('click', () => {
+    closeSheets();
+    claimDailyBonus();
+  });
+  $('sellDupesSheet').addEventListener('click', () => {
+    sellAllDuplicates();
+  });
+  $('profileSellDupes').addEventListener('click', sellAllDuplicates);
+  $('profileActions').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-profile-action]');
+    if (!button) return;
+    const action = button.dataset.profileAction;
+    if (action === 'history') {
+      renderHistory();
+      openSheet('historySheet');
+    } else if (action === 'achievements') {
+      renderAchievements();
+      openSheet('achievementsSheet');
+    } else if (action === 'customize') {
+      closeSheets();
+      const panel = $('profileBasePanel');
+      if (panel) {
+        panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        panel.classList.remove('is-highlight');
+        window.requestAnimationFrame(() => panel.classList.add('is-highlight'));
+        window.setTimeout(() => panel.classList.remove('is-highlight'), 1600);
+      }
+    } else if (action === 'invite') {
+      shareLook();
+    }
+  });
+  $('removeSlotBtn').addEventListener('click', () => removeSlotSoft(state.selectedSlot));
+  $('slotSpinBtn').addEventListener('click', () => {
+    const slotId = state.selectedSlot;
+    closeTray();
+    openSpinSheet(slotId);
+  });
+  $('slotDoneBtn').addEventListener('click', closeTray);
+  $('slotOwnedGrid').addEventListener('click', (event) => {
+    const card = event.target.closest('[data-slot-item]');
+    if (!card) return;
+    const item = getItem(card.dataset.slotItem);
+    if (!item) return;
+    if (state.equipped[item.slot] === item.id) {
+      showToast('Эта вещь уже надета');
+      return;
+    }
+    applyEquippedItem(item);
+    playHaptic('light');
+  });
+  $('compareTopBtn').addEventListener('click', () => {
+    const top = lastLeaderboard[0];
+    if (top) openCompare(top);
+  });
+  $('shareLookBtn').addEventListener('click', shareLook);
+  $('shareActionBtn').addEventListener('click', executeShare);
+  $('settingsBtn').addEventListener('click', () => {
+    const screen = document.querySelector('.screen[data-screen="profile"]');
+    if (screen) screen.scrollTo({ top: screen.scrollHeight, behavior: 'smooth' });
+  });
+  $('resetBtn').addEventListener('click', () => {
+    if (!window.confirm('Сбросить демо-прогресс ЛУКАП?')) return;
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    state = createDefaultState();
+    saveState();
+    closeAllOverlays();
+    renderAll();
+    switchTab('look');
+    showToast('Демо сброшено');
+  });
+
+  $('slotRail').addEventListener('click', (event) => {
+    const card = event.target.closest('.slot-card');
+    if (!card) return;
+    const spinMark = event.target.closest('[data-spin-slot]');
+    if (spinMark) openSpinSheet(spinMark.dataset.spinSlot);
+    else openSlotSheet(card.dataset.slot);
+  });
+
+  $('avatarHotspots').addEventListener('click', (event) => {
+    const hotspot = event.target.closest('[data-slot]');
+    if (!hotspot) return;
+    openSlotSheet(hotspot.dataset.slot);
+  });
+
+  $('wardrobeGrid').addEventListener('click', (event) => {
+    const card = event.target.closest('.item-card');
+    if (!card) return;
+    const item = getItem(card.dataset.itemId);
+    if (!item) return;
+    if (!ownedCount(item) || state.equipped[item.slot] === item.id) {
+      openItemSheet(item);
+      return;
+    }
+    equipItem(item);
+  });
+  $('slotFilters').addEventListener('click', (event) => {
+    const chip = event.target.closest('[data-filter-slot]');
+    if (!chip) return;
+    state.wardrobeSlot = chip.dataset.filterSlot;
+    saveState();
+    renderWardrobe();
+  });
+  $('wardrobeCollections').addEventListener('click', (event) => {
+    const chip = event.target.closest('[data-filter-collection]');
+    if (!chip) return;
+    state.wardrobeCollection = chip.dataset.filterCollection;
+    saveState();
+    renderWardrobe();
+  });
+
+  $('leaderTabs').addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-period]');
+    if (!button) return;
+    state.leaderPeriod = button.dataset.period;
+    saveState();
+    renderLeaders();
+  });
+  $('leaderList').addEventListener('click', (event) => {
+    const row = event.target.closest('.leader-row');
+    if (!row) return;
+    const player = lastLeaderboard.find((entry) => entry.name === row.dataset.player);
+    if (player) openCompare(player);
+  });
+
+  $('bonusBtn').addEventListener('click', claimDailyBonus);
+
+  ['hairTextureTabs', 'hairTextureTabsProfile'].forEach((id) => {
+    const host = $(id);
+    if (!host) return;
+    host.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-hair-texture]');
+      if (button) setHairTexture(button.dataset.hairTexture);
+    });
+  });
+
+  $('skinSwatches').addEventListener('click', (event) => {
+    const swatch = event.target.closest('[data-skin]');
+    if (!swatch) return;
+    state.skin = Number(swatch.dataset.skin);
+    saveState();
+    renderSkinSwatches();
+    updateLook();
+    updateProfile();
+  });
+  $('bodyTabs').addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-body]');
+    if (!button) return;
+    state.body = button.dataset.body;
+    saveState();
+    renderProfileBase();
+    updateLook();
+    updateProfile();
+  });
+  $('soundToggle').addEventListener('click', () => {
+    state.sound = !state.sound;
+    saveState();
+    renderProfileBase();
+    if (state.sound) {
+      playTone(440, 0.07, 0.02, 'sine');
+      playHaptic('light');
+      showToast('Звук и отклик включены');
+    } else {
+      showToast('Звук и отклик выключены');
+    }
+  });
+
+  backdrop.addEventListener('click', closeAllOverlays);
+  document.querySelectorAll('[data-close]').forEach((button) => {
+    button.addEventListener('click', () => {
+      if (button.dataset.close === 'slotSheet') closeTray();
+      else closeSheets();
+    });
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    if (dropModal.classList.contains('is-open')) closeDrop();
+    else if ($('slotSheet').classList.contains('is-open')) closeTray();
+    else closeSheets();
+  });
+}
+
+function renderAll() {
+  window.itemArtTexture = state.hairTexture;
+  window.itemArtWatchDial = state.watchDial;
+  window.itemArtWatchStrap = state.watchStrap;
+  renderSkinSwatches();
+  renderHairTextures();
+  renderWatchControls();
+  renderProfileBase();
+  updateAll();
+}
+
+function initTelegram() {
+  const telegram = window.Telegram && window.Telegram.WebApp;
+  if (!telegram) return;
+  try {
+    telegram.ready();
+    telegram.expand();
+    if (telegram.setHeaderColor) telegram.setHeaderColor('#050505');
+    if (telegram.setBackgroundColor) telegram.setBackgroundColor('#050505');
+    if (telegram.disableVerticalSwipes) telegram.disableVerticalSwipes();
+  } catch {
+    // The prototype also runs outside Telegram.
+  }
+}
+
+window.LUKAP = {
+  getState: () => state,
+  getItems: () => ITEMS,
+  getCollections: () => COLLECTIONS,
+  getRarities: () => RARITY_META,
+  getOdds: () => ({ dropTable: DROP_TABLE, rtp: estimatedRtp(), dropValue: estimatedDropValue(), spinCost: SPIN_COST }),
+  computeOutfit,
+  itemLabel,
+  itemIcon,
+  openSlotSheet,
+  openSpinSheet,
+  applyEquippedItem,
+  removeSlotSoft
+};
+
+function init() {
+  window.itemArtTexture = state.hairTexture;
+  window.itemArtWatchDial = state.watchDial;
+  window.itemArtWatchStrap = state.watchStrap;
+  initTelegram();
+  bindEvents();
+  renderAll();
+  switchTab('look');
+  // Re-clone the portrait after fonts/layout settle.
+  window.setTimeout(updateProfile, 120);
+}
+
+init();
