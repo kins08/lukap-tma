@@ -54,6 +54,13 @@
     return `<g transform="translate(${x} ${y}) scale(${scale})">${brandGlyph(item, 1, color)}${word}</g>`;
   }
 
+  function isLightColor(value) {
+    const hex = value.replace('#', '');
+    const parts = hex.length === 3 ? hex.split('').map((char) => char + char) : [hex.slice(0, 2), hex.slice(2, 4), hex.slice(4, 6)];
+    const [r, g, b] = parts.map((part) => parseInt(part, 16));
+    return (r * 0.299 + g * 0.587 + b * 0.114) > 150;
+  }
+
   let artSerial = 0;
 
   function safeId(item) {
@@ -139,7 +146,7 @@
         <path d="M96 96 C106 101 116 103 120 103 C124 103 134 101 144 96" fill="none" stroke="${light}" stroke-width="1.2" opacity=".5"/>
         <path d="M100 52 L120 66 L140 52" fill="none" stroke="${accent}" stroke-width="2" opacity=".8"/>
         <circle cx="120" cy="165" r="9" fill="none" stroke="${accent}" stroke-width="2" opacity=".8"/>
-        ${item.brand ? `<g>${brandLockup(item, 120, 166, cream, { scale: .62 })}</g>` : ''}
+        ${item.brand ? `<g>${brandLockup(item, 120, 166, isLightColor(main) ? accent : cream, { scale: .62 })}</g>` : ''}
       `, id);
     }
 
@@ -739,6 +746,11 @@
         <path d="M84 189 L84 204" stroke="${detail}" stroke-width="1" opacity=".28"/>
         <circle cx="132" cy="181" r="2.2" fill="${metal}"/>
       `;
+    }
+    if (item.brand && variant !== 'runner') {
+      const brandPositions = { platform: [120, 170], mule: [120, 154], ballet: [120, 152], derby: [120, 152] };
+      const [brandX, brandY] = brandPositions[variant] || [120, 160];
+      content += `<g opacity=".9">${brandLockup(item, brandX, brandY, accent, { scale: .68 })}</g>`;
     }
     return frame(item, content, id);
   }

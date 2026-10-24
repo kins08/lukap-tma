@@ -340,6 +340,7 @@ function todayKey() {
 }
 
 function itemLabel(item) {
+  if (item.labelName) return `«${item.labelName}»`;
   const label = item.brand && !item.name.startsWith(item.brand) ? `${item.brand} ${item.name}` : item.name;
   return `«${label}»`;
 }
@@ -1109,6 +1110,149 @@ ARCHIVE_HOUSES.forEach((house, houseIndex) => {
 });
 
 
+/* ---------- DROP 03 · 10 houses × 12 = 120 more branded items ---------- */
+const DROP3_MODELS = {
+  top: ['Astra', 'Cinder', 'Halo', 'Nexus', 'Rune', 'Sonic', 'Vertex', 'Atlas', 'Ember', 'Lumen', 'Onyx', 'Quartz'],
+  bottom: ['Axis', 'Bend', 'Curve', 'Dune', 'Flux', 'Grid', 'Hinge', 'Knot', 'Lane', 'Mesh'],
+  shoes: ['Arrow', 'Bolt', 'Coast', 'Drift', 'Flash', 'Ghost', 'Haven', 'Ion', 'Jet', 'Kite'],
+  accessory: ['Aura', 'Bead', 'Cipher', 'Drift', 'Echo', 'Flint', 'Glow', 'Haze', 'Iris', 'Jade']
+};
+const DROP3_TOP_SETS = {
+  sport: [
+    { variant: 'tank', fit: 'oversize' },
+    { variant: 'longsleeve', fit: 'slim' },
+    { variant: 'bomber', fit: 'oversize' },
+    { variant: 'shirt', fit: 'regular' }
+  ],
+  street: [
+    { variant: 'tank', fit: 'oversize' },
+    { variant: 'longsleeve', fit: 'regular' },
+    { variant: 'bomber', fit: 'oversize' },
+    { variant: 'shirt', fit: 'regular' }
+  ],
+  noir: [
+    { variant: 'tee', fit: 'cropped' },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'vest', fit: 'tailored' },
+    { variant: 'hoodie', fit: 'oversize' }
+  ],
+  old: [
+    { variant: 'tee', fit: 'regular' },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'vest', fit: 'tailored' },
+    { variant: 'hoodie', fit: 'oversize' }
+  ],
+  muse: [
+    { variant: 'tank', fit: 'regular' },
+    { variant: 'longsleeve', fit: 'slim' },
+    { variant: 'vest', fit: 'tailored' },
+    { variant: 'shirt', fit: 'oversize' }
+  ]
+};
+const DROP3_BOTTOM_SETS = {
+  sport: [
+    { variant: 'parachute', fit: 'mid' },
+    { variant: 'flare', fit: 'high' },
+    { variant: 'wide', fit: 'mid' }
+  ],
+  street: [
+    { variant: 'parachute', fit: 'mid' },
+    { variant: 'flare', fit: 'high' },
+    { variant: 'jorts', fit: 'low' }
+  ],
+  noir: [
+    { variant: 'flare', fit: 'high' },
+    { variant: 'jorts', fit: 'low' },
+    { variant: 'tailored', fit: 'mid' }
+  ],
+  old: [
+    { variant: 'flare', fit: 'high' },
+    { variant: 'jorts', fit: 'low' },
+    { variant: 'tailored', fit: 'mid' }
+  ],
+  muse: [
+    { variant: 'parachute', fit: 'mid' },
+    { variant: 'flare', fit: 'high' },
+    { variant: 'wide', fit: 'high' }
+  ]
+};
+const DROP3_SHOE_SETS = {
+  sport: [
+    { variant: 'runner', sole: 'high', soleType: 'tread', upper: 'knit' },
+    { variant: 'sneaker', sole: 'mid', soleType: 'cup', upper: 'nubuck' },
+    { variant: 'platform', sole: 'high', soleType: 'lug', upper: 'leather' }
+  ],
+  street: [
+    { variant: 'runner', sole: 'max', soleType: 'carbon', upper: 'mesh' },
+    { variant: 'sneaker', sole: 'mid', soleType: 'cup', upper: 'nubuck' },
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'suede' }
+  ],
+  noir: [
+    { variant: 'derby', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'loafer', sole: 'low', soleType: 'cup', upper: 'suede' },
+    { variant: 'platform', sole: 'max', soleType: 'lug', upper: 'leather' }
+  ],
+  old: [
+    { variant: 'loafer', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'derby', sole: 'mid', soleType: 'cup', upper: 'nubuck' },
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'suede' }
+  ],
+  muse: [
+    { variant: 'ballet', sole: 'low', soleType: 'cup', upper: 'satin' },
+    { variant: 'mule', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'boot', sole: 'mid', soleType: 'cup', upper: 'suede' }
+  ]
+};
+const DROP3_ACCESSORY_BANK = [
+  { variant: 'visor' },
+  { variant: 'glasses', shape: 'rect' },
+  { variant: 'watch', watchFamily: 'gmt' },
+  { variant: 'chain' },
+  { variant: 'earrings' },
+  { variant: 'glasses', shape: 'cat' },
+  { variant: 'watch', watchFamily: 'dress' },
+  { variant: 'rings' },
+  { variant: 'pearls' },
+  { variant: 'watch', watchFamily: 'chrono' }
+];
+const DROP3_RARITIES = ['base', 'norm', 'trend', 'couture', 'legend', 'icon', 'base', 'norm', 'trend', 'couture', 'legend', 'trend'];
+ARCHIVE_HOUSES.forEach((house, houseIndex) => {
+  const collection = COLLECTIONS[house.collection];
+  const letter = String.fromCharCode(65 + houseIndex);
+  let serial = 0;
+  const addDropItem = (slot, spec, localIndex) => {
+    const model = `${DROP3_MODELS[slot][localIndex]} ${letter}${serial + 1}Q`;
+    EXTRA_ITEMS.push({
+      collection: house.collection,
+      slot,
+      rarity: DROP3_RARITIES[serial],
+      name: `${house.brand} ${model}`,
+      variant: spec.variant,
+      fit: spec.fit || null,
+      shape: spec.shape || null,
+      sole: spec.sole || null,
+      soleType: spec.soleType || null,
+      upper: spec.upper || null,
+      watchFamily: spec.watchFamily || null,
+      brand: house.brand,
+      model,
+      paletteIndex: (houseIndex * 7 + serial) % collection.palettes.length,
+      style: 'АРХИВ'
+    });
+    serial += 1;
+  };
+  const tops = DROP3_TOP_SETS[house.collection] || DROP3_TOP_SETS.noir;
+  const bottoms = DROP3_BOTTOM_SETS[house.collection] || DROP3_BOTTOM_SETS.noir;
+  const shoes = DROP3_SHOE_SETS[house.collection] || DROP3_SHOE_SETS.noir;
+  tops.forEach((spec, index) => addDropItem('top', spec, index));
+  bottoms.forEach((spec, index) => addDropItem('bottom', spec, index));
+  shoes.forEach((spec, index) => addDropItem('shoes', spec, index));
+  [0, 1].forEach((offset) => {
+    const spec = DROP3_ACCESSORY_BANK[(houseIndex * 3 + offset) % DROP3_ACCESSORY_BANK.length];
+    addDropItem('accessory', spec, offset);
+  });
+});
+
 const extraVariantCounts = {};
 EXTRA_ITEMS.forEach((entry) => {
   const key = `${entry.collection}-${entry.slot}-${entry.variant}`;
@@ -1144,6 +1288,30 @@ EXTRA_ITEMS.forEach((entry) => {
 });
 
 ITEMS.forEach(finalizeItem);
+
+const displayNameCounts = {};
+ITEMS.forEach((item) => {
+  const base = item.brand && !item.name.startsWith(item.brand) ? `${item.brand} ${item.name}` : item.name;
+  displayNameCounts[base] = (displayNameCounts[base] || 0) + 1;
+});
+const usedDisplayNames = new Set();
+ITEMS.forEach((item) => {
+  const base = item.brand && !item.name.startsWith(item.brand) ? `${item.brand} ${item.name}` : item.name;
+  let label = base;
+  if (displayNameCounts[base] > 1) {
+    const suffix = item.slot === 'hair'
+      ? `${COLLECTIONS[item.collection].name} · ${SLOT_BY_ID[item.slot].label.toUpperCase()}`
+      : SLOT_BY_ID[item.slot].label.toUpperCase();
+    label = `${base} · ${suffix}`;
+    let counter = 2;
+    while (usedDisplayNames.has(label)) {
+      label = `${base} · ${suffix} ${counter}`;
+      counter += 1;
+    }
+  }
+  usedDisplayNames.add(label);
+  item.labelName = label;
+});
 
 const ITEM_BY_ID = Object.fromEntries(ITEMS.map((item) => [item.id, item]));
 
@@ -1250,6 +1418,7 @@ function loadState() {
 
 let state = loadState();
 let activeTab = 'look';
+let wardrobeLimit = 120;
 let activeSheet = null;
 let spinInProgress = false;
 let spinTimer = null;
@@ -1866,7 +2035,11 @@ function renderWardrobe() {
     return RARITY_ORDER[b.rarity] - RARITY_ORDER[a.rarity] || a.index - b.index;
   });
 
-  $('wardrobeGrid').innerHTML = filtered.map(itemCardHTML).join('');
+  const visible = filtered.slice(0, wardrobeLimit);
+  const remaining = filtered.length - visible.length;
+  $('wardrobeGrid').innerHTML = visible.map(itemCardHTML).join('') + (remaining > 0
+    ? `<button class="wardrobe-more" data-wardrobe-more>ПОКАЗАТЬ ЕЩЁ · ${remaining}</button>`
+    : '');
   $('ownedCounter').textContent = ownedUniqueCount();
   $('catalogCounter').textContent = ITEMS.length;
 }
@@ -2481,6 +2654,11 @@ function bindEvents() {
   });
 
   $('wardrobeGrid').addEventListener('click', (event) => {
+    if (event.target.closest('[data-wardrobe-more]')) {
+      wardrobeLimit += 120;
+      renderWardrobe();
+      return;
+    }
     const card = event.target.closest('.item-card');
     if (!card) return;
     const item = getItem(card.dataset.itemId);
@@ -2495,6 +2673,7 @@ function bindEvents() {
     const chip = event.target.closest('[data-filter-slot]');
     if (!chip) return;
     state.wardrobeSlot = chip.dataset.filterSlot;
+    wardrobeLimit = 120;
     saveState();
     renderWardrobe();
   });
@@ -2502,6 +2681,7 @@ function bindEvents() {
     const chip = event.target.closest('[data-filter-collection]');
     if (!chip) return;
     state.wardrobeCollection = chip.dataset.filterCollection;
+    wardrobeLimit = 120;
     saveState();
     renderWardrobe();
   });

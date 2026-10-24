@@ -169,6 +169,13 @@
     return new THREE.Color(value);
   }
 
+  function isLightColor(value) {
+    const hex = value.replace('#', '');
+    const parts = hex.length === 3 ? hex.split('').map((char) => char + char) : [hex.slice(0, 2), hex.slice(2, 4), hex.slice(4, 6)];
+    const [r, g, b] = parts.map((part) => parseInt(part, 16));
+    return (r * 0.299 + g * 0.587 + b * 0.114) > 150;
+  }
+
   function material(value, options) {
     const params = {
       color: toColor(value),
@@ -763,6 +770,7 @@
         add(slotGroup, box(0.11, 0.018, 0.04), accent, [x, 0.16, 0.12]);
         add(slotGroup, box(0.02, 0.02, 0.02), metal, [x, 0.18, 0.1]);
         add(slotGroup, box(0.015, 0.06, 0.01), metal, [x + side * 0.07, 0.16, 0.08]);
+        addBrandMark(slotGroup, item, [x, 0.17, 0.14], 0.85, accent);
       } else if (variant === 'mule') {
         add(slotGroup, box(0.15, 0.025, 0.3), dark, [x, 0.02, 0.08]);
         add(slotGroup, sphere(0.075, 16), main, [x, 0.085, 0.13], null, [0.85, 0.58, 1.5]);
@@ -770,6 +778,7 @@
         add(slotGroup, box(0.055, 0.12, 0.055), dark, [x, 0.07, -0.06]);
         add(slotGroup, box(0.11, 0.02, 0.035), accent, [x, 0.13, 0.1]);
         add(slotGroup, box(0.02, 0.02, 0.02), metal, [x, 0.145, 0.1]);
+        addBrandMark(slotGroup, item, [x, 0.14, 0.118], 0.72, accent);
       } else if (variant === 'ballet') {
         add(slotGroup, box(0.16, 0.026, 0.33), dark, [x, 0.018, 0.08]);
         add(slotGroup, box(0.14, 0.016, 0.31), main, [x, 0.045, 0.08]);
@@ -779,6 +788,7 @@
         add(slotGroup, box(0.012, 0.02, 0.16), dark, [x, 0.08, 0.03]);
         add(slotGroup, torus(0.058, 0.005, 18), dark, [x, 0.135, 0], [Math.PI / 2, 0, 0]);
         add(slotGroup, box(0.02, 0.018, 0.018), metal, [x + side * 0.055, 0.13, 0.025]);
+        addBrandMark(slotGroup, item, [x, 0.102, 0.112], 0.65, accent);
       } else if (variant === 'runner') {
         add(slotGroup, box(0.17, 0.05, 0.33), dark, [x, 0.028, 0.08]);
         add(slotGroup, box(0.165, 0.03, 0.32), light, [x, 0.065, 0.08]);
@@ -815,6 +825,7 @@
         add(slotGroup, box(0.11, 0.05, 0.09), dark, [x, 0.14, 0.02]);
         add(slotGroup, box(0.012, 0.012, 0.11), metal, [x, 0.155, 0.05]);
         add(slotGroup, box(0.015, 0.06, 0.015), dark, [x, 0.08, -0.07]);
+        addBrandMark(slotGroup, item, [x, 0.125, 0.128], 0.72, accent);
       }
     });
   }
@@ -939,7 +950,7 @@
       add(slotGroup, box(0.012, 0.19, 0.012), hi, [0.15, 1.15, 0.17]);
     }
     if (item.brand) {
-      if (casual) addBrandMark(slotGroup, item, [0, 1.12, 0.224], 1.55, cream);
+      if (casual) addBrandMark(slotGroup, item, [0, 1.12, 0.224], 1.55, isLightColor(item.palette.main) ? accent : cream);
       else addBrandMark(slotGroup, item, [0.1, 1.3, 0.185], 1.15, accent);
     }
     applyTopWidthScale(slotGroup, item);

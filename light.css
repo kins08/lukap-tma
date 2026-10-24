@@ -1465,3 +1465,22 @@ body { color: var(--text); }
 .watch-dial-tabs button { min-width: 0; padding: 4px 1px; font-size: 6.4px; line-height: 1.15; letter-spacing: .02em; }
 .watch-straps { flex-wrap: wrap; gap: 7px; }
 .watch-strap-swatch { width: 18px; height: 18px; }
+
+/* WARDROBE PAGINATION */
+.wardrobe-more {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 3px 0 8px;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(247, 241, 231, 0.72);
+  color: var(--ink);
+  font-family: 'Manrope', sans-serif;
+  font-size: 7.2px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.wardrobe-more:active { transform: translateY(1px); }
