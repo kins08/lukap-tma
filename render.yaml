@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: lukap-tma
+    runtime: node
+    plan: free
+    startCommand: node server.js
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 24.18.0

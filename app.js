@@ -3,6 +3,55 @@
 const $ = (id) => document.getElementById(id);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
+const BLOCKED_BRAND_NAMES = ['ABIBAS', 'NIKA', 'PYMA', 'REBOK', 'VANZ', 'STOME ISLAND', 'NORTH FASE', 'LAKOSTE', 'MONCLAR', 'NEW BALANSE'];
+const BLOCKED_BRAND_RE = new RegExp(BLOCKED_BRAND_NAMES.map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'i');
+const SAFE_COLOR_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+
+function safeText(value, maxLength = 80) {
+  return String(value ?? '').replace(/[<>&"'`]/g, '').trim().slice(0, maxLength);
+}
+
+function safeColor(value, fallback = '#34343a') {
+  return typeof value === 'string' && SAFE_COLOR_RE.test(value) ? value : fallback;
+}
+
+function safeId(value) {
+  const id = String(value ?? '').replace(/[^a-zA-Z0-9_-]/g, '-').replace(/-+/g, '-').slice(0, 96);
+  return id || 'item';
+}
+
+function clampInt(value, min, max, fallback = min) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.min(max, Math.max(min, Math.trunc(number))) : fallback;
+}
+
+function escapeHTML(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[character]));
+}
+
+function randomUnit() {
+  try {
+    const values = new Uint32Array(1);
+    crypto.getRandomValues(values);
+    return values[0] / 4294967296;
+  } catch {
+    return Math.random();
+  }
+}
+
+function ownValue(object, key) {
+  return object && Object.prototype.hasOwnProperty.call(object, key) ? object[key] : undefined;
+}
+
+function deepFreeze(value) {
+  if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
+  Object.freeze(value);
+  Object.values(value).forEach(deepFreeze);
+  return value;
+}
+
 const SLOTS = [
   { id: 'hair', label: 'Волосы', icon: 'i-hair' },
   { id: 'top', label: 'Верх', icon: 'i-top' },
@@ -455,6 +504,32 @@ function itemFitLabel(item) {
 }
 
 function finalizeItem(item) {
+  if (!ownValue(COLLECTIONS, item.collection) || !ownValue(SLOT_BY_ID, item.slot)) {
+    item.invalidCatalog = true;
+    return;
+  }
+  item.id = safeId(item.id);
+  item.name = safeText(item.name, 80) || 'Архив';
+  item.brand = item.brand ? safeText(item.brand, 32) : null;
+  if (item.brand && (!ownValue(CAPSULE_BRANDS, item.brand) || BLOCKED_BRAND_NAMES.includes(item.brand.toUpperCase()))) {
+    item.brand = null;
+    item.forceUnbranded = true;
+  }
+  if (BLOCKED_BRAND_RE.test(item.name)) {
+    item.name = item.name.replace(BLOCKED_BRAND_RE, 'ARCHIVE').replace(/\s+/g, ' ').trim();
+  }
+  const rarity = RARITY_META[item.rarity] || RARITY_META.base;
+  item.rarity = rarity.id;
+  item.points = rarity.points;
+  item.sell = rarity.sell;
+  item.palette = {
+    main: safeColor(item.palette?.main, '#34343a'),
+    accent: safeColor(item.palette?.accent, '#a4a4ae'),
+    detail: safeColor(item.palette?.detail, '#7f201c'),
+    metal: safeColor(item.palette?.metal, '#c4c6cc'),
+    hair: safeColor(item.palette?.hair, '#1c1c1f'),
+    hairHi: safeColor(item.palette?.hairHi, '#3d3d43')
+  };
   if (!item.fit) item.fit = defaultFitFor(item);
   if (!item.cut) item.cut = defaultCutFor(item);
   const lowerName = item.name.toLowerCase();
@@ -465,14 +540,22 @@ function finalizeItem(item) {
   if (item.variant === 'glasses' && !item.shape) {
     item.shape = lowerName.includes('киск') ? 'cat' : lowerName.includes('ретро') ? 'rect' : 'round';
   }
-  if (!item.brand && item.slot !== 'hair') {
+  if (!item.brand && item.slot !== 'hair' && !item.forceUnbranded) {
     const houses = HOUSE_ASSIGN[item.collection] || [];
     let hash = 0;
     for (let index = 0; index < item.id.length; index += 1) hash = (hash * 31 + item.id.charCodeAt(index)) % 997;
     if (houses.length && hash % 10 < 9) item.brand = houses[hash % houses.length];
   }
   if (item.brand && !item.mark) item.mark = CAPSULE_BRANDS[item.brand]?.mark || null;
-  item.style = item.style || COLLECTION_STYLES[item.collection] || '';
+  item.variant = safeText(item.variant, 24);
+  item.model = item.model ? safeText(item.model, 60) : null;
+  item.sole = item.sole ? safeText(item.sole, 12) : null;
+  item.upper = item.upper ? safeText(item.upper, 12) : null;
+  item.soleType = item.soleType ? safeText(item.soleType, 12) : null;
+  item.watchFamily = WATCH_FAMILY_LABELS[item.watchFamily] ? item.watchFamily : null;
+  item.mark = ['wing', 'slash', 'peak', 'orbit', 'sun', 'monogram', 'bolt', 'diamond', 'arc', 'wave'].includes(item.mark) ? item.mark : null;
+  item.shape = ['rect', 'cat', 'round'].includes(item.shape) ? item.shape : (item.variant === 'glasses' ? 'round' : null);
+  item.style = safeText(item.style || COLLECTION_STYLES[item.collection] || '', 40);
   item.fitLabel = itemFitLabel(item);
   item.metaLine = `${COLLECTIONS[item.collection].name} · ${SLOT_BY_ID[item.slot].label.toUpperCase()}${item.fitLabel ? ` · ${item.fitLabel}` : ''}${item.brand ? ` · ${item.brand}` : ''}`;
 }
@@ -1670,6 +1753,23 @@ EXTRA_ITEMS.forEach((entry) => {
 
 ITEMS.forEach(finalizeItem);
 
+for (let index = ITEMS.length - 1; index >= 0; index -= 1) {
+  if (ITEMS[index].invalidCatalog) ITEMS.splice(index, 1);
+}
+const catalogIds = new Set();
+ITEMS.forEach((item, index) => {
+  const base = item.id;
+  let id = base;
+  let suffix = 2;
+  while (catalogIds.has(id)) {
+    id = `${base}-${suffix}`;
+    suffix += 1;
+  }
+  item.id = id;
+  item.index = index + 1;
+  catalogIds.add(id);
+});
+
 const displayNameCounts = {};
 ITEMS.forEach((item) => {
   const base = item.brand && !item.name.startsWith(item.brand) ? `${item.brand} ${item.name}` : item.name;
@@ -1694,10 +1794,25 @@ ITEMS.forEach((item) => {
   item.labelName = label;
 });
 
+ITEMS.forEach((item) => {
+  Object.freeze(item.palette);
+  Object.freeze(item);
+});
+Object.freeze(ITEMS);
+deepFreeze(COLLECTIONS);
+deepFreeze(RARITIES);
+deepFreeze(RARITY_META);
+deepFreeze(CAPSULE_BRANDS);
+deepFreeze(WATCH_DIALS);
+deepFreeze(WATCH_STRAPS);
+deepFreeze(SLOTS);
+deepFreeze(SLOT_BY_ID);
+deepFreeze(LEADERBOARDS);
+
 const ITEM_BY_ID = Object.fromEntries(ITEMS.map((item) => [item.id, item]));
 
 function getItem(id) {
-  return ITEM_BY_ID[id];
+  return ownValue(ITEM_BY_ID, id);
 }
 
 function computeOutfit(equipped = state.equipped) {
@@ -1759,41 +1874,92 @@ function createDefaultState() {
 
 function loadState() {
   const defaults = createDefaultState();
+  let raw = null;
+  try {
+    raw = localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return defaults;
+  }
+  if (!raw) return defaults;
+  if (raw.length > 1_000_000) {
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+    return defaults;
+  }
   let saved = null;
   try {
-    saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    saved = JSON.parse(raw);
   } catch {
-    saved = null;
+    return defaults;
   }
-  if (!saved || typeof saved !== 'object') return defaults;
-  const state = { ...defaults, ...saved };
-  state.inventory = { ...defaults.inventory, ...(saved.inventory || {}) };
-  state.equipped = { ...defaults.equipped, ...(saved.equipped || {}) };
-  state.history = Array.isArray(saved.history) ? saved.history.slice(0, 20) : [];
+  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return defaults;
+
+  const state = { ...defaults };
+  state.wallet = clampInt(saved.wallet, 0, 1_000_000_000, defaults.wallet);
+  state.bestScore = clampInt(saved.bestScore, 0, 100, defaults.bestScore);
+  state.sold = clampInt(saved.sold, 0, 10_000_000, 0);
+  state.sound = typeof saved.sound === 'boolean' ? saved.sound : defaults.sound;
+  state.dailyClaimed = saved.dailyClaimed === true;
+  state.dailyDate = typeof saved.dailyDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.dailyDate) ? saved.dailyDate : defaults.dailyDate;
+
+  state.inventory = {};
+  if (saved.inventory && typeof saved.inventory === 'object' && !Array.isArray(saved.inventory)) {
+    Object.entries(saved.inventory).slice(0, 1500).forEach(([id, quantity]) => {
+      if (!getItem(id)) return;
+      const count = clampInt(quantity, 0, 999, 0);
+      if (count > 0) state.inventory[id] = count;
+    });
+  } else {
+    state.inventory = { ...defaults.inventory };
+  }
+
+  state.equipped = { ...defaults.equipped };
+  if (saved.equipped && typeof saved.equipped === 'object' && !Array.isArray(saved.equipped)) {
+    SLOT_KEYS.forEach((slot) => {
+      const id = saved.equipped[slot];
+      if (id === null) {
+        state.equipped[slot] = null;
+        return;
+      }
+      const item = typeof id === 'string' ? getItem(id) : null;
+      if (item && item.slot === slot) state.equipped[slot] = item.id;
+    });
+  }
   SLOT_KEYS.forEach((slot) => {
-    if (state.equipped[slot] === null) return;
-    const item = getItem(state.equipped[slot]);
-    if (!item || item.slot !== slot) state.equipped[slot] = defaults.equipped[slot];
+    if (state.equipped[slot] && !state.inventory[state.equipped[slot]]) {
+      state.equipped[slot] = state.inventory[defaults.equipped[slot]] ? defaults.equipped[slot] : null;
+    }
   });
-  SLOT_KEYS.forEach((slot) => {
-    if (state.equipped[slot] && !state.inventory[state.equipped[slot]]) state.inventory[state.equipped[slot]] = 1;
-  });
-  if (!SLOT_BY_ID[state.selectedSlot]) state.selectedSlot = 'accessory';
-  if (!SKINS[state.skin]) state.skin = 0;
-  if (!['slim', 'average', 'strong'].includes(state.body)) state.body = 'average';
-  if (!HAIR_TEXTURES.some((texture) => texture.id === state.hairTexture)) state.hairTexture = 'straight';
-  if (!WATCH_DIALS.some((dial) => dial.id === state.watchDial)) state.watchDial = 'classic';
-  if (!WATCH_STRAPS.some((strap) => strap.id === state.watchStrap)) state.watchStrap = 'leather';
-  if (!['all', ...SLOT_KEYS].includes(state.wardrobeSlot)) state.wardrobeSlot = 'all';
-  if (!['all', ...Object.keys(COLLECTIONS)].includes(state.wardrobeCollection)) state.wardrobeCollection = 'all';
-  if (!LEADERBOARDS[state.leaderPeriod]) state.leaderPeriod = 'week';
+
+  state.selectedSlot = ownValue(SLOT_BY_ID, saved.selectedSlot) ? saved.selectedSlot : defaults.selectedSlot;
+  state.skin = Number.isInteger(saved.skin) && SKINS[saved.skin] ? saved.skin : 0;
+  state.body = ['slim', 'average', 'strong'].includes(saved.body) ? saved.body : 'average';
+  state.hairTexture = HAIR_TEXTURES.some((texture) => texture.id === saved.hairTexture) ? saved.hairTexture : 'straight';
+  state.watchDial = WATCH_DIALS.some((dial) => dial.id === saved.watchDial) ? saved.watchDial : 'classic';
+  state.watchStrap = WATCH_STRAPS.some((strap) => strap.id === saved.watchStrap) ? saved.watchStrap : 'leather';
+  state.wardrobeSlot = ['all', ...SLOT_KEYS].includes(saved.wardrobeSlot) ? saved.wardrobeSlot : 'all';
+  state.wardrobeCollection = ['all', ...Object.keys(COLLECTIONS)].includes(saved.wardrobeCollection) ? saved.wardrobeCollection : 'all';
+  state.leaderPeriod = ownValue(LEADERBOARDS, saved.leaderPeriod) ? saved.leaderPeriod : 'week';
+
+  state.history = [];
+  if (Array.isArray(saved.history)) {
+    saved.history.slice(0, 20).forEach((entry) => {
+      if (!entry || typeof entry !== 'object') return;
+      const item = typeof entry.id === 'string' ? getItem(entry.id) : null;
+      if (!item) return;
+      state.history.push({
+        id: item.id,
+        duplicate: entry.duplicate === true,
+        at: Number.isFinite(entry.at) ? entry.at : Date.now()
+      });
+    });
+  }
+
   const today = todayKey();
   if (state.dailyDate !== today) {
     state.dailyClaimed = false;
     state.dailyDate = today;
   }
-  state.dailyClaimed = Boolean(state.dailyClaimed);
-  state.bestScore = Math.max(computeOutfit(state.equipped).score, Number(state.bestScore) || 0);
+  state.bestScore = Math.max(computeOutfit(state.equipped).score, state.bestScore);
   return state;
 }
 
@@ -2028,7 +2194,7 @@ function renderSlotRail() {
 /* ---------- QUICK SLOT WARDROBE ---------- */
 
 function openSlotSheet(slotId) {
-  state.selectedSlot = SLOT_BY_ID[slotId] ? slotId : 'accessory';
+  state.selectedSlot = ownValue(SLOT_BY_ID, slotId) ? slotId : 'accessory';
   saveState();
   closeSheets();
   closeDrop();
@@ -2139,7 +2305,7 @@ function updateSpinChrome() {
 
 function randomItemForSlot(slotId, excludeId = null) {
   const pool = ITEMS.filter((item) => item.slot === slotId && item.id !== excludeId);
-  return pool[Math.floor(Math.random() * pool.length)] || ITEMS[0];
+  return pool[Math.floor(randomUnit() * pool.length)] || ITEMS[0];
 }
 
 function reelCardHTML(item) {
@@ -2196,7 +2362,7 @@ function animateReel(resultItem) {
 }
 
 function rollRarity() {
-  const roll = Math.random() * 100;
+  const roll = randomUnit() * 100;
   let cursor = 0;
   for (const [rarityId, chance] of Object.entries(DROP_TABLE)) {
     cursor += chance;
@@ -2207,7 +2373,7 @@ function rollRarity() {
 
 function openSpinSheet(slotId = state.selectedSlot) {
   if (spinInProgress) return;
-  state.selectedSlot = SLOT_BY_ID[slotId] ? slotId : 'accessory';
+  state.selectedSlot = ownValue(SLOT_BY_ID, slotId) ? slotId : 'accessory';
   saveState();
   renderSlotRail();
   updateSpinChrome();
@@ -2226,7 +2392,7 @@ function performSpin() {
   state.wallet -= SPIN_COST;
   const rarityId = rollRarity();
   const pool = ITEMS.filter((item) => item.slot === state.selectedSlot && item.rarity === rarityId);
-  const item = pool[Math.floor(Math.random() * pool.length)] || randomItemForSlot(state.selectedSlot);
+  const item = pool[Math.floor(randomUnit() * pool.length)] || randomItemForSlot(state.selectedSlot);
   const hadDuplicate = ownedCount(item) > 0;
   state.inventory[item.id] = ownedCount(item) + 1;
   state.history.unshift({ id: item.id, duplicate: hadDuplicate, at: Date.now() });
@@ -2509,7 +2675,7 @@ function slotPipsForCurrent() {
 }
 
 function initials(name) {
-  return name.replace('@', '').slice(0, 2).toUpperCase();
+  return escapeHTML(String(name).replace('@', '').slice(0, 2).toUpperCase());
 }
 
 function currentUserEntry() {
@@ -2526,7 +2692,7 @@ function currentUserEntry() {
 }
 
 function getLeaderboard(period = state.leaderPeriod) {
-  const base = LEADERBOARDS[period] || LEADERBOARDS.week;
+  const base = ownValue(LEADERBOARDS, period) || LEADERBOARDS.week;
   const self = currentUserEntry();
   return [...base, self].sort((a, b) => b.score - a.score).map((player, index) => ({ ...player, rank: index + 1 }));
 }
@@ -2536,24 +2702,35 @@ function renderLeaders() {
   lastLeaderboard = all;
   const top = all.slice(0, 3);
   const podiumOrder = [top[1], top[0], top[2]].filter(Boolean);
-  $('podium').innerHTML = podiumOrder.map((player) => `
-    <div class="podium-card rank-${player.rank}">
-      <span class="podium-rank">#${player.rank}</span>
-      <div class="podium-avatar" style="--avatar-accent:${player.accent}">${initials(player.name)}</div>
-      <div class="podium-name">${player.name}</div>
-      <div class="podium-score">${player.score}</div>
-      <div class="podium-title">${player.title}</div>
-      <div class="podium-pips">${player.pips.map((rarity) => `<span style="--pip:${pipColor(rarity)}"></span>`).join('')}</div>
-    </div>`).join('');
+  $('podium').innerHTML = podiumOrder.map((player) => {
+    const rank = clampInt(player.rank, 1, 999, 1);
+    const score = clampInt(player.score, 0, 100, 0);
+    const accent = safeColor(player.accent, '#ff5b4f');
+    const pips = (Array.isArray(player.pips) ? player.pips : []).map((rarity) => `<span style="--pip:${pipColor(rarity)}"></span>`).join('');
+    return `
+    <div class="podium-card rank-${rank}">
+      <span class="podium-rank">#${rank}</span>
+      <div class="podium-avatar" style="--avatar-accent:${accent}">${initials(player.name)}</div>
+      <div class="podium-name">${escapeHTML(player.name)}</div>
+      <div class="podium-score">${score}</div>
+      <div class="podium-title">${escapeHTML(player.title)}</div>
+      <div class="podium-pips">${pips}</div>
+    </div>`;
+  }).join('');
 
   const rows = all.slice(3);
-  $('leaderList').innerHTML = rows.map((player) => `
-    <button class="leader-row ${player.isSelf ? 'is-self' : ''}" data-player="${player.name}">
-      <span class="leader-place">${String(player.rank).padStart(2, '0')}</span>
-      <span class="leader-mini" style="color:${player.accent}">${initials(player.name)}</span>
-      <span class="leader-copy"><b>${player.name}</b><small>${player.title} · ${player.set}</small></span>
-      <span class="leader-score"><b>${player.score}</b><small>гармония</small></span>
-    </button>`).join('');
+  $('leaderList').innerHTML = rows.map((player) => {
+    const rank = clampInt(player.rank, 1, 999, 1);
+    const score = clampInt(player.score, 0, 100, 0);
+    const accent = safeColor(player.accent, '#ff5b4f');
+    return `
+    <button class="leader-row ${player.isSelf ? 'is-self' : ''}" data-player="${escapeHTML(player.name)}">
+      <span class="leader-place">${String(rank).padStart(2, '0')}</span>
+      <span class="leader-mini" style="color:${accent}">${initials(player.name)}</span>
+      <span class="leader-copy"><b>${escapeHTML(player.name)}</b><small>${escapeHTML(player.title)} · ${escapeHTML(player.set)}</small></span>
+      <span class="leader-score"><b>${score}</b><small>гармония</small></span>
+    </button>`;
+  }).join('');
 
   $('leaderTabs').querySelectorAll('button').forEach((button) => {
     button.classList.toggle('is-active', button.dataset.period === state.leaderPeriod);
@@ -3166,8 +3343,8 @@ function initTelegram() {
   }
 }
 
-window.LUKAP = {
-  getState: () => state,
+const publicApi = {
+  getState: () => JSON.parse(JSON.stringify(state)),
   getItems: () => ITEMS,
   getCollections: () => COLLECTIONS,
   getRarities: () => RARITY_META,
@@ -3180,6 +3357,8 @@ window.LUKAP = {
   applyEquippedItem,
   removeSlotSoft
 };
+Object.freeze(publicApi);
+window.LUKAP = publicApi;
 
 function init() {
   window.itemArtTexture = state.hairTexture;
