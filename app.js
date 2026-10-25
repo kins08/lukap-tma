@@ -1253,6 +1253,387 @@ ARCHIVE_HOUSES.forEach((house, houseIndex) => {
   });
 });
 
+/* ---------- DROP 04 · 10 houses × 20 = 200 + 3 grails = 1000 items ---------- */
+const DROP4_MODELS = {
+  top: ['Aeon', 'Blaze', 'Cipher', 'Dyno', 'Ethos', 'Fable', 'Glint', 'Hush', 'Ion', 'Jolt', 'Karma', 'Loom', 'Miro', 'Nimbus', 'Opal', 'Prism', 'Quark', 'Rift', 'Spark', 'Tidal'],
+  bottom: ['Arc', 'Bloom', 'Chase', 'Dusk', 'Edge', 'Flow', 'Grain', 'Haze', 'Inlet', 'Jive', 'Kinetic', 'Loop'],
+  shoes: ['Aero', 'Brisk', 'Climb', 'Dash', 'Echo', 'Fleet', 'Glide', 'Hype', 'Ice', 'Jump', 'Kick', 'Lace'],
+  accessory: ['Aura', 'Beam', 'Crest', 'Dune', 'Ember', 'Frost', 'Gem', 'Halo', 'Iris', 'Jolt', 'Kite', 'Lumen']
+};
+const DROP4_TOP_SETS = {
+  sport: [
+    { variant: 'tee', fit: 'regular' },
+    { variant: 'tank', fit: 'oversize' },
+    { variant: 'longsleeve', fit: 'slim' },
+    { variant: 'shirt', fit: 'regular' },
+    { variant: 'bomber', fit: 'oversize' },
+    { variant: 'hoodie', fit: 'oversize' }
+  ],
+  street: [
+    { variant: 'tee', fit: 'regular' },
+    { variant: 'tank', fit: 'oversize' },
+    { variant: 'longsleeve', fit: 'regular' },
+    { variant: 'shirt', fit: 'regular' },
+    { variant: 'bomber', fit: 'oversize' },
+    { variant: 'hoodie', fit: 'oversize' }
+  ],
+  noir: [
+    { variant: 'tee', fit: 'cropped' },
+    { variant: 'longsleeve', fit: 'slim' },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'vest', fit: 'tailored' },
+    { variant: 'bomber', fit: 'oversize' },
+    { variant: 'hoodie', fit: 'oversize' }
+  ],
+  old: [
+    { variant: 'tee', fit: 'regular' },
+    { variant: 'longsleeve', fit: 'slim' },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'vest', fit: 'tailored' },
+    { variant: 'bomber', fit: 'oversize' },
+    { variant: 'hoodie', fit: 'oversize' }
+  ],
+  muse: [
+    { variant: 'tee', fit: 'cropped' },
+    { variant: 'longsleeve', fit: 'slim' },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'vest', fit: 'tailored' },
+    { variant: 'bomber', fit: 'oversize' },
+    { variant: 'hoodie', fit: 'oversize' }
+  ]
+};
+const DROP4_BOTTOM_SETS = {
+  sport: [
+    { variant: 'track', fit: 'mid' },
+    { variant: 'baggy', fit: 'low' },
+    { variant: 'parachute', fit: 'mid' },
+    { variant: 'flare', fit: 'high' },
+    { variant: 'wide', fit: 'mid' }
+  ],
+  street: [
+    { variant: 'track', fit: 'mid' },
+    { variant: 'baggy', fit: 'low' },
+    { variant: 'parachute', fit: 'mid' },
+    { variant: 'flare', fit: 'high' },
+    { variant: 'jorts', fit: 'low' }
+  ],
+  noir: [
+    { variant: 'tailored', fit: 'mid' },
+    { variant: 'wide', fit: 'mid' },
+    { variant: 'flare', fit: 'high' },
+    { variant: 'jorts', fit: 'low' },
+    { variant: 'parachute', fit: 'mid' }
+  ],
+  old: [
+    { variant: 'tailored', fit: 'mid' },
+    { variant: 'wide', fit: 'high' },
+    { variant: 'flare', fit: 'high' },
+    { variant: 'jorts', fit: 'low' },
+    { variant: 'baggy', fit: 'low' }
+  ],
+  muse: [
+    { variant: 'flare', fit: 'high' },
+    { variant: 'wide', fit: 'high' },
+    { variant: 'parachute', fit: 'mid' },
+    { variant: 'jorts', fit: 'low' },
+    { variant: 'baggy', fit: 'low' }
+  ]
+};
+const DROP4_SHOE_SETS = {
+  sport: [
+    { variant: 'runner', sole: 'mid', soleType: 'foam', upper: 'mesh' },
+    { variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'suede' },
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'nubuck' },
+    { variant: 'platform', sole: 'high', soleType: 'lug', upper: 'leather' },
+    { variant: 'runner', sole: 'max', soleType: 'carbon', upper: 'knit' }
+  ],
+  street: [
+    { variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'canvas' },
+    { variant: 'runner', sole: 'mid', soleType: 'foam', upper: 'knit' },
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'suede' },
+    { variant: 'platform', sole: 'high', soleType: 'lug', upper: 'leather' },
+    { variant: 'sneaker', sole: 'mid', soleType: 'cup', upper: 'nubuck' }
+  ],
+  noir: [
+    { variant: 'derby', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'loafer', sole: 'low', soleType: 'cup', upper: 'suede' },
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'leather' },
+    { variant: 'platform', sole: 'max', soleType: 'lug', upper: 'leather' },
+    { variant: 'runner', sole: 'high', soleType: 'tread', upper: 'mesh' }
+  ],
+  old: [
+    { variant: 'loafer', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'derby', sole: 'mid', soleType: 'cup', upper: 'nubuck' },
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'suede' },
+    { variant: 'platform', sole: 'high', soleType: 'lug', upper: 'leather' },
+    { variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'leather' }
+  ],
+  muse: [
+    { variant: 'ballet', sole: 'low', soleType: 'cup', upper: 'satin' },
+    { variant: 'mule', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'boot', sole: 'mid', soleType: 'cup', upper: 'suede' },
+    { variant: 'platform', sole: 'high', soleType: 'lug', upper: 'leather' },
+    { variant: 'runner', sole: 'mid', soleType: 'foam', upper: 'mesh' }
+  ]
+};
+const DROP4_ACCESSORY_BANK = [
+  { variant: 'visor' },
+  { variant: 'glasses', shape: 'rect' },
+  { variant: 'watch', watchFamily: 'chrono' },
+  { variant: 'rings' },
+  { variant: 'chain' },
+  { variant: 'earrings' },
+  { variant: 'pearls' },
+  { variant: 'glasses', shape: 'cat' },
+  { variant: 'watch', watchFamily: 'gmt' },
+  { variant: 'watch', watchFamily: 'dress' }
+];
+const DROP4_RARITIES = ['base', 'norm', 'norm', 'trend', 'trend', 'couture', 'legend', 'base', 'norm', 'trend', 'couture', 'legend', 'base', 'norm', 'trend', 'couture', 'legend', 'icon', 'base', 'trend'];
+ARCHIVE_HOUSES.forEach((house, houseIndex) => {
+  const collection = COLLECTIONS[house.collection];
+  const letter = String.fromCharCode(65 + houseIndex);
+  let serial = 0;
+  const addDropItem = (slot, spec, localIndex) => {
+    const model = `${DROP4_MODELS[slot][localIndex]} ${letter}${serial + 1}Z`;
+    EXTRA_ITEMS.push({
+      collection: house.collection,
+      slot,
+      rarity: DROP4_RARITIES[serial],
+      name: `${house.brand} ${model}`,
+      variant: spec.variant,
+      fit: spec.fit || null,
+      shape: spec.shape || null,
+      sole: spec.sole || null,
+      soleType: spec.soleType || null,
+      upper: spec.upper || null,
+      watchFamily: spec.watchFamily || null,
+      brand: house.brand,
+      model,
+      paletteIndex: (houseIndex * 11 + serial) % collection.palettes.length,
+      style: 'АРХИВ'
+    });
+    serial += 1;
+  };
+  const tops = DROP4_TOP_SETS[house.collection] || DROP4_TOP_SETS.noir;
+  const bottoms = DROP4_BOTTOM_SETS[house.collection] || DROP4_BOTTOM_SETS.noir;
+  const shoes = DROP4_SHOE_SETS[house.collection] || DROP4_SHOE_SETS.noir;
+  tops.forEach((spec, index) => addDropItem('top', spec, index));
+  bottoms.forEach((spec, index) => addDropItem('bottom', spec, index));
+  shoes.forEach((spec, index) => addDropItem('shoes', spec, index));
+  [0, 1, 2, 3].forEach((offset) => {
+    const spec = DROP4_ACCESSORY_BANK[(houseIndex * 4 + offset) % DROP4_ACCESSORY_BANK.length];
+    addDropItem('accessory', spec, offset);
+  });
+});
+[
+  { collection: 'sport', name: 'MERIDIAN Singularis', brand: 'MERIDIAN', model: 'Singularis', watchFamily: 'dress', paletteIndex: 2 },
+  { collection: 'old', name: 'AUREL Eclipse', brand: 'AUREL', model: 'Eclipse', watchFamily: 'dress', paletteIndex: 4 },
+  { collection: 'sport', name: 'VELOX Chronomax', brand: 'VELOX', model: 'Chronomax', watchFamily: 'chrono', paletteIndex: 5 }
+].forEach((entry) => {
+  EXTRA_ITEMS.push({
+    collection: entry.collection,
+    slot: 'accessory',
+    rarity: 'icon',
+    name: entry.name,
+    variant: 'watch',
+    brand: entry.brand,
+    model: entry.model,
+    watchFamily: entry.watchFamily,
+    paletteIndex: entry.paletteIndex,
+    style: 'АРХИВ'
+  });
+});
+
+/* ---------- DROP 05 · 10 houses × 25 = 250 more branded items ---------- */
+const DROP5_MODELS = {
+  top: ['Aster', 'Beacon', 'Comet', 'Delta', 'Echo', 'Fable', 'Glyph', 'Halo', 'Iris', 'Juno', 'Kite', 'Loom', 'Mirage', 'Nimbus', 'Orbit', 'Pulse', 'Quartz', 'Rune', 'Solace', 'Tide', 'Umbra', 'Verse', 'Wave', 'Xenon', 'Zenith'],
+  bottom: ['Base', 'Curve', 'Drift', 'Edge', 'Fold', 'Grain', 'Hinge', 'Inlet', 'Jolt', 'Knot', 'Lane', 'Mesh', 'Notch', 'Pace', 'Ridge'],
+  shoes: ['Arrow', 'Brisk', 'Climb', 'Dart', 'Echo', 'Fleet', 'Glide', 'Hype', 'Ion', 'Jump', 'Kick', 'Lace', 'Move', 'Nudge', 'Orbit'],
+  accessory: ['Aura', 'Beam', 'Crest', 'Dune', 'Ember', 'Frost', 'Gem', 'Halo', 'Iris', 'Jolt', 'Kite', 'Lumen', 'Mark', 'Niche', 'Opal']
+};
+const DROP5_TOP_SETS = {
+  sport: [
+    { variant: 'tee', fit: 'regular' },
+    { variant: 'tank', fit: 'oversize' },
+    { variant: 'longsleeve', fit: 'slim' },
+    { variant: 'shirt', fit: 'regular' },
+    { variant: 'vest', fit: 'tailored' },
+    { variant: 'bomber', fit: 'oversize' },
+    { variant: 'hoodie', fit: 'oversize' }
+  ],
+  street: [
+    { variant: 'tee', fit: 'regular' },
+    { variant: 'tank', fit: 'oversize' },
+    { variant: 'longsleeve', fit: 'regular' },
+    { variant: 'shirt', fit: 'regular' },
+    { variant: 'vest', fit: 'tailored' },
+    { variant: 'bomber', fit: 'oversize' },
+    { variant: 'hoodie', fit: 'oversize' }
+  ],
+  noir: [
+    { variant: 'tee', fit: 'cropped' },
+    { variant: 'longsleeve', fit: 'slim' },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'vest', fit: 'tailored' },
+    { variant: 'bomber', fit: 'oversize' },
+    { variant: 'hoodie', fit: 'oversize' },
+    { variant: 'tank', fit: 'regular' }
+  ],
+  old: [
+    { variant: 'tee', fit: 'regular' },
+    { variant: 'longsleeve', fit: 'slim' },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'vest', fit: 'tailored' },
+    { variant: 'bomber', fit: 'oversize' },
+    { variant: 'hoodie', fit: 'oversize' },
+    { variant: 'tank', fit: 'regular' }
+  ],
+  muse: [
+    { variant: 'tee', fit: 'cropped' },
+    { variant: 'longsleeve', fit: 'slim' },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'vest', fit: 'tailored' },
+    { variant: 'bomber', fit: 'oversize' },
+    { variant: 'hoodie', fit: 'oversize' },
+    { variant: 'tank', fit: 'regular' }
+  ]
+};
+const DROP5_BOTTOM_SETS = {
+  sport: [
+    { variant: 'track', fit: 'mid' },
+    { variant: 'baggy', fit: 'low' },
+    { variant: 'parachute', fit: 'mid' },
+    { variant: 'flare', fit: 'high' },
+    { variant: 'wide', fit: 'mid' },
+    { variant: 'jorts', fit: 'low' }
+  ],
+  street: [
+    { variant: 'track', fit: 'mid' },
+    { variant: 'baggy', fit: 'low' },
+    { variant: 'parachute', fit: 'mid' },
+    { variant: 'flare', fit: 'high' },
+    { variant: 'wide', fit: 'mid' },
+    { variant: 'jorts', fit: 'low' }
+  ],
+  noir: [
+    { variant: 'tailored', fit: 'mid' },
+    { variant: 'wide', fit: 'mid' },
+    { variant: 'flare', fit: 'high' },
+    { variant: 'jorts', fit: 'low' },
+    { variant: 'parachute', fit: 'mid' },
+    { variant: 'baggy', fit: 'low' }
+  ],
+  old: [
+    { variant: 'tailored', fit: 'mid' },
+    { variant: 'wide', fit: 'high' },
+    { variant: 'flare', fit: 'high' },
+    { variant: 'jorts', fit: 'low' },
+    { variant: 'baggy', fit: 'low' },
+    { variant: 'parachute', fit: 'mid' }
+  ],
+  muse: [
+    { variant: 'flare', fit: 'high' },
+    { variant: 'wide', fit: 'high' },
+    { variant: 'parachute', fit: 'mid' },
+    { variant: 'jorts', fit: 'low' },
+    { variant: 'baggy', fit: 'low' },
+    { variant: 'tailored', fit: 'mid' }
+  ]
+};
+const DROP5_SHOE_SETS = {
+  sport: [
+    { variant: 'runner', sole: 'high', soleType: 'tread', upper: 'knit' },
+    { variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'suede' },
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'nubuck' },
+    { variant: 'platform', sole: 'high', soleType: 'lug', upper: 'leather' },
+    { variant: 'runner', sole: 'max', soleType: 'carbon', upper: 'mesh' },
+    { variant: 'sneaker', sole: 'mid', soleType: 'cup', upper: 'leather' }
+  ],
+  street: [
+    { variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'canvas' },
+    { variant: 'runner', sole: 'mid', soleType: 'foam', upper: 'knit' },
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'suede' },
+    { variant: 'platform', sole: 'high', soleType: 'lug', upper: 'leather' },
+    { variant: 'sneaker', sole: 'mid', soleType: 'cup', upper: 'nubuck' },
+    { variant: 'runner', sole: 'high', soleType: 'tread', upper: 'mesh' }
+  ],
+  noir: [
+    { variant: 'derby', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'loafer', sole: 'low', soleType: 'cup', upper: 'suede' },
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'leather' },
+    { variant: 'platform', sole: 'max', soleType: 'lug', upper: 'leather' },
+    { variant: 'runner', sole: 'high', soleType: 'tread', upper: 'mesh' },
+    { variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'leather' }
+  ],
+  old: [
+    { variant: 'loafer', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'derby', sole: 'mid', soleType: 'cup', upper: 'nubuck' },
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'suede' },
+    { variant: 'platform', sole: 'high', soleType: 'lug', upper: 'leather' },
+    { variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'derby', sole: 'low', soleType: 'cup', upper: 'suede' }
+  ],
+  muse: [
+    { variant: 'ballet', sole: 'low', soleType: 'cup', upper: 'satin' },
+    { variant: 'mule', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'boot', sole: 'mid', soleType: 'cup', upper: 'suede' },
+    { variant: 'platform', sole: 'high', soleType: 'lug', upper: 'leather' },
+    { variant: 'runner', sole: 'mid', soleType: 'foam', upper: 'mesh' },
+    { variant: 'ballet', sole: 'mid', soleType: 'cup', upper: 'satin' }
+  ]
+};
+const DROP5_ACCESSORY_BANK = [
+  { variant: 'visor' },
+  { variant: 'glasses', shape: 'rect' },
+  { variant: 'watch', watchFamily: 'chrono' },
+  { variant: 'rings' },
+  { variant: 'chain' },
+  { variant: 'earrings' },
+  { variant: 'pearls' },
+  { variant: 'glasses', shape: 'cat' },
+  { variant: 'watch', watchFamily: 'gmt' },
+  { variant: 'watch', watchFamily: 'dress' },
+  { variant: 'glasses', shape: 'round' },
+  { variant: 'watch', watchFamily: 'field' }
+];
+const DROP5_RARITIES = ['base', 'norm', 'norm', 'trend', 'trend', 'couture', 'couture', 'legend', 'base', 'norm', 'trend', 'trend', 'couture', 'legend', 'base', 'norm', 'trend', 'couture', 'legend', 'icon', 'base', 'norm', 'trend', 'couture', 'legend'];
+ARCHIVE_HOUSES.forEach((house, houseIndex) => {
+  const collection = COLLECTIONS[house.collection];
+  const letter = String.fromCharCode(65 + houseIndex);
+  let serial = 0;
+  const addDropItem = (slot, spec, localIndex) => {
+    const model = `${DROP5_MODELS[slot][localIndex]} ${letter}${serial + 1}X`;
+    EXTRA_ITEMS.push({
+      collection: house.collection,
+      slot,
+      rarity: DROP5_RARITIES[serial],
+      name: `${house.brand} ${model}`,
+      variant: spec.variant,
+      fit: spec.fit || null,
+      shape: spec.shape || null,
+      sole: spec.sole || null,
+      soleType: spec.soleType || null,
+      upper: spec.upper || null,
+      watchFamily: spec.watchFamily || null,
+      brand: house.brand,
+      model,
+      paletteIndex: (houseIndex * 13 + serial) % collection.palettes.length,
+      style: 'АРХИВ'
+    });
+    serial += 1;
+  };
+  const tops = DROP5_TOP_SETS[house.collection] || DROP5_TOP_SETS.noir;
+  const bottoms = DROP5_BOTTOM_SETS[house.collection] || DROP5_BOTTOM_SETS.noir;
+  const shoes = DROP5_SHOE_SETS[house.collection] || DROP5_SHOE_SETS.noir;
+  tops.forEach((spec, index) => addDropItem('top', spec, index));
+  bottoms.forEach((spec, index) => addDropItem('bottom', spec, index));
+  shoes.forEach((spec, index) => addDropItem('shoes', spec, index));
+  [0, 1, 2, 3, 4, 5].forEach((offset) => {
+    const spec = DROP5_ACCESSORY_BANK[(houseIndex * 5 + offset) % DROP5_ACCESSORY_BANK.length];
+    addDropItem('accessory', spec, offset);
+  });
+});
+
 const extraVariantCounts = {};
 EXTRA_ITEMS.forEach((entry) => {
   const key = `${entry.collection}-${entry.slot}-${entry.variant}`;
@@ -1782,6 +2163,7 @@ function buildStaticReel() {
   reelTrack.style.transition = 'none';
   reelTrack.style.transform = 'translateX(0px)';
   reelTrack.innerHTML = cards.join('');
+  document.querySelector('.reel-viewport')?.classList.remove('is-spinning');
 }
 
 function animateReel(resultItem) {
@@ -1798,6 +2180,7 @@ function animateReel(resultItem) {
   const resultCard = reelTrack.children[resultIndex];
   resultCard.dataset.result = 'true';
   const viewport = document.querySelector('.reel-viewport');
+  viewport.classList.add('is-spinning');
   reelTrack.getBoundingClientRect();
   const viewportRect = viewport.getBoundingClientRect();
   const cardRect = resultCard.getBoundingClientRect();
@@ -1876,6 +2259,7 @@ function finishSpin() {
   if (!spinInProgress || !pendingDrop) return;
   clearTimeout(spinTimer);
   spinInProgress = false;
+  document.querySelector('.reel-viewport')?.classList.remove('is-spinning');
   reelTrack.style.transition = 'none';
   reelTrack.style.transform = `translateX(${spinTargetOffset}px)`;
   const resultCard = reelTrack.querySelector('[data-result="true"]');

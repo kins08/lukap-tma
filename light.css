@@ -1484,3 +1484,42 @@ body { color: var(--text); }
   cursor: pointer;
 }
 .wardrobe-more:active { transform: translateY(1px); }
+
+/* MOTION POLISH */
+.avatar-stage.is-refreshing::after {
+  animation: stageRefresh .58s cubic-bezier(.2, .8, .2, 1);
+}
+.avatar-stage.is-refreshing .avatar-3d {
+  animation: stageLift .58s cubic-bezier(.2, .8, .2, 1);
+}
+.reel-viewport.is-spinning::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, .09) 50%, transparent 80%);
+  animation: reelSweep .6s linear infinite;
+}
+.reel-track {
+  transition: transform 3.2s cubic-bezier(.12, .86, .08, 1);
+}
+@keyframes stageRefresh {
+  0% { opacity: .18; transform: scale(.985); }
+  38% { opacity: .95; transform: scale(1.012); }
+  100% { opacity: 0; transform: scale(1.03); }
+}
+@keyframes stageLift {
+  0% { transform: translateY(3px) scale(.992); }
+  55% { transform: translateY(-2px) scale(1.004); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes reelSweep {
+  from { transform: translateX(-80%); }
+  to { transform: translateX(80%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .avatar-stage.is-refreshing::after,
+  .avatar-stage.is-refreshing .avatar-3d,
+  .reel-viewport.is-spinning::after { animation: none !important; }
+}

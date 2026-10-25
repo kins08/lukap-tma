@@ -19,8 +19,8 @@
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.toneMapping = THREE.NoToneMapping;
-  renderer.toneMappingExposure = 0.9;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.04;
   renderer.setClearColor(0x000000, 0);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -91,21 +91,21 @@
   camera.position.set(0, 1.03, BASE_DISTANCE);
   camera.lookAt(0, 0.95, 0);
 
-  scene.add(new THREE.HemisphereLight(0xfff7ec, 0x5c4c3b, 0.32));
-  const keyLight = new THREE.DirectionalLight(0xfff3e2, 1.08);
+  scene.add(new THREE.HemisphereLight(0xfff7ec, 0x5c4c3b, 0.38));
+  const keyLight = new THREE.DirectionalLight(0xfff3e2, 1.16);
   keyLight.position.set(-2.2, 3.8, 3.3);
   keyLight.castShadow = true;
-  keyLight.shadow.mapSize.set(1024, 1024);
+  keyLight.shadow.mapSize.set(2048, 2048);
   keyLight.shadow.camera.near = 0.5;
   keyLight.shadow.camera.far = 9;
   keyLight.shadow.camera.left = -2;
   keyLight.shadow.camera.right = 2;
   keyLight.shadow.camera.top = 3;
   keyLight.shadow.camera.bottom = -0.5;
-  keyLight.shadow.bias = -0.0002;
-  keyLight.shadow.radius = 4;
+  keyLight.shadow.bias = -0.0003;
+  keyLight.shadow.radius = 5;
   scene.add(keyLight);
-  const fillLight = new THREE.DirectionalLight(0xffe0c8, 0.24);
+  const fillLight = new THREE.DirectionalLight(0xffe0c8, 0.3);
   fillLight.position.set(2.6, 1.4, 2.1);
   scene.add(fillLight);
   const rimLight = new THREE.PointLight(0xff4131, 1.2, 5.5);
@@ -142,6 +142,14 @@
   shadowReceiver.receiveShadow = true;
   scene.add(shadowReceiver);
 
+  const pedestal = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.4, 0.435, 0.02, 64),
+    new THREE.MeshStandardMaterial({ color: 0xe4d6c2, roughness: 0.9, metalness: 0.02 })
+  );
+  pedestal.position.set(0, -0.012, 0.02);
+  pedestal.receiveShadow = true;
+  scene.add(pedestal);
+
   const root = new THREE.Group();
   scene.add(root);
 
@@ -153,6 +161,11 @@
   let pickables = [];
   let rotation = 0;
   let zoom = 1;
+  let viewRotation = 0;
+  let viewZoom = 1;
+  let rotationVelocity = 0;
+  let refreshTimer = null;
+  let hasBuilt = false;
   const activePointers = new Map();
   let pinchStart = null;
   let dragStart = null;
@@ -584,7 +597,7 @@
       add(slotGroup, box(0.07, 0.018, 0.01), hi, [0.13, 1.3, 0.18]);
     } else if (variant === 'vest') {
       [-1, 1].forEach((side) => {
-        add(slotGroup, torus(0.075, 0.01, 18), trim, [side * 0.19, 1.37, 0], [Math.PI / 2, 0, 0], [1, 1, 0.9]);
+        add(slotGroup, torus(0.072, 0.007, 18), dark, [side * 0.19, 1.37, 0], [Math.PI / 2, 0, 0], [1, 1, 0.9]);
       });
       add(slotGroup, box(0.105, 0.3, 0.016), accent, [-0.06, 1.31, 0.155], [0, 0, 0.22]);
       add(slotGroup, box(0.105, 0.3, 0.016), accent, [0.06, 1.31, 0.155], [0, 0, -0.22]);
@@ -677,45 +690,46 @@
 
     const hemY = variant === 'jorts' ? 0.52 : 0.13;
     [-1, 1].forEach((side) => {
-      const x = side * (['flare', 'baggy', 'parachute'].includes(variant) ? 0.1 : variant === 'jorts' ? 0.095 : 0.086);
+      const x = side * (variant === 'baggy' ? 0.14 : variant === 'parachute' ? 0.15 : variant === 'flare' ? 0.13 : variant === 'jorts' ? 0.13 : 0.086);
       if (variant === 'flare') {
         add(slotGroup, cylinder(0.1, 0.08, 0.34, 20), main, [x, 0.66, 0]);
-        add(slotGroup, cylinder(0.08, 0.175, 0.36, 20), main, [x, 0.32, 0]);
-        add(slotGroup, torus(0.178, 0.012, 22), trim, [x, 0.135, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, torus(0.1, 0.008, 18), metal, [x, 0.5, 0], [Math.PI / 2, 0, 0]);
+        add(slotGroup, cylinder(0.08, 0.145, 0.36, 20), main, [x, 0.32, 0]);
+        add(slotGroup, torus(0.148, 0.008, 22), dark, [x, 0.135, 0], [Math.PI / 2, 0, 0]);
+        add(slotGroup, torus(0.094, 0.004, 18), crease, [x, 0.5, 0], [Math.PI / 2, 0, 0]);
         add(slotGroup, box(0.012, 0.5, 0.012), hi, [x + side * 0.045, 0.48, 0.045]);
+        add(slotGroup, box(0.006, 0.36, 0.008), crease, [0, 0.32, 0.145]);
       } else if (variant === 'baggy') {
-        add(slotGroup, cylinder(0.145, 0.155, 0.79, 20), main, [x, 0.52, 0]);
-        add(slotGroup, torus(0.157, 0.014, 22), trim, [x, 0.17, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, torus(0.14, 0.009, 22), trim, [x, 0.235, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, box(0.095, 0.13, 0.055), main, [side * 0.15, 0.62, 0.04]);
-        add(slotGroup, box(0.1, 0.018, 0.06), dark, [side * 0.15, 0.69, 0.04]);
-        add(slotGroup, box(0.05, 0.02, 0.02), metal, [side * 0.15, 0.69, 0.075]);
-        add(slotGroup, box(0.008, 0.6, 0.008), hi, [x + side * 0.08, 0.5, 0.05]);
+        add(slotGroup, cylinder(0.125, 0.135, 0.79, 20), main, [x, 0.52, 0]);
+        add(slotGroup, torus(0.133, 0.01, 22), dark, [x, 0.17, 0], [Math.PI / 2, 0, 0]);
+        add(slotGroup, torus(0.118, 0.006, 22), crease, [x, 0.235, 0], [Math.PI / 2, 0, 0]);
+        add(slotGroup, box(0.09, 0.13, 0.052), main, [side * 0.185, 0.62, 0.04]);
+        add(slotGroup, box(0.095, 0.018, 0.057), dark, [side * 0.185, 0.69, 0.04]);
+        add(slotGroup, box(0.05, 0.02, 0.02), metal, [side * 0.185, 0.69, 0.075]);
+        add(slotGroup, box(0.008, 0.6, 0.008), hi, [x + side * 0.066, 0.5, 0.05]);
       } else if (variant === 'parachute') {
-        add(slotGroup, cylinder(0.15, 0.175, 0.8, 20), main, [x, 0.52, 0]);
-        add(slotGroup, torus(0.09, 0.018, 20), trim, [x, 0.155, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, torus(0.16, 0.012, 24), trim, [x, 0.23, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, box(0.065, 0.16, 0.055), main, [side * 0.16, 0.56, 0.02]);
-        add(slotGroup, box(0.07, 0.025, 0.06), dark, [side * 0.16, 0.63, 0.025]);
-        add(slotGroup, box(0.045, 0.018, 0.02), metal, [side * 0.16, 0.63, 0.058]);
+        add(slotGroup, cylinder(0.13, 0.15, 0.8, 20), main, [x, 0.52, 0]);
+        add(slotGroup, torus(0.084, 0.014, 20), dark, [x, 0.155, 0], [Math.PI / 2, 0, 0]);
+        add(slotGroup, torus(0.14, 0.008, 24), crease, [x, 0.23, 0], [Math.PI / 2, 0, 0]);
+        add(slotGroup, box(0.062, 0.16, 0.052), main, [side * 0.2, 0.56, 0.02]);
+        add(slotGroup, box(0.067, 0.025, 0.057), dark, [side * 0.2, 0.63, 0.025]);
+        add(slotGroup, box(0.045, 0.018, 0.02), metal, [side * 0.2, 0.63, 0.058]);
         add(slotGroup, box(0.01, 0.15, 0.01), hi, [x + side * 0.04, 0.45, 0.08]);
       } else if (variant === 'track') {
         add(slotGroup, cylinder(0.1, 0.065, 0.78, 20), main, [x, 0.53, 0]);
-        add(slotGroup, torus(0.073, 0.016, 20), trim, [x, 0.16, 0], [Math.PI / 2, 0, 0]);
+        add(slotGroup, torus(0.071, 0.012, 20), dark, [x, 0.16, 0], [Math.PI / 2, 0, 0]);
         add(slotGroup, box(0.025, 0.65, 0.012), hi, [x + side * 0.06, 0.5, 0.05]);
         add(slotGroup, box(0.012, 0.5, 0.012), dark, [x + side * 0.062, 0.5, 0.05]);
         add(slotGroup, torus(0.086, 0.01, 18), metal, [x, 0.5, 0], [Math.PI / 2, 0, 0]);
       } else if (variant === 'jorts') {
-        add(slotGroup, cylinder(0.155, 0.165, 0.36, 20), main, [x, 0.72, 0], null, [1, 1, 0.9]);
-        add(slotGroup, torus(0.157, 0.014, 22), trim, [x, 0.55, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, box(0.105, 0.12, 0.055), main, [side * 0.155, 0.77, 0.02]);
-        add(slotGroup, box(0.11, 0.018, 0.06), dark, [side * 0.155, 0.83, 0.025]);
+        add(slotGroup, cylinder(0.125, 0.135, 0.36, 20), main, [x, 0.72, 0], null, [1, 1, 0.9]);
+        add(slotGroup, torus(0.133, 0.01, 22), dark, [x, 0.55, 0], [Math.PI / 2, 0, 0]);
+        add(slotGroup, box(0.1, 0.12, 0.052), main, [side * 0.185, 0.77, 0.02]);
+        add(slotGroup, box(0.105, 0.018, 0.057), dark, [side * 0.185, 0.83, 0.025]);
         [0, 1, 2].forEach((index) => add(slotGroup, box(0.02, 0.03, 0.01), main, [x - 0.04 + index * 0.04, 0.535, 0.08], [0, 0, side * (index % 2 ? 0.2 : -0.2)]));
       } else if (variant === 'wide') {
         const wx = side * 0.126;
         add(slotGroup, cylinder(0.098, 0.106, 0.72, 22), main, [wx, 0.56, 0], null, [1, 1, 0.92]);
-        add(slotGroup, cylinder(0.108, 0.11, 0.07, 22), trim, [wx, 0.21, 0], null, [1, 1, 0.92]);
+        add(slotGroup, cylinder(0.108, 0.11, 0.07, 22), dark, [wx, 0.21, 0], null, [1, 1, 0.92]);
         add(slotGroup, box(0.008, 0.55, 0.008), hi, [wx + side * 0.058, 0.56, 0.06]);
         add(slotGroup, box(0.008, 0.55, 0.008), dark, [wx - side * 0.046, 0.56, 0.06]);
         if (item.cargo) {
@@ -878,8 +892,8 @@
       add(slotGroup, cylinder(0.265, 0.225, 0.57, 22), main, [0, 1.2, 0], null, [1, 1, 0.82]);
       add(slotGroup, sphere(0.245, 18), main, [0, 1.45, -0.015], null, [1.17, 0.43, 0.9]);
       [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.145, 16), main, [side * 0.21, 1.46, 0], null, [1.12, 0.75, 1.05]);
-        makeSleeve(slotGroup, side, main, trim, { radius: 0.118, length: 0.48 });
+        add(slotGroup, sphere(0.128, 16), main, [side * 0.205, 1.445, 0], null, [1.06, 0.68, 1.02]);
+        makeSleeve(slotGroup, side, main, trim, { radius: 0.11, length: 0.48 });
       });
       const hood = add(slotGroup, torus(0.145, 0.055, 24), main, [0, 1.49, -0.06], [Math.PI / 2, 0, 0], [1.2, 1, 0.9]);
       hood.userData.slot = 'top';
@@ -1578,6 +1592,14 @@
     }
   }
 
+  function pulseStage() {
+    stage.classList.remove('is-refreshing');
+    void stage.offsetWidth;
+    stage.classList.add('is-refreshing');
+    window.clearTimeout(refreshTimer);
+    refreshTimer = window.setTimeout(() => stage.classList.remove('is-refreshing'), 620);
+  }
+
   function sync(force) {
     state = API.getState();
     const nextSignature = JSON.stringify({ equipped: state.equipped, skin: state.skin, body: state.body });
@@ -1585,29 +1607,46 @@
     signature = nextSignature;
     snapshotCache = { signature: '', url: '' };
     buildCharacter();
+    if (hasBuilt) pulseStage();
+    hasBuilt = true;
   }
 
-  function updateCamera() {
-    const targetY = 0.95 + Math.min(0.6, Math.max(0, zoom - 1) * 0.62);
-    camera.position.set(0, targetY + 0.08, BASE_DISTANCE / zoom);
+  function applyCamera() {
+    const targetY = 0.95 + Math.min(0.6, Math.max(0, viewZoom - 1) * 0.62);
+    camera.position.set(0, targetY + 0.08, BASE_DISTANCE / viewZoom);
     camera.lookAt(0, targetY, 0);
+  }
+
+  function updateCamera(instant) {
+    if (instant) {
+      viewZoom = zoom;
+      viewRotation = rotation;
+      root.rotation.y = viewRotation;
+    }
     stage.classList.toggle('is-zoomed', zoom > 1.03);
+    applyCamera();
   }
 
   function snapshot() {
     if (snapshotCache.signature === signature && snapshotCache.url) return snapshotCache.url;
     const previousRotation = rotation;
     const previousZoom = zoom;
+    const previousViewRotation = viewRotation;
+    const previousViewZoom = viewZoom;
     rotation = 0;
     zoom = 1;
+    viewRotation = 0;
+    viewZoom = 1;
     root.rotation.y = 0;
-    updateCamera();
+    applyCamera();
     renderer.render(scene, camera);
     const url = renderer.domElement.toDataURL('image/png');
     rotation = previousRotation;
     zoom = previousZoom;
-    root.rotation.y = previousRotation;
-    updateCamera();
+    viewRotation = previousViewRotation;
+    viewZoom = previousViewZoom;
+    root.rotation.y = viewRotation;
+    applyCamera();
     renderer.render(scene, camera);
     snapshotCache = { signature, url };
     return url;
@@ -1668,6 +1707,7 @@
     dragMode = null;
     dragSlot = raycast(event);
     dragMoved = 0;
+    rotationVelocity = 0;
     lastInteraction = performance.now();
     renderer.domElement.setPointerCapture?.(event.pointerId);
   }
@@ -1695,7 +1735,9 @@
       return;
     }
     if (dragMode === 'rotate') {
+      const previous = rotation;
       rotation = dragStart.rotation + dx * 0.011;
+      rotationVelocity = (rotation - previous) * 0.62;
       lastInteraction = performance.now();
     }
   }
@@ -1728,7 +1770,7 @@
   renderer.domElement.addEventListener('pointermove', onPointerMove);
   renderer.domElement.addEventListener('pointerup', onPointerUp);
   renderer.domElement.addEventListener('pointercancel', onPointerUp);
-  renderer.domElement.addEventListener('dblclick', () => { rotation = 0; });
+  renderer.domElement.addEventListener('dblclick', () => { rotation = 0; rotationVelocity = 0; });
   renderer.domElement.addEventListener('wheel', (event) => {
     event.preventDefault();
     zoom = Math.min(2.4, Math.max(1, zoom - event.deltaY * 0.0012));
@@ -1753,10 +1795,19 @@
     if (!visible) return;
     if (now - lastRenderAt < 30) return;
     lastRenderAt = now;
-    if (!dragStart && performance.now() - lastInteraction > 2600) {
-      rotation += delta * 0.18;
+    if (!dragStart) {
+      if (performance.now() - lastInteraction > 2600) {
+        rotation += delta * 0.18;
+        rotationVelocity *= 0.88;
+      } else {
+        rotation += rotationVelocity;
+        rotationVelocity *= 0.9;
+      }
     }
-    root.rotation.y = rotation;
+    viewZoom += (zoom - viewZoom) * Math.min(1, delta * 9);
+    viewRotation += (rotation - viewRotation) * Math.min(1, delta * 16);
+    root.rotation.y = viewRotation;
+    applyCamera();
     renderer.render(scene, camera);
   }
 
@@ -1768,7 +1819,7 @@
   window.lukap3d = {
     sync,
     snapshot,
-    resetView() { rotation = 0; zoom = 1; updateCamera(); },
+    resetView() { rotation = 0; zoom = 1; rotationVelocity = 0; updateCamera(true); },
     get rotation() { return rotation; },
     get zoom() { return zoom; }
   };
