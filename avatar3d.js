@@ -365,6 +365,41 @@
     return group;
   }
 
+  function sampleProfile(points, t) {
+    if (t <= points[0][0]) return points[0][1];
+    for (let index = 1; index < points.length; index += 1) {
+      const [t1, value1] = points[index];
+      if (t <= t1) {
+        const [t0, value0] = points[index - 1];
+        const local = (t - t0) / Math.max(0.0001, t1 - t0);
+        return value0 + (value1 - value0) * local;
+      }
+    }
+    return points[points.length - 1][1];
+  }
+
+  function profileLegMesh(side, topY, bottomY, rxPoints, cxPoints, depth, mat) {
+    const height = Math.max(0.05, topY - bottomY);
+    const geometry = new THREE.CylinderGeometry(1, 1, height, 24, 14, true);
+    const positions = geometry.attributes.position;
+    for (let index = 0; index < positions.count; index += 1) {
+      const y = positions.getY(index);
+      const t = (height / 2 - y) / height;
+      const rx = sampleProfile(rxPoints, t);
+      const cx = sampleProfile(cxPoints, t);
+      const nx = positions.getX(index);
+      const nz = positions.getZ(index);
+      positions.setX(index, nx * rx + side * cx);
+      positions.setZ(index, nz * rx * depth);
+    }
+    geometry.computeVertexNormals();
+    const mesh = new THREE.Mesh(geometry, mat);
+    mesh.position.set(0, (topY + bottomY) / 2, 0);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    return mesh;
+  }
+
   function makeSleeve(parent, side, mat, cuffMat, options) {
     const config = options || {};
     const shoulderX = side * 0.205;
@@ -659,9 +694,6 @@
     add(slotGroup, box(0.012, 0.19, 0.012), dark, [0, waistY - 0.15, 0.145]);
     [-1, 1].forEach((side) => {
       add(slotGroup, box(0.012, 0.14, 0.012), crease, [side * 0.155, waistY - 0.14, 0.02], [0, 0, side * 0.1]);
-      const bottomCrease = tube([[side * 0.12, waistY - 0.3, 0.13], [side * 0.08, waistY - 0.4, 0.15], [side * 0.1, waistY - 0.5, 0.14]], 0.0022, crease);
-      bottomCrease.userData.slot = 'bottom';
-      slotGroup.add(bottomCrease);
     });
 
     if (variant === 'skirt') {
@@ -689,31 +721,56 @@
     }
 
     const hemY = variant === 'jorts' ? 0.52 : 0.13;
+    const legTop = Math.min(0.93, waistY + 0.02);
     [-1, 1].forEach((side) => {
-      const x = side * (variant === 'baggy' ? 0.14 : variant === 'parachute' ? 0.15 : variant === 'flare' ? 0.13 : variant === 'jorts' ? 0.13 : 0.086);
+      const x = side * (variant === 'baggy' ? 0.145 : variant === 'parachute' ? 0.16 : variant === 'flare' ? 0.115 : variant === 'jorts' ? 0.13 : 0.086);
       if (variant === 'flare') {
-        add(slotGroup, cylinder(0.1, 0.08, 0.34, 20), main, [x, 0.66, 0]);
-        add(slotGroup, cylinder(0.08, 0.145, 0.36, 20), main, [x, 0.32, 0]);
-        add(slotGroup, torus(0.148, 0.008, 22), dark, [x, 0.135, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, torus(0.094, 0.004, 18), crease, [x, 0.5, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, box(0.012, 0.5, 0.012), hi, [x + side * 0.045, 0.48, 0.045]);
-        add(slotGroup, box(0.006, 0.36, 0.008), crease, [0, 0.32, 0.145]);
+        const leg = profileLegMesh(
+          side, legTop, 0.13,
+          [[0, 0.095], [0.16, 0.102], [0.4, 0.086], [0.56, 0.07], [0.72, 0.1], [1, 0.15]],
+          [[0, 0.082], [0.56, 0.092], [1, 0.135]],
+          0.9,
+          main
+        );
+        slotGroup.add(leg);
+        const hemCx = sampleProfile([[0, 0.082], [0.56, 0.092], [1, 0.135]], 1);
+        add(slotGroup, torus(0.144, 0.008, 22), dark, [side * hemCx, 0.135, 0], [Math.PI / 2, 0, 0], [1, 1, 0.9]);
+        add(slotGroup, torus(0.084, 0.004, 18), crease, [side * 0.092, 0.5, 0], [Math.PI / 2, 0, 0], [1, 1, 0.9]);
+        add(slotGroup, box(0.012, 0.5, 0.012), hi, [side * 0.135, 0.48, 0.045]);
+        add(slotGroup, box(0.006, 0.36, 0.008), crease, [0, 0.32, 0.14]);
+        const flareKnee = tube([[side * 0.074, 0.58, 0.086], [side * 0.09, 0.53, 0.098], [side * 0.104, 0.48, 0.09]], 0.0018, crease);
+        flareKnee.userData.slot = 'bottom';
+        slotGroup.add(flareKnee);
+        const flareHem = tube([[side * 0.112, 0.3, 0.118], [side * 0.128, 0.27, 0.135], [side * 0.12, 0.23, 0.126]], 0.0016, crease);
+        flareHem.userData.slot = 'bottom';
+        slotGroup.add(flareHem);
       } else if (variant === 'baggy') {
-        add(slotGroup, cylinder(0.125, 0.135, 0.79, 20), main, [x, 0.52, 0]);
-        add(slotGroup, torus(0.133, 0.01, 22), dark, [x, 0.17, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, torus(0.118, 0.006, 22), crease, [x, 0.235, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, box(0.09, 0.13, 0.052), main, [side * 0.185, 0.62, 0.04]);
-        add(slotGroup, box(0.095, 0.018, 0.057), dark, [side * 0.185, 0.69, 0.04]);
-        add(slotGroup, box(0.05, 0.02, 0.02), metal, [side * 0.185, 0.69, 0.075]);
-        add(slotGroup, box(0.008, 0.6, 0.008), hi, [x + side * 0.066, 0.5, 0.05]);
+        add(slotGroup, cylinder(0.135, 0.145, 0.79, 20), main, [x, 0.52, 0]);
+        add(slotGroup, torus(0.143, 0.01, 22), dark, [x, 0.17, 0], [Math.PI / 2, 0, 0]);
+        add(slotGroup, torus(0.128, 0.006, 22), crease, [x, 0.235, 0], [Math.PI / 2, 0, 0]);
+        add(slotGroup, torus(0.14, 0.005, 22), crease, [x, 0.205, 0], [Math.PI / 2, 0, 0]);
+        add(slotGroup, box(0.09, 0.13, 0.052), main, [side * 0.195, 0.62, 0.04]);
+        add(slotGroup, box(0.095, 0.018, 0.057), dark, [side * 0.195, 0.69, 0.04]);
+        add(slotGroup, box(0.05, 0.02, 0.02), metal, [side * 0.195, 0.69, 0.075]);
+        add(slotGroup, box(0.008, 0.6, 0.008), hi, [x + side * 0.07, 0.5, 0.05]);
       } else if (variant === 'parachute') {
-        add(slotGroup, cylinder(0.13, 0.15, 0.8, 20), main, [x, 0.52, 0]);
-        add(slotGroup, torus(0.084, 0.014, 20), dark, [x, 0.155, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, torus(0.14, 0.008, 24), crease, [x, 0.23, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, box(0.062, 0.16, 0.052), main, [side * 0.2, 0.56, 0.02]);
-        add(slotGroup, box(0.067, 0.025, 0.057), dark, [side * 0.2, 0.63, 0.025]);
-        add(slotGroup, box(0.045, 0.018, 0.02), metal, [side * 0.2, 0.63, 0.058]);
-        add(slotGroup, box(0.01, 0.15, 0.01), hi, [x + side * 0.04, 0.45, 0.08]);
+        const leg = profileLegMesh(
+          side, legTop, 0.13,
+          [[0, 0.12], [0.28, 0.165], [0.65, 0.16], [0.88, 0.105], [1, 0.085]],
+          [[0, 0.13], [1, 0.17]],
+          1,
+          main
+        );
+        slotGroup.add(leg);
+        add(slotGroup, torus(0.087, 0.014, 20), dark, [side * 0.17, 0.145, 0], [Math.PI / 2, 0, 0]);
+        add(slotGroup, torus(0.15, 0.006, 24), crease, [side * 0.163, 0.28, 0], [Math.PI / 2, 0, 0], [1, 1, 0.95]);
+        add(slotGroup, box(0.062, 0.16, 0.052), main, [side * 0.225, 0.56, 0.02]);
+        add(slotGroup, box(0.067, 0.025, 0.057), dark, [side * 0.225, 0.63, 0.025]);
+        add(slotGroup, box(0.045, 0.018, 0.02), metal, [side * 0.225, 0.63, 0.058]);
+        add(slotGroup, box(0.01, 0.15, 0.01), hi, [side * 0.18, 0.45, 0.08]);
+        const balloonFold = tube([[side * 0.13, 0.46, 0.15], [side * 0.155, 0.42, 0.165], [side * 0.14, 0.37, 0.155]], 0.0018, crease);
+        balloonFold.userData.slot = 'bottom';
+        slotGroup.add(balloonFold);
       } else if (variant === 'track') {
         add(slotGroup, cylinder(0.1, 0.065, 0.78, 20), main, [x, 0.53, 0]);
         add(slotGroup, torus(0.071, 0.012, 20), dark, [x, 0.16, 0], [Math.PI / 2, 0, 0]);
@@ -727,33 +784,35 @@
         add(slotGroup, box(0.105, 0.018, 0.057), dark, [side * 0.185, 0.83, 0.025]);
         [0, 1, 2].forEach((index) => add(slotGroup, box(0.02, 0.03, 0.01), main, [x - 0.04 + index * 0.04, 0.535, 0.08], [0, 0, side * (index % 2 ? 0.2 : -0.2)]));
       } else if (variant === 'wide') {
-        const wx = side * 0.126;
-        add(slotGroup, cylinder(0.098, 0.106, 0.72, 22), main, [wx, 0.56, 0], null, [1, 1, 0.92]);
-        add(slotGroup, cylinder(0.108, 0.11, 0.07, 22), dark, [wx, 0.21, 0], null, [1, 1, 0.92]);
-        add(slotGroup, box(0.008, 0.55, 0.008), hi, [wx + side * 0.058, 0.56, 0.06]);
-        add(slotGroup, box(0.008, 0.55, 0.008), dark, [wx - side * 0.046, 0.56, 0.06]);
+        const wx = side * 0.135;
+        add(slotGroup, cylinder(0.115, 0.128, 0.72, 22), main, [wx, 0.56, 0], null, [1, 1, 0.92]);
+        add(slotGroup, cylinder(0.13, 0.132, 0.07, 22), dark, [wx, 0.21, 0], null, [1, 1, 0.92]);
+        add(slotGroup, box(0.008, 0.55, 0.008), hi, [wx + side * 0.07, 0.56, 0.06]);
+        add(slotGroup, box(0.008, 0.55, 0.008), dark, [wx - side * 0.055, 0.56, 0.06]);
         if (item.cargo) {
-          add(slotGroup, box(0.078, 0.13, 0.048), main, [side * 0.198, 0.6, 0.03]);
-          add(slotGroup, box(0.083, 0.018, 0.052), dark, [side * 0.198, 0.67, 0.03]);
-          add(slotGroup, box(0.05, 0.018, 0.02), metal, [side * 0.198, 0.67, 0.062]);
+          add(slotGroup, box(0.078, 0.13, 0.048), main, [side * 0.22, 0.6, 0.03]);
+          add(slotGroup, box(0.083, 0.018, 0.052), dark, [side * 0.22, 0.67, 0.03]);
+          add(slotGroup, box(0.05, 0.018, 0.02), metal, [side * 0.22, 0.67, 0.062]);
         }
       }
-      const shorts = variant === 'jorts';
-      const narrow = variant === 'track';
-      const wide = variant === 'wide';
-      const foldX = wide ? side * 0.126 : x;
-      const kneeZ = narrow ? 0.066 : variant === 'flare' ? 0.098 : wide ? 0.094 : 0.145;
-      const hemZ = narrow ? 0.062 : variant === 'flare' ? 0.138 : wide ? 0.098 : 0.144;
-      const kneeY = shorts ? 0.74 : wide ? 0.6 : 0.53;
-      const hemYPos = shorts ? 0.585 : wide ? 0.27 : 0.255;
-      const kneeFold = tube([[foldX - side * 0.03, kneeY + 0.03, kneeZ - 0.01], [foldX + side * 0.004, kneeY, kneeZ], [foldX + side * 0.03, kneeY - 0.035, kneeZ - 0.008]], 0.0018, crease);
-      kneeFold.userData.slot = 'bottom';
-      slotGroup.add(kneeFold);
-      const hemFold = tube([[foldX - side * 0.026, hemYPos + 0.035, hemZ - 0.012], [foldX + side * 0.012, hemYPos, hemZ], [foldX - side * 0.006, hemYPos - 0.04, hemZ - 0.01]], 0.0016, crease);
-      hemFold.userData.slot = 'bottom';
-      slotGroup.add(hemFold);
-      add(slotGroup, box(0.03, 0.006, 0.008), crease, [foldX + side * 0.024, hemYPos - 0.052, hemZ - 0.008], [0, 0, side * 0.16]);
-      add(slotGroup, box(0.008, 0.36, 0.008), hi, [x - side * 0.045, 0.72, 0.06]);
+      if (variant !== 'flare' && variant !== 'parachute') {
+        const shorts = variant === 'jorts';
+        const narrow = variant === 'track';
+        const wide = variant === 'wide';
+        const foldX = wide ? side * 0.135 : x;
+        const kneeZ = narrow ? 0.066 : wide ? 0.105 : 0.142;
+        const hemZ = narrow ? 0.062 : wide ? 0.115 : 0.14;
+        const kneeY = shorts ? 0.74 : wide ? 0.6 : 0.53;
+        const hemYPos = shorts ? 0.585 : wide ? 0.27 : 0.255;
+        const kneeFold = tube([[foldX - side * 0.03, kneeY + 0.03, kneeZ - 0.01], [foldX + side * 0.004, kneeY, kneeZ], [foldX + side * 0.03, kneeY - 0.035, kneeZ - 0.008]], 0.0018, crease);
+        kneeFold.userData.slot = 'bottom';
+        slotGroup.add(kneeFold);
+        const hemFold = tube([[foldX - side * 0.026, hemYPos + 0.035, hemZ - 0.012], [foldX + side * 0.012, hemYPos, hemZ], [foldX - side * 0.006, hemYPos - 0.04, hemZ - 0.01]], 0.0016, crease);
+        hemFold.userData.slot = 'bottom';
+        slotGroup.add(hemFold);
+        add(slotGroup, box(0.03, 0.006, 0.008), crease, [foldX + side * 0.024, hemYPos - 0.052, hemZ - 0.008], [0, 0, side * 0.16]);
+        add(slotGroup, box(0.008, 0.36, 0.008), hi, [foldX - side * 0.045, 0.72, 0.06]);
+      }
     });
 
     add(slotGroup, box(0.012, 0.12, 0.012), dark, [0, waistY - 0.02, 0.148]);
