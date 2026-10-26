@@ -1113,12 +1113,6 @@
       <path d="M86 194 C98 186 108 182 120 182 C132 182 142 186 154 194" fill="none" stroke="${skinShadow}" stroke-width="1" opacity=".45"/>
       ${hairMarkup}
       ${textureMarkup}
-      <path d="M92 100 C104 92 136 92 148 100 L148 127 C136 135 104 135 92 127Z" fill="${skin}"/>
-      <path d="M93 101 C105 94 135 94 147 101" fill="none" stroke="${skinShadow}" stroke-width=".8" opacity=".22"/>
-      <path d="M99 119 C103 116 108 116 112 119 M128 119 C132 116 137 116 141 119" stroke="#5b3526" stroke-width="1.6" stroke-linecap="round" fill="none"/>
-      <path d="M118 122 L116 132 L120 133" stroke="${skinShadow}" stroke-width="1.2" fill="none"/>
-      <path d="M111 142 C116 145 124 145 129 142" stroke="#8b4d3b" stroke-width="1.6" stroke-linecap="round" fill="none"/>
-      <path d="M94 154 C103 158 113 160 120 160 C127 160 137 158 146 154" fill="none" stroke="${skinShadow}" stroke-width="1" opacity=".45"/>
     `, id);
   }
 

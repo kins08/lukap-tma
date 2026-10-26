@@ -15,8 +15,10 @@ npm start
 ```bash
 npm run check     # HTML ids, SRI, CSP, ссылки, синтаксис
 npm test          # unit-тесты и smoke-тест сервера
+npm run e2e       # браузерный smoke на 320 и 390 px (Chrome)
 npm run build     # check + test + сборка dist с хешем ассетов
-npm run simulate  # Monte Carlo экономики
+npm run simulate  # 1M спинов: RTP и шансы икон
+npm run simulate:cohort  # когорта игроков на 750 спинов
 ```
 
 `localStorage` имеет версию (`lukap_stage1_v13`), старые сохранения мигрируются в `loadState()`.
@@ -28,6 +30,8 @@ npm run simulate  # Monte Carlo экономики
 - Repository root: корень проекта.
 - Build command: `npm run build`.
 - Build output directory: `dist`.
+- Deploy command: **оставить пустым** — Pages сам публикует `dist`. Если поле обязательно, указать `npx wrangler pages deploy dist --project-name lukap-tma`.
+- Не использовать `npx wrangler deploy`: это команда Worker, для Pages она падает с `Missing entry-point`.
 - Конфиг: `wrangler.toml`, security/cache-заголовки: `_headers`.
 - Ручной деплой после `npx wrangler login`:
 

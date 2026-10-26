@@ -13,6 +13,8 @@ const required = [
   'avatar3d.js',
   'item-art.js',
   'lib/security.js',
+  'lib/outfit.js',
+  'lib/state.js',
   'data/leaderboard-mock.js',
   'config/csp.js',
   'light.css',
@@ -55,9 +57,13 @@ if (!html.includes(sdk)) throw new Error('Telegram WebApp SDK script is missing'
 if (!html.includes('<meta name="lukap-log" content="">')) throw new Error('Client log meta placeholder is missing');
 const dataIndex = html.indexOf('src="data/leaderboard-mock.js');
 const libIndex = html.indexOf('src="lib/security.js');
+const outfitIndex = html.indexOf('src="lib/outfit.js');
+const stateIndex = html.indexOf('src="lib/state.js');
 const appIndex = html.indexOf('src="app.js');
 if (dataIndex < 0 || appIndex < 0 || dataIndex > appIndex) throw new Error('Leaderboard mock must load before app.js');
 if (libIndex < 0 || libIndex > appIndex) throw new Error('Security helpers must load before app.js');
+if (outfitIndex < 0 || outfitIndex > appIndex) throw new Error('Outfit helpers must load before app.js');
+if (stateIndex < 0 || stateIndex > appIndex) throw new Error('State helpers must load before app.js');
 
 const vendorHash = crypto.createHash('sha384').update(fs.readFileSync(path.join(root, 'vendor/three.min.js'))).digest('base64');
 const expectedIntegrity = `sha384-${vendorHash}`;
@@ -81,7 +87,7 @@ if (!server.includes('content="/log"')) throw new Error('server.js does not inje
 const wrangler = read('wrangler.toml');
 if (!wrangler.includes('pages_build_output_dir = "./dist"')) throw new Error('wrangler.toml must publish dist');
 
-for (const file of ['app.js', 'avatar3d.js', 'item-art.js', 'lib/security.js', 'data/leaderboard-mock.js', 'config/csp.js', 'server.js', 'scripts/build-static.js', 'scripts/check-static.js']) {
+for (const file of ['app.js', 'avatar3d.js', 'item-art.js', 'lib/security.js', 'lib/outfit.js', 'lib/state.js', 'data/leaderboard-mock.js', 'config/csp.js', 'server.js', 'scripts/build-static.js', 'scripts/check-static.js', 'scripts/check-catalog.js', 'scripts/e2e-smoke.js', 'scripts/simulate-economy.js']) {
   execFileSync(process.execPath, ['--check', path.join(root, file)], { stdio: 'pipe' });
 }
 

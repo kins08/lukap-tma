@@ -18,6 +18,8 @@ const PUBLIC_FILES = new Map([
   ['/avatar3d.js', { file: 'avatar3d.js', type: 'text/javascript; charset=utf-8', cache: 'public, max-age=31536000, immutable' }],
   ['/item-art.js', { file: 'item-art.js', type: 'text/javascript; charset=utf-8', cache: 'public, max-age=31536000, immutable' }],
   ['/lib/security.js', { file: 'lib/security.js', type: 'text/javascript; charset=utf-8', cache: 'public, max-age=31536000, immutable' }],
+  ['/lib/outfit.js', { file: 'lib/outfit.js', type: 'text/javascript; charset=utf-8', cache: 'public, max-age=31536000, immutable' }],
+  ['/lib/state.js', { file: 'lib/state.js', type: 'text/javascript; charset=utf-8', cache: 'public, max-age=31536000, immutable' }],
   ['/data/leaderboard-mock.js', { file: 'data/leaderboard-mock.js', type: 'text/javascript; charset=utf-8', cache: 'public, max-age=31536000, immutable' }],
   ['/light.css', { file: 'light.css', type: 'text/css; charset=utf-8', cache: 'public, max-age=31536000, immutable' }],
   ['/styles.css', { file: 'styles.css', type: 'text/css; charset=utf-8', cache: 'public, max-age=31536000, immutable' }],

@@ -1545,7 +1545,7 @@ body { color: var(--text); }
 .history-copy small, .leader-copy small, .tab-label,
 .nav-btn, .filter-chip, .collection-chip,
 .segmented button, .text-action {
-  font-size: max(9px, .62em);
+  font-size: max(10px, .62em);
 }
 .slot-name, .item-name, .drop-meta, .item-sheet-meta,
 .history-copy small, .leader-copy small { font-size: 10px; }
@@ -1554,8 +1554,11 @@ body { color: var(--text); }
 .plaque-text b, .rail-hint, .spin-caption, .spin-caption b,
 .bonus-strip b, .bonus-strip small, .bonus-strip em { font-size: 10px; }
 .plaque-text small { font-size: 9px; }
+@media (max-width: 480px) {
+  .stage-tap-hint { display: none; }
+}
 @media (max-width: 370px) {
-  .stage-tap-hint, .stage-mode, .rail-hint { display: none; }
+  .stage-mode, .rail-hint { display: none; }
 }
 
 @media (pointer: coarse) {
@@ -1579,4 +1582,81 @@ body { color: var(--text); }
   }
   .watch-straps { gap: 8px; }
   .slot-card { min-height: 96px; }
+}
+
+/* Wardrobe card fixes */
+.item-equipped {
+  top: 5px;
+  right: 5px;
+  bottom: auto;
+}
+.item-rank {
+  font-size: 8px;
+  padding: 2px 5px;
+}
+.item-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: clip;
+  line-height: 1.3;
+  min-height: 2.6em;
+}
+.filter-scroll {
+  scroll-snap-type: x proximity;
+  padding-right: 16px;
+}
+.filter-chip, .collection-chip { scroll-snap-align: start; }
+.wardrobe-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 12px;
+  text-align: center;
+}
+.wardrobe-empty .slot-empty-note { margin: 0; }
+
+/* Readability pass for secondary UI text */
+.profile-stats span, .profile-actions button, .profile-rank,
+.custom-label, .segmented button, .owned-counter, .progress-card small,
+.wardrobe-hint, .tryon-status, .secondary-btn, .mini-action, .text-action,
+.bonus-method-copy b, .bonus-method-copy span, .rtp-note span, .rtp-note small,
+.wallet-label, .panel-foot, .stage-mode, .plaque-text small {
+  font-size: 10px;
+}
+.item-rank, .item-equipped { font-size: 9px; }
+.reel-card-name { font-size: 10px; }
+.reel-card-set, .reel-card-rarity { font-size: 9px; }
+.segmented.compact button, .watch-dial-tabs button, .hair-texture-tabs button { font-size: 10px; }
+@media (max-width: 480px) {
+  .brand-stage { display: none; }
+}
+@media (pointer: coarse) {
+  .segmented.compact button,
+  .profile-actions button { min-height: 44px; }
+  .avatar-hotspot::before {
+    content: "";
+    position: absolute;
+    inset: -9px;
+    border-radius: 50%;
+  }
+}
+
+.profile-card-copy p,
+.wallet-hero > span, .wallet-hero small,
+.pool-info b, .pool-info small, .reel-topline,
+.spin-odds-title, .spin-odds-title span, .spin-odds-chip, .spin-odds-chip b,
+.item-facts span, .progress-card-top b, .progress-card-top span,
+.item-rank, .item-equipped, .reel-card-set, .reel-card-rarity {
+  font-size: 10px;
+}
+
+#sheetBalance { font-size: 10px; }
+
+.item-rank {
+  background: color-mix(in srgb, var(--rarity-color, #69645d) 70%, #201c17);
 }

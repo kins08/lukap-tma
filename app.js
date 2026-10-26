@@ -283,7 +283,7 @@ function watchStrapLabel(id = state.watchStrap) {
 }
 
 const STORAGE_KEY = 'lukap_stage1_v13';
-const CURRENT_STATE_VERSION = 1;
+const CURRENT_STATE_VERSION = 2;
 const SET_BONUS = { 5: 20, 4: 14, 3: 7, 2: 2 };
 
 const LEADERBOARDS = window.LEADERBOARD_MOCK || { week: [], all: [], friends: [] };
@@ -1796,31 +1796,12 @@ function getItem(id) {
 }
 
 function computeOutfit(equipped = state.equipped) {
-  const items = SLOT_KEYS.map((slot) => getItem(equipped[slot])).filter(Boolean);
-  const base = items.reduce((sum, item) => sum + item.points, 0);
-  const counts = {};
-  items.forEach((item) => {
-    counts[item.collection] = (counts[item.collection] || 0) + 1;
+  return window.LUKAP_OUTFIT.computeOutfit(equipped, {
+    slotKeys: SLOT_KEYS,
+    getItem,
+    setBonus: SET_BONUS,
+    collections: COLLECTIONS
   });
-  let setKey = null;
-  let setCount = 0;
-  Object.entries(counts).forEach(([key, count]) => {
-    if (count > setCount) {
-      setKey = key;
-      setCount = count;
-    }
-  });
-  const setBonus = SET_BONUS[setCount] || 0;
-  return {
-    items,
-    base,
-    setKey,
-    setCount,
-    setBonus,
-    score: Math.min(100, base + setBonus),
-    collection: setKey ? COLLECTIONS[setKey] : null,
-    full: items.length === 5 && setCount === 5
-  };
 }
 
 function createDefaultState() {
@@ -1854,14 +1835,7 @@ function createDefaultState() {
 }
 
 function migrateState(saved) {
-  const source = { ...saved };
-  const version = clampInt(source.version, 0, CURRENT_STATE_VERSION, 0);
-  if (version < 1) {
-    source.version = 1;
-  }
-  // Future schema migrations go here, gated by version.
-  source.version = CURRENT_STATE_VERSION;
-  return source;
+  return window.LUKAP_STATE.migrateState(saved, CURRENT_STATE_VERSION, clampInt);
 }
 
 function loadState() {
@@ -2177,13 +2151,13 @@ function renderSlotRail() {
     const rarity = item ? RARITY_META[item.rarity] : null;
     const selected = state.selectedSlot === slot.id;
     return `
-      <button class="slot-card ${selected ? 'is-selected' : ''} ${item ? '' : 'is-empty'}" data-slot="${slot.id}" data-rarity="${item ? item.rarity : 'none'}" style="--rarity-color:${rarity ? rarity.color : '#cbbfae'}" aria-pressed="${selected}" aria-label="${slot.label}: ${item ? `${itemLabel(item)}, ${rarity.label}` : 'пусто'}">
+      <button class="slot-card ${selected ? 'is-selected' : ''} ${item ? '' : 'is-empty'}" data-slot="${slot.id}" data-rarity="${item ? item.rarity : 'none'}" style="--rarity-color:${rarity ? rarity.color : '#cbbfae'}" aria-pressed="${selected}" aria-label="${slot.label}: ${item ? `${escapeHTML(itemLabel(item))}, ${rarity.label}` : 'пусто'}">
         <span class="slot-top">
           <span class="slot-icon"><svg class="icon"><use href="#${slot.icon}"></use></svg></span>
           <span class="slot-spin-mark" data-spin-slot="${slot.id}" aria-hidden="true"><svg class="icon"><use href="#i-spark"></use></svg></span>
         </span>
         <span class="slot-label">${slot.short}</span>
-        <span class="slot-name">${item ? itemLabel(item) : 'Пусто'}</span>
+        <span class="slot-name">${item ? escapeHTML(itemLabel(item)) : 'Пусто'}</span>
       </button>`;
   }).join('');
 }
@@ -2246,7 +2220,7 @@ function renderSlotSheet() {
       return `
         <button class="slot-item ${active ? 'is-active' : ''}" data-slot-item="${item.id}" data-rarity="${item.rarity}" style="--rarity-color:${rarity.color}">
           <span class="slot-item-art">${itemArt(item)}</span>
-          <span class="slot-item-copy"><b>${itemLabel(item)}</b><small>${collection.name} · ${rarity.label}</small></span>
+          <span class="slot-item-copy"><b>${escapeHTML(itemLabel(item))}</b><small>${escapeHTML(collection.name)} · ${rarity.label}</small></span>
           <span class="slot-item-state">${active ? 'НАДЕТО' : 'ПРИМЕРИТЬ'}</span>
         </button>`;
     }).join('')
@@ -2310,10 +2284,10 @@ function reelCardHTML(item) {
   const collection = COLLECTIONS[item.collection];
   const slot = SLOT_BY_ID[item.slot];
   return `
-    <div class="reel-card" style="--reel-color:${rarity.color};--rarity-color:${rarity.color}" data-rarity="${item.rarity}" data-item-id="${item.id}">
+    <div class="reel-card" style="--reel-color:${rarity.color};--rarity-color:${rarity.color}" data-rarity="${item.rarity}" data-item-id="${item.id}" aria-label="${escapeHTML(itemLabel(item))}, ${escapeHTML(collection.name)}, ${rarity.label}">
       <span class="reel-card-rarity">${rarity.label.toUpperCase()}</span>
       <span class="reel-card-photo">${itemArt(item)}</span>
-      <span class="reel-card-name">${itemLabel(item)}</span>
+      <span class="reel-card-name">${escapeHTML(itemLabel(item))}</span>
       <span class="reel-card-set">${collection.name}</span>
     </div>`;
 }
@@ -2359,13 +2333,7 @@ function animateReel(resultItem) {
 }
 
 function rollRarity() {
-  const roll = randomUnit() * 100;
-  let cursor = 0;
-  for (const [rarityId, chance] of Object.entries(DROP_TABLE)) {
-    cursor += chance;
-    if (roll < cursor) return rarityId;
-  }
-  return 'base';
+  return window.LUKAP_OUTFIT.rollRarity(randomUnit, DROP_TABLE);
 }
 
 function openSpinSheet(slotId = state.selectedSlot) {
@@ -2529,14 +2497,14 @@ function itemCardHTML(item) {
   const isLocked = count === 0;
   const isEquipped = state.equipped[item.slot] === item.id;
   return `
-    <button class="item-card ${isLocked ? 'is-locked' : ''} ${isEquipped ? 'is-equipped' : ''}" data-item-id="${item.id}" data-rarity="${item.rarity}" style="--rarity-color:${rarity.color}; --item-color:${item.palette.main}; --item-accent:${item.palette.accent}" aria-label="${itemLabel(item)}, ${collection.name}, ${rarity.label}${isLocked ? ', не выбит' : ''}">
+    <button class="item-card ${isLocked ? 'is-locked' : ''} ${isEquipped ? 'is-equipped' : ''}" data-item-id="${item.id}" data-rarity="${item.rarity}" style="--rarity-color:${rarity.color}; --item-color:${item.palette.main}; --item-accent:${item.palette.accent}" aria-label="${escapeHTML(itemLabel(item))}, ${escapeHTML(collection.name)}, ${rarity.label}${isLocked ? ', не выбит' : ''}">
       <span class="item-thumb">
         <span class="item-rank">${rarity.label.toUpperCase()}</span>
         ${isLocked ? '<span class="item-lock"><svg class="icon"><use href="#i-lock"></use></svg></span>' : ''}
         ${isEquipped ? '<span class="item-equipped">НАДЕТО</span>' : count > 1 ? `<span class="item-count">×${count}</span>` : ''}
         <span class="item-art">${itemArt(item)}</span>
       </span>
-      <span class="item-name">${itemLabel(item)}</span>
+      <span class="item-name">${escapeHTML(itemLabel(item))}</span>
       <span class="item-meta"><span>${collection.name}</span><em>${formatCoins(item.sell)}</em></span>
     </button>`;
 }
@@ -2591,7 +2559,7 @@ function renderWardrobe() {
   const remaining = filtered.length - visible.length;
   $('wardrobeGrid').innerHTML = visible.length ? visible.map(itemCardHTML).join('') + (remaining > 0
     ? `<button class="wardrobe-more" data-wardrobe-more>ПОКАЗАТЬ ЕЩЁ · ${remaining}</button>`
-    : '') : '<div class="slot-empty-note">В этой подборке пока нет вещей. Смени фильтр или прокрути спин.</div>';
+    : '') : `<div class="wardrobe-empty"><p class="slot-empty-note">Ничего не найдено. Сбрось фильтр или прокрути спин.</p><button class="secondary-btn" data-reset-filters>СБРОСИТЬ ФИЛЬТРЫ</button></div>`;
   $('ownedCounter').textContent = ownedUniqueCount();
   $('catalogCounter').textContent = ITEMS.length;
 }
@@ -2871,7 +2839,7 @@ function renderHistory() {
     return `
       <div class="history-row" data-rarity="${item.rarity}" style="--rarity-color:${rarity.color}">
         <span class="history-art">${itemArt(item)}</span>
-        <span class="history-copy"><b>${itemLabel(item)}</b><small>${collection.name} · ${rarity.label}${entry.duplicate ? ' · дубль' : ''}</small></span>
+        <span class="history-copy"><b>${escapeHTML(itemLabel(item))}</b><small>${escapeHTML(collection.name)} · ${rarity.label}${entry.duplicate ? ' · дубль' : ''}</small></span>
         <em>${formatCoins(item.sell)}</em>
       </div>`;
   }).join('');
@@ -3236,6 +3204,14 @@ function bindEvents() {
   });
 
   $('wardrobeGrid').addEventListener('click', (event) => {
+    if (event.target.closest('[data-reset-filters]')) {
+      state.wardrobeSlot = 'all';
+      state.wardrobeCollection = 'all';
+      wardrobeLimit = 120;
+      saveState();
+      renderWardrobe();
+      return;
+    }
     if (event.target.closest('[data-wardrobe-more]')) {
       wardrobeLimit += 120;
       renderWardrobe();

@@ -193,6 +193,7 @@
   let rotationVelocity = 0;
   let refreshTimer = null;
   let hasBuilt = false;
+  let rebuildCount = 0;
   const activePointers = new Map();
   let pinchStart = null;
   let dragStart = null;
@@ -454,7 +455,7 @@
     return mesh;
   }
 
-  const ARM_ANGLE = 0.38;
+  const ARM_ANGLE = 0.5585;
   const SHOULDER_X = 0.205;
   const SHOULDER_Y = 1.44;
 
@@ -519,17 +520,17 @@
     root.add(headGroup);
 
     [-1, 1].forEach((side) => {
-      const x = side * 0.085;
-      const upper = add(body, cylinder(0.067, 0.055, 0.4), skin, [x, 0.7, 0]);
-      upper.userData.slot = 'bottom';
-      pickables.push(upper);
-      const knee = add(body, sphere(0.06, 14), skin, [x, 0.51, 0], null, [1, 0.85, 1]);
-      knee.userData.slot = 'bottom';
-      pickables.push(knee);
-      const lower = add(body, cylinder(0.055, 0.043, 0.4), skin, [x, 0.3, 0]);
-      lower.userData.slot = 'bottom';
-      pickables.push(lower);
-      const ankle = add(body, sphere(0.045, 12), skinDark, [x, 0.11, 0]);
+      const leg = profileLegMesh(
+        side, 0.94, 0.08,
+        [[0, 0.072], [0.45, 0.054], [0.62, 0.06], [1, 0.04]],
+        [[0, 0.085], [1, 0.085]],
+        1,
+        skin
+      );
+      leg.userData.slot = 'bottom';
+      body.add(leg);
+      pickables.push(leg);
+      const ankle = add(body, sphere(0.043, 12), skinDark, [side * 0.085, 0.09, 0]);
       ankle.userData.slot = 'shoes';
       pickables.push(ankle);
 
@@ -547,32 +548,46 @@
       handGroup.position.set(0, -0.65, 0.015);
       handGroup.scale.x = 1 / bodyWidth;
       arm.add(handGroup);
-      const hand = add(handGroup, sphere(0.058, 14), skin, [0, 0, 0], null, [0.9, 1.1, 0.7]);
+      const hand = add(handGroup, sphere(0.058, 14), skin, [0, 0, 0], null, [0.9, 1.1, 0.5]);
       hand.userData.slot = 'accessory';
       pickables.push(hand);
-      const thumb = add(handGroup, sphere(0.023, 10), skin, [-side * 0.023, 0.02, 0.03]);
+      const thumb = add(handGroup, sphere(0.023, 10), skin, [-side * 0.025, 0.02, 0.035], [0.2, 0, side * 0.45], [0.7, 1.15, 0.55]);
       thumb.userData.slot = 'accessory';
       pickables.push(thumb);
     });
 
-    const hips = add(body, cylinder(0.15, 0.16, 0.14), skinDark, [0, 0.93, 0], null, [1, 1, 0.72]);
-    hips.userData.slot = 'bottom';
-    pickables.push(hips);
-    const torso = add(body, cylinder(0.185, 0.135, 0.49, 20), skin, [0, 1.22, 0], null, [1, 1, 0.68]);
+    const torsoProfile = [
+      new THREE.Vector2(0, 0.86),
+      new THREE.Vector2(0.12, 0.87),
+      new THREE.Vector2(0.158, 0.9),
+      new THREE.Vector2(0.15, 1.0),
+      new THREE.Vector2(0.13, 1.08),
+      new THREE.Vector2(0.145, 1.17),
+      new THREE.Vector2(0.175, 1.32),
+      new THREE.Vector2(0.2, 1.46),
+      new THREE.Vector2(0.14, 1.51),
+      new THREE.Vector2(0.054, 1.56),
+      new THREE.Vector2(0, 1.57)
+    ];
+    const torso = new THREE.Mesh(new THREE.LatheGeometry(torsoProfile, 28), skin);
+    torso.scale.z = 0.7;
+    torso.castShadow = true;
+    torso.receiveShadow = true;
     torso.userData.slot = 'top';
+    body.add(torso);
     pickables.push(torso);
-    const chest = add(body, sphere(0.16, 16), skin, [0, 1.38, 0.015], null, [1.08, 0.62, 0.72]);
-    chest.userData.slot = 'top';
-    pickables.push(chest);
 
     const neck = add(headGroup, cylinder(0.044, 0.05, 0.14, 14), skin, [0, 1.56, 0]);
+    const neckSoft = add(headGroup, sphere(0.06, 16), skin, [0, 1.605, 0], null, [0.92, 0.72, 0.92]);
+    neckSoft.userData.slot = 'hair';
+    pickables.push(neckSoft);
     neck.userData.slot = 'hair';
     pickables.push(neck);
-    const head = add(headGroup, sphere(0.148, 24), skin, [0, 1.73, 0], null, [1, 1.12, 0.94]);
+    const head = add(headGroup, sphere(0.148, 24), skin, [0, 1.73, 0], null, [1, 1.15, 0.94]);
     head.userData.slot = 'hair';
     pickables.push(head);
     [-1, 1].forEach((side) => {
-      const ear = add(headGroup, sphere(0.03, 12), skin, [side * 0.146, 1.72, 0], null, [0.55, 1, 0.7]);
+      const ear = add(headGroup, sphere(0.03, 12), skin, [side * 0.14, 1.72, 0], null, [0.55, 1, 0.7]);
       ear.userData.slot = 'hair';
       pickables.push(ear);
     });
@@ -1252,36 +1267,47 @@
       : hair;
     const fade = material(palette.hair, { roughness: 0.82, transparent: true, opacity: 0.42 });
     if (item.variant === 'crop') {
-      add(slotGroup, sphere(0.158, 30), hair, [0, 1.828, -0.028], null, [1.01, 0.68, 1.0]);
+      add(slotGroup, sphere(0.155, 28), hair, [0, 1.805, -0.02], null, [1.02, 0.56, 1.0]);
+      add(slotGroup, sphere(0.132, 18), hair, [0, 1.772, -0.06], null, [1.0, 0.64, 0.8]);
+      add(slotGroup, sphere(0.1, 16), hair, [0, 1.835, 0.112], [0.12, 0, 0], [1.25, 0.24, 0.42]);
+      const front = [
+        [-0.102, 1.848, 0.088, -0.22, 0.9, 0.52, 0.72],
+        [-0.052, 1.858, 0.106, -0.1, 0.92, 0.56, 0.74],
+        [0.002, 1.862, 0.112, 0.02, 0.94, 0.56, 0.74],
+        [0.056, 1.856, 0.104, 0.14, 0.9, 0.54, 0.72],
+        [0.104, 1.844, 0.086, 0.28, 0.84, 0.5, 0.68]
+      ];
+      front.forEach(([x, y, z, rz, sx, sy, sz], index) => {
+        add(slotGroup, sphere(0.042, 14), index % 2 ? hairHi : hair, [x, y, z], [0.12, 0, rz], [sx, sy, sz]);
+      });
+      [-1, 1].forEach((side) => {
+        add(slotGroup, sphere(0.047, 14), texture === 'curly' ? curlHi : hair, [side * 0.134, 1.795, 0.025], [0.1, 0, side * 0.3], [0.72, 0.9, 0.68]);
+        if (texture !== 'straight') {
+          add(slotGroup, sphere(0.043, 14), hairHi, [side * 0.078, 1.82, -0.108], [0.1, 0, side * 0.2], [0.8, 0.72, 0.6]);
+        }
+      });
       if (texture === 'curly') {
         [
-          [-0.108, 1.824, 0.108, -0.24, 0.8, 0.8, 0.6],
-          [-0.055, 1.832, 0.12, -0.1, 0.85, 0.75, 0.62],
-          [0.004, 1.836, 0.124, 0.02, 0.85, 0.72, 0.6],
-          [0.062, 1.83, 0.118, 0.15, 0.8, 0.74, 0.6],
-          [0.116, 1.818, 0.104, 0.32, 0.7, 0.7, 0.55]
-        ].forEach(([x, y, z, rz, sx, sy, sz], index) => {
-          add(slotGroup, sphere(0.04, 14), index % 2 ? hairHi : hair, [x, y, z], [0.14, 0, rz], [sx, sy, sz]);
+          [-0.064, 1.895, 0.032, -0.18],
+          [-0.018, 1.906, 0.048, -0.04],
+          [0.032, 1.902, 0.042, 0.12],
+          [0.078, 1.888, 0.024, 0.28],
+          [-0.12, 1.846, 0.06, -0.3],
+          [0.124, 1.842, 0.05, 0.3],
+          [-0.04, 1.84, -0.11, 0.12],
+          [0.045, 1.83, -0.115, -0.12],
+          [0, 1.88, -0.1, 0]
+        ].forEach(([x, y, z, rz], index) => {
+          add(slotGroup, sphere(0.038, 14), index % 2 ? curlHi : hair, [x, y, z], [0.1, 0, rz], [0.82, 0.76, 0.7]);
         });
       } else if (texture === 'wavy') {
-        add(slotGroup, sphere(0.09, 18), hair, [0.035, 1.838, 0.095], [0.1, 0, -0.35], [1.2, 0.38, 0.55]);
-        add(slotGroup, sphere(0.065, 16), hair, [-0.115, 1.79, 0.06], [0, 0, -0.25], [0.62, 1.3, 0.55]);
-        add(slotGroup, sphere(0.065, 16), hair, [0.14, 1.77, 0.06], [0, 0, 0.25], [0.62, 1.3, 0.55]);
-        add(slotGroup, sphere(0.06, 14), hairHi, [0.055, 1.855, 0.11], [0.1, 0, -0.3], [1.15, 0.25, 0.5]);
-        add(slotGroup, sphere(0.04, 12), hairHi, [-0.12, 1.79, 0.09], [0, 0, -0.2], [0.55, 0.9, 0.45]);
-        add(slotGroup, sphere(0.045, 14), hair, [-0.065, 1.84, 0.112], [0.1, 0, -0.32], [0.55, 1.0, 0.45]);
-        add(slotGroup, sphere(0.045, 14), hair, [0.095, 1.835, 0.108], [0.1, 0, 0.28], [0.5, 1.05, 0.44]);
-        add(slotGroup, sphere(0.03, 12), hairHi, [-0.072, 1.852, 0.125], [0, 0, -0.28], [0.5, 0.8, 0.38]);
-      } else {
-        add(slotGroup, sphere(0.115, 20), hair, [0, 1.84, 0.08], null, [1.2, 0.24, 0.52]);
-        add(slotGroup, sphere(0.06, 14), hair, [-0.13, 1.79, 0.04], [0, 0, -0.18], [0.45, 0.95, 0.5]);
-        add(slotGroup, sphere(0.06, 14), hair, [0.13, 1.79, 0.04], [0, 0, 0.18], [0.45, 0.95, 0.5]);
-        add(slotGroup, sphere(0.075, 14), hairHi, [-0.03, 1.875, 0.045], [-0.1, 0.1, -0.14], [0.9, 0.14, 0.55]);
+        [-0.045, 0.035].forEach((x, index) => {
+          add(slotGroup, sphere(0.04, 14), hairHi, [x, 1.892 - index * 0.004, 0.055], [0.08, 0, index ? 0.18 : -0.18], [0.9, 0.5, 0.66]);
+        });
       }
-      add(slotGroup, sphere(0.125, 20), hair, [0, 1.775, -0.06], null, [0.9, 0.65, 0.62]);
-      add(slotGroup, box(0.02, 0.055, 0.026), hair, [-0.142, 1.755, 0.06], [0.2, 0, -0.2]);
-      add(slotGroup, box(0.02, 0.055, 0.026), hair, [0.142, 1.755, 0.06], [0.2, 0, 0.2]);
-      add(slotGroup, sphere(0.062, 14), hairHi, [-0.032, 1.905, 0.032], [-0.1, 0.1, -0.16], [0.88, 0.16, 0.62]);
+      add(slotGroup, box(0.02, 0.05, 0.026), hair, [-0.14, 1.76, 0.052], [0.2, 0, -0.2]);
+      add(slotGroup, box(0.02, 0.05, 0.026), hair, [0.14, 1.76, 0.052], [0.2, 0, 0.2]);
+      add(slotGroup, sphere(0.05, 12), hairHi, [-0.028, 1.902, 0.018], [-0.1, 0.1, -0.16], [0.82, 0.28, 0.62]);
     } else if (item.variant === 'flow') {
       add(slotGroup, sphere(0.163, 30), hair, [0, 1.834, -0.038], null, [1.03, 0.74, 1.01]);
       add(slotGroup, sphere(0.125, 22), hair, [0, 1.785, -0.075], null, [1.0, 0.9, 0.62]);
@@ -1686,6 +1712,7 @@
   }
 
   function buildCharacter() {
+    rebuildCount += 1;
     state = API.getState();
     pickables = [];
     while (root.children.length) {
@@ -1971,7 +1998,9 @@
     snapshot,
     resetView() { rotation = 0; zoom = 1; rotationVelocity = 0; updateCamera(true); },
     get rotation() { return rotation; },
-    get zoom() { return zoom; }
+    get zoom() { return zoom; },
+    get rebuilds() { return rebuildCount; },
+    setRotation(value) { rotation = Number(value) || 0; rotationVelocity = 0; updateCamera(); }
   };
   sync(true);
   animate();
