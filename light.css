@@ -207,17 +207,17 @@ body { color: var(--text); }
 .stage-serial { color: rgba(104, 78, 45, 0.62); }
 .stage-mode {
   position: absolute;
-  top: 11px;
+  top: 8px;
   left: 82px;
   z-index: 5;
-  padding: 2px 5px;
+  padding: 3px 6px;
   border: 1px solid rgba(216, 58, 43, 0.22);
   border-radius: 3px;
   background: rgba(255, 253, 248, 0.66);
   color: var(--red);
-  font-size: 5.2px;
+  font-size: 9px;
   font-weight: 800;
-  letter-spacing: .09em;
+  letter-spacing: .07em;
 }
 .stage-halo {
   background:
@@ -263,9 +263,9 @@ body { color: var(--text); }
   border-radius: 4px;
   background: rgba(255, 253, 248, 0.62);
   color: rgba(92, 72, 48, 0.7);
-  font-size: 5.7px;
+  font-size: 8.5px;
   font-weight: 800;
-  letter-spacing: .08em;
+  letter-spacing: .06em;
   white-space: nowrap;
   transition: opacity .25s ease;
 }
@@ -388,7 +388,7 @@ body { color: var(--text); }
   box-shadow: 0 6px 18px rgba(216, 58, 43, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 .slot-icon { background: color-mix(in srgb, var(--rarity-color, #a89a88) 10%, #fffdf8); }
-.slot-label { color: #9d9182; }
+.slot-label { color: #9d9182; letter-spacing: .05em; }
 .slot-name { color: #40372c; }
 .slot-card.is-selected .slot-name { color: #211d18; }
 .slot-card.is-empty .slot-name { color: #b1a595; font-style: italic; }
@@ -1522,4 +1522,61 @@ body { color: var(--text); }
   .avatar-stage.is-refreshing::after,
   .avatar-stage.is-refreshing .avatar-3d,
   .reel-viewport.is-spinning::after { animation: none !important; }
+}
+
+.render-fallback {
+  position: absolute;
+  right: 18px;
+  bottom: 64px;
+  z-index: 4;
+  padding: 5px 8px;
+  border: 1px solid rgba(155, 111, 53, 0.28);
+  border-radius: 6px;
+  background: rgba(255, 253, 248, 0.84);
+  color: #756a5c;
+  font-size: 9px;
+  letter-spacing: .04em;
+}
+.render-fallback[hidden] { display: none; }
+
+/* ACCESSIBILITY: readable labels and touch targets */
+.eyebrow, .panel-note, .slot-label, .slot-name,
+.item-name, .item-meta, .drop-meta, .item-sheet-meta,
+.history-copy small, .leader-copy small, .tab-label,
+.nav-btn, .filter-chip, .collection-chip,
+.segmented button, .text-action {
+  font-size: max(9px, .62em);
+}
+.slot-name, .item-name, .drop-meta, .item-sheet-meta,
+.history-copy small, .leader-copy small { font-size: 10px; }
+
+.live-label, .live-text, .score-status, .set-hint,
+.plaque-text b, .rail-hint, .spin-caption, .spin-caption b,
+.bonus-strip b, .bonus-strip small, .bonus-strip em { font-size: 10px; }
+.plaque-text small { font-size: 9px; }
+@media (max-width: 370px) {
+  .stage-tap-hint, .stage-mode, .rail-hint { display: none; }
+}
+
+@media (pointer: coarse) {
+  .tab, .nav-btn, .filter-chip, .collection-chip,
+  .segmented button, .hair-texture-tabs button,
+  .watch-dial-tabs button, .swatch, .watch-strap-swatch,
+  .icon-btn, .balance-plus, .text-action,
+  .brand, .balance-pill, .primary-btn, .secondary-btn,
+  .mini-action, .zoom-controls button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .zoom-controls button {
+    width: 44px;
+    height: 44px;
+  }
+  .tryon-actions .secondary-btn, .tryon-actions .primary-btn { min-height: 44px; }
+  .swatch, .watch-strap-swatch {
+    width: 44px;
+    height: 44px;
+  }
+  .watch-straps { gap: 8px; }
+  .slot-card { min-height: 96px; }
 }

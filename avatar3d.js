@@ -84,7 +84,34 @@
   const fabricBump = new THREE.CanvasTexture(fabricCanvas);
   fabricBump.wrapS = THREE.RepeatWrapping;
   fabricBump.wrapT = THREE.RepeatWrapping;
-  fabricBump.repeat.set(3, 3);
+  fabricBump.repeat.set(4, 4);
+
+  const fabricNormalCanvas = document.createElement('canvas');
+  fabricNormalCanvas.width = 128;
+  fabricNormalCanvas.height = 128;
+  const fabricNormalContext = fabricNormalCanvas.getContext('2d');
+  const fabricNormalImage = fabricNormalContext.createImageData(128, 128);
+  for (let y = 0; y < 128; y += 1) {
+    for (let x = 0; x < 128; x += 1) {
+      const u = (x / 128) * Math.PI * 14;
+      const v = (y / 128) * Math.PI * 14;
+      const dx = Math.cos(u) * 0.62;
+      const dy = Math.cos(v) * 0.62;
+      const nx = -dx * 0.34;
+      const ny = -dy * 0.34;
+      const length = Math.hypot(nx, ny, 1);
+      const offset = (y * 128 + x) * 4;
+      fabricNormalImage.data[offset] = Math.round((nx / length * 0.5 + 0.5) * 255);
+      fabricNormalImage.data[offset + 1] = Math.round((ny / length * 0.5 + 0.5) * 255);
+      fabricNormalImage.data[offset + 2] = Math.round((1 / length * 0.5 + 0.5) * 255);
+      fabricNormalImage.data[offset + 3] = 255;
+    }
+  }
+  fabricNormalContext.putImageData(fabricNormalImage, 0, 0);
+  const fabricNormal = new THREE.CanvasTexture(fabricNormalCanvas);
+  fabricNormal.wrapS = THREE.RepeatWrapping;
+  fabricNormal.wrapT = THREE.RepeatWrapping;
+  fabricNormal.repeat.set(8, 8);
 
   const BASE_DISTANCE = 3.9;
   const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 30);
@@ -174,6 +201,7 @@
   let dragMoved = 0;
   let lastInteraction = performance.now();
   let snapshotCache = { signature: '', url: '' };
+  let lastGoodSize = { width: 720, height: 900 };
 
   const SKIN_TONES = ['#c68b63', '#8e5a3e', '#e0af88'];
   const WHITE = new THREE.Color(0xffffff);
@@ -202,7 +230,9 @@
       delete params.fabric;
       if (fabric) {
         params.bumpMap = fabricBump;
-        params.bumpScale = params.bumpScale || 0.004;
+        params.bumpScale = params.bumpScale || 0.0015;
+        params.normalMap = fabricNormal;
+        params.normalScale = new THREE.Vector2(0.1, 0.1);
       }
     }
     return new THREE.MeshStandardMaterial(params);
@@ -247,10 +277,23 @@
     return group;
   }
 
+  const geometryCache = new Map();
+  const cachedGeometries = new Set();
+
+  function cachedGeometry(key, create) {
+    let geometry = geometryCache.get(key);
+    if (!geometry) {
+      geometry = create();
+      geometryCache.set(key, geometry);
+      cachedGeometries.add(geometry);
+    }
+    return geometry;
+  }
+
   function clearGroup(group) {
     group.traverse((object) => {
       if (object.isMesh) {
-        if (object.geometry && typeof object.geometry.dispose === 'function') object.geometry.dispose();
+        if (object.geometry && !cachedGeometries.has(object.geometry) && typeof object.geometry.dispose === 'function') object.geometry.dispose();
         if (Array.isArray(object.material)) object.material.forEach((mat) => mat.dispose());
         else if (object.material && typeof object.material.dispose === 'function') object.material.dispose();
       }
@@ -259,25 +302,36 @@
   }
 
   function cylinder(radiusTop, radiusBottom, height, segments = 24) {
-    return new THREE.CylinderGeometry(radiusTop, radiusBottom, height, Math.max(segments, 22), 1);
+    const count = Math.max(segments, 22);
+    return cachedGeometry(`cyl:${radiusTop}:${radiusBottom}:${height}:${count}`, () => new THREE.CylinderGeometry(radiusTop, radiusBottom, height, count, 1));
   }
 
   function sphere(radius, segments = 22) {
     const count = Math.max(segments, 18);
-    return new THREE.SphereGeometry(radius, count, Math.max(12, Math.floor(count * 0.7)));
+    return cachedGeometry(`sph:${radius}:${count}`, () => new THREE.SphereGeometry(radius, count, Math.max(12, Math.floor(count * 0.7))));
+  }
+
+  function sphereGeo(radius, widthSegments, heightSegments) {
+    return cachedGeometry(`sphx:${radius}:${widthSegments}:${heightSegments}`, () => new THREE.SphereGeometry(radius, widthSegments, heightSegments));
   }
 
   function box(width, height, depth) {
-    return new THREE.BoxGeometry(width, height, depth);
+    return cachedGeometry(`box:${width}:${height}:${depth}`, () => new THREE.BoxGeometry(width, height, depth));
+  }
+
+  function cone(radius, height, segments) {
+    return cachedGeometry(`cone:${radius}:${height}:${segments}`, () => new THREE.ConeGeometry(radius, height, segments));
   }
 
   function torus(radius, tube, segments = 26) {
-    return new THREE.TorusGeometry(radius, tube, 10, Math.max(segments, 24));
+    const count = Math.max(segments, 24);
+    return cachedGeometry(`tor:${radius}:${tube}:${count}`, () => new THREE.TorusGeometry(radius, tube, 10, count));
   }
 
   function tube(points, radius, mat) {
     const curve = new THREE.CatmullRomCurve3(points.map((point) => new THREE.Vector3(point[0], point[1], point[2])));
-    return new THREE.Mesh(new THREE.TubeGeometry(curve, 28, radius, 6, false), mat);
+    const key = `tube:${radius}:${points.map((point) => point.map((value) => value.toFixed(4)).join(',')).join(';')}`;
+    return new THREE.Mesh(cachedGeometry(key, () => new THREE.TubeGeometry(curve, 28, radius, 6, false)), mat);
   }
 
   function addBrandMark(parent, item, position, scale, mat) {
@@ -290,28 +344,28 @@
     group.scale.setScalar(s);
     if (mark === 'slash') {
       [-0.012, 0.012].forEach((offset) => {
-        const slash = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.044, 0.004), mat);
+        const slash = new THREE.Mesh(box(0.008, 0.044, 0.004), mat);
         slash.position.set(offset, 0, 0);
         slash.rotation.z = -0.38;
         group.add(slash);
       });
     } else if (mark === 'peak') {
       [-0.024, 0, 0.024].forEach((offset, index) => {
-        const peak = new THREE.Mesh(new THREE.ConeGeometry(0.019 - index * 0.002, 0.032 + index * 0.004, 3), mat);
+        const peak = new THREE.Mesh(cone(0.019 - index * 0.002, 0.032 + index * 0.004, 3), mat);
         peak.position.set(offset, index === 2 ? 0.004 : -0.004, 0);
         peak.scale.z = 0.22;
         group.add(peak);
       });
     } else if (mark === 'orbit') {
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.0035, 8, 24), mat);
+      const ring = new THREE.Mesh(torus(0.02, 0.0035, 24), mat);
       ring.rotation.z = -0.4;
       group.add(ring);
-      const core = new THREE.Mesh(new THREE.SphereGeometry(0.0055, 10, 8), mat);
+      const core = new THREE.Mesh(sphereGeo(0.0055, 10, 8), mat);
       group.add(core);
     } else if (mark === 'sun') {
-      group.add(new THREE.Mesh(new THREE.SphereGeometry(0.012, 12, 10), mat));
+      group.add(new THREE.Mesh(sphereGeo(0.012, 12, 10), mat));
       for (let index = 0; index < 8; index += 1) {
-        const ray = new THREE.Mesh(new THREE.BoxGeometry(0.0028, 0.012, 0.003), mat);
+        const ray = new THREE.Mesh(box(0.0028, 0.012, 0.003), mat);
         const angle = (index / 8) * Math.PI * 2;
         ray.position.set(Math.cos(angle) * 0.021, Math.sin(angle) * 0.021, 0);
         ray.rotation.z = angle - Math.PI / 2;
@@ -319,43 +373,43 @@
       }
     } else if (mark === 'monogram') {
       [[0, 0.024, 0.048, 0.003], [0, -0.024, 0.048, 0.003], [-0.024, 0, 0.003, 0.048], [0.024, 0, 0.003, 0.048]].forEach(([x, y, w, h]) => {
-        const bar = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.004), mat);
+        const bar = new THREE.Mesh(box(w, h, 0.004), mat);
         bar.position.set(x, y, 0);
         group.add(bar);
       });
       [-1, 1].forEach((side) => {
-        const stroke = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.032, 0.005), mat);
+        const stroke = new THREE.Mesh(box(0.006, 0.032, 0.005), mat);
         stroke.position.set(side * 0.008, -0.002, 0.004);
         stroke.rotation.z = side * 0.52;
         group.add(stroke);
       });
     } else if (mark === 'bolt') {
       [-1, 1].forEach((side) => {
-        const stroke = new THREE.Mesh(new THREE.BoxGeometry(0.009, 0.032, 0.005), mat);
+        const stroke = new THREE.Mesh(box(0.009, 0.032, 0.005), mat);
         stroke.position.set(side * 0.007, side * 0.008, 0);
         stroke.rotation.z = side * -0.55;
         group.add(stroke);
       });
     } else if (mark === 'diamond') {
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.0032, 4, 4), mat);
+      const ring = new THREE.Mesh(cachedGeometry('torx:0.02:0.0032:4:4', () => new THREE.TorusGeometry(0.02, 0.0032, 4, 4)), mat);
       ring.rotation.z = Math.PI / 4;
       group.add(ring);
-      group.add(new THREE.Mesh(new THREE.SphereGeometry(0.006, 10, 8), mat));
+      group.add(new THREE.Mesh(sphereGeo(0.006, 10, 8), mat));
     } else if (mark === 'arc') {
-      const arc = new THREE.Mesh(new THREE.TorusGeometry(0.019, 0.0032, 8, 18, Math.PI), mat);
+      const arc = new THREE.Mesh(cachedGeometry('torx:0.019:0.0032:8:18:half', () => new THREE.TorusGeometry(0.019, 0.0032, 8, 18, Math.PI)), mat);
       group.add(arc);
-      const dot = new THREE.Mesh(new THREE.SphereGeometry(0.0045, 10, 8), mat);
+      const dot = new THREE.Mesh(sphereGeo(0.0045, 10, 8), mat);
       dot.position.set(0, -0.019, 0);
       group.add(dot);
     } else if (mark === 'wave') {
       [-0.015, 0, 0.015].forEach((x, index) => {
-        const bead = new THREE.Mesh(new THREE.SphereGeometry(0.006, 10, 8), mat);
+        const bead = new THREE.Mesh(sphereGeo(0.006, 10, 8), mat);
         bead.position.set(x, index === 0 ? 0.006 : index === 1 ? -0.006 : 0.004, 0);
         group.add(bead);
       });
     } else {
       [-1, 1].forEach((side) => {
-        const wing = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.011, 0.004), mat);
+        const wing = new THREE.Mesh(box(0.05, 0.011, 0.004), mat);
         wing.position.set(side * 0.022, side * 0.006, 0);
         wing.rotation.z = side * -0.34;
         group.add(wing);
@@ -400,37 +454,49 @@
     return mesh;
   }
 
+  const ARM_ANGLE = 0.38;
+  const SHOULDER_X = 0.205;
+  const SHOULDER_Y = 1.44;
+
+  function armPivot(parent, side) {
+    const pivot = new THREE.Group();
+    pivot.position.set(side * SHOULDER_X, SHOULDER_Y, 0);
+    pivot.rotation.z = side * ARM_ANGLE;
+    parent.add(pivot);
+    return pivot;
+  }
+
   function makeSleeve(parent, side, mat, cuffMat, options) {
     const config = options || {};
-    const shoulderX = side * 0.205;
     const radius = config.radius || 0.095;
     const length = config.length || 0.5;
+    const pivot = armPivot(parent, side);
     const shoulder = add(
-      parent,
+      pivot,
       sphere(radius * 1.13, 16),
       mat,
-      [shoulderX, 1.44, 0],
+      [0, -0.01, 0],
       null,
       [1.05, 0.9, 1]
     );
     const arm = add(
-      parent,
+      pivot,
       cylinder(radius, radius * 0.82, length, 16),
       mat,
-      [side * 0.22, 1.17, 0]
+      [0, -length / 2 - 0.02, 0]
     );
     const cuff = add(
-      parent,
+      pivot,
       cylinder(radius * 0.84, radius * 0.72, 0.08, 16),
       cuffMat,
-      [side * 0.22, 0.91, 0]
+      [0, -length - 0.03, 0]
     );
     if (config.stripes) {
-      [-0.2, -0.33].forEach((yOffset) => {
-        add(parent, torus(radius * 0.92, 0.012, 18), config.stripeMat, [side * 0.22, 1.17 + yOffset, 0], [Math.PI / 2, 0, 0]);
+      [-0.4, -0.49].forEach((yOffset) => {
+        add(pivot, torus(radius * 0.92, 0.012, 18), config.stripeMat, [0, yOffset, 0], [Math.PI / 2, 0, 0]);
       });
     }
-    return { shoulder, arm, cuff };
+    return { shoulder, arm, cuff, pivot };
   }
 
   function addBody() {
@@ -445,8 +511,12 @@
       roughness: 0.82,
       envMapIntensity: 0.35
     });
+    const bodyWidth = state.body === 'slim' ? 0.93 : state.body === 'strong' ? 1.07 : 1;
     const body = new THREE.Group();
+    body.scale.x = bodyWidth;
     root.add(body);
+    const headGroup = new THREE.Group();
+    root.add(headGroup);
 
     [-1, 1].forEach((side) => {
       const x = side * 0.085;
@@ -463,19 +533,24 @@
       ankle.userData.slot = 'shoes';
       pickables.push(ankle);
 
-      const upperArm = add(body, cylinder(0.052, 0.045, 0.32, 14), skin, [side * 0.21, 1.26, 0]);
+      const arm = armPivot(body, side);
+      const upperArm = add(arm, cylinder(0.052, 0.045, 0.32, 14), skin, [0, -0.16, 0]);
       upperArm.userData.slot = 'top';
       pickables.push(upperArm);
-      const elbow = add(body, sphere(0.05, 12), skin, [side * 0.215, 1.09, 0], null, [1, 0.85, 1]);
+      const elbow = add(arm, sphere(0.05, 12), skin, [0, -0.32, 0], null, [1, 0.85, 1]);
       elbow.userData.slot = 'top';
       pickables.push(elbow);
-      const forearm = add(body, cylinder(0.045, 0.037, 0.29, 14), skin, [side * 0.22, 0.945, 0]);
+      const forearm = add(arm, cylinder(0.045, 0.037, 0.29, 14), skin, [0, -0.465, 0]);
       forearm.userData.slot = 'top';
       pickables.push(forearm);
-      const hand = add(body, sphere(0.058, 14), skin, [side * 0.223, 0.79, 0.015], null, [0.9, 1.1, 0.7]);
+      const handGroup = new THREE.Group();
+      handGroup.position.set(0, -0.65, 0.015);
+      handGroup.scale.x = 1 / bodyWidth;
+      arm.add(handGroup);
+      const hand = add(handGroup, sphere(0.058, 14), skin, [0, 0, 0], null, [0.9, 1.1, 0.7]);
       hand.userData.slot = 'accessory';
       pickables.push(hand);
-      const thumb = add(body, sphere(0.023, 10), skin, [side * 0.2, 0.81, 0.045]);
+      const thumb = add(handGroup, sphere(0.023, 10), skin, [-side * 0.023, 0.02, 0.03]);
       thumb.userData.slot = 'accessory';
       pickables.push(thumb);
     });
@@ -490,34 +565,20 @@
     chest.userData.slot = 'top';
     pickables.push(chest);
 
-    const neck = add(body, cylinder(0.044, 0.05, 0.14, 14), skin, [0, 1.56, 0]);
+    const neck = add(headGroup, cylinder(0.044, 0.05, 0.14, 14), skin, [0, 1.56, 0]);
     neck.userData.slot = 'hair';
     pickables.push(neck);
-    const head = add(body, sphere(0.148, 24), skin, [0, 1.73, 0], null, [1, 1.12, 0.94]);
+    const head = add(headGroup, sphere(0.148, 24), skin, [0, 1.73, 0], null, [1, 1.12, 0.94]);
     head.userData.slot = 'hair';
     pickables.push(head);
     [-1, 1].forEach((side) => {
-      const ear = add(body, sphere(0.03, 12), skin, [side * 0.146, 1.72, 0], null, [0.55, 1, 0.7]);
+      const ear = add(headGroup, sphere(0.03, 12), skin, [side * 0.146, 1.72, 0], null, [0.55, 1, 0.7]);
       ear.userData.slot = 'hair';
       pickables.push(ear);
     });
 
-    const eyeMat = material('#221c17', { roughness: 0.5 });
-    [-1, 1].forEach((side) => {
-      add(body, sphere(0.024, 12), eyeMat, [side * 0.055, 1.76, 0.133], null, [1.15, 0.38, 0.24]);
-      const brow = add(body, box(0.058, 0.012, 0.014), eyeMat, [side * 0.057, 1.805, 0.135], [0, 0, side * 0.1]);
-      brow.userData.slot = 'hair';
-      pickables.push(brow);
-    });
-    const nose = add(body, new THREE.ConeGeometry(0.016, 0.055, 8), skinDark, [0, 1.715, 0.147], [0.35, 0, 0]);
-    nose.userData.slot = 'hair';
-    pickables.push(nose);
-    const mouth = add(body, box(0.052, 0.011, 0.01), material('#6a382f', { roughness: 0.7 }), [0, 1.665, 0.14]);
-    mouth.userData.slot = 'hair';
-    pickables.push(mouth);
-
     if (state.equipped.hair === null) {
-      add(body, sphere(0.151, 20), skin, [0, 1.75, -0.004], null, [1.02, 1.08, 0.97]).userData.slot = 'hair';
+      add(headGroup, sphere(0.151, 20), skin, [0, 1.75, -0.004], null, [1.02, 1.08, 0.97]).userData.slot = 'hair';
     }
     return body;
   }
@@ -591,10 +652,11 @@
     if (variant === 'tee' || variant === 'tank') {
       if (variant === 'tee') {
         [-1, 1].forEach((side) => {
-          add(slotGroup, sphere(radius * 0.45, 16), main, [side * (radius - 0.005), bodyTop - 0.065, 0], null, [1.05, 0.82, 1.02]);
-          add(slotGroup, cylinder(radius * 0.45, radius * 0.34, 0.185, 16), main, [side * (radius + 0.045), bodyTop - 0.135, 0], [0, 0, side * 0.6]);
-          add(slotGroup, sphere(radius * 0.36, 14), main, [side * (radius + 0.105), bodyTop - 0.225, 0], null, [1, 0.72, 1]);
-          add(slotGroup, torus(radius * 0.33, 0.006, 18), trim, [side * (radius + 0.107), bodyTop - 0.235, 0], [Math.PI / 2, 0, side * 0.6], [1, 1, 0.85]);
+          const sleeve = armPivot(slotGroup, side);
+          add(sleeve, sphere(radius * 0.45, 16), main, [0, -0.06, 0], null, [1.05, 0.82, 1.02]);
+          add(sleeve, cylinder(radius * 0.45, radius * 0.34, 0.185, 16), main, [0, -0.14, 0]);
+          add(sleeve, sphere(radius * 0.36, 14), main, [0, -0.235, 0], null, [1, 0.72, 1]);
+          add(sleeve, torus(radius * 0.33, 0.006, 18), trim, [0, -0.245, 0], [Math.PI / 2, 0, 0], [1, 1, 0.85]);
         });
       } else {
         [-1, 1].forEach((side) => {
@@ -608,9 +670,9 @@
       add(slotGroup, box(0.05, 0.016, 0.012), cream, [-0.02, bodyBottom + 0.012, 0.15]);
     } else if (variant === 'longsleeve' || variant === 'shirt') {
       [-1, 1].forEach((side) => {
-        makeSleeve(slotGroup, side, main, trim, { radius: oversize ? 0.105 : slim ? 0.07 : 0.085, length: 0.5 });
+        const sleeve = makeSleeve(slotGroup, side, main, trim, { radius: oversize ? 0.105 : slim ? 0.07 : 0.085, length: 0.5 });
         if (variant === 'shirt') {
-          [0, 1].forEach((index) => add(slotGroup, sphere(0.008, 8), metal, [side * 0.22, 0.9 + index * 0.022, 0.085]));
+          [0, 1].forEach((index) => add(sleeve.pivot, sphere(0.008, 8), metal, [0, -0.48 - index * 0.022, 0.085]));
         }
       });
       if (variant === 'longsleeve') {
@@ -620,8 +682,8 @@
     } else if (variant === 'bomber') {
       [-1, 1].forEach((side) => {
         add(slotGroup, sphere(0.118, 16), main, [side * 0.215, 1.43, 0], null, [1.15, 0.85, 1.1]);
-        makeSleeve(slotGroup, side, main, trim, { radius: 0.115, length: 0.49 });
-        add(slotGroup, torus(0.09, 0.011, 20), trim, [side * 0.22, 0.885, 0], [Math.PI / 2, 0, 0]);
+        const sleeve = makeSleeve(slotGroup, side, main, trim, { radius: 0.115, length: 0.49 });
+        add(sleeve.pivot, torus(0.09, 0.011, 20), trim, [0, -0.51, 0], [Math.PI / 2, 0, 0]);
       });
       add(slotGroup, torus(radius * 0.94, 0.016, 26), trim, [0, bodyBottom, 0], [Math.PI / 2, 0, 0], [1, 1, 0.8]);
       add(slotGroup, torus(0.075, 0.012, 20), trim, [0, bodyTop + 0.045, 0], [Math.PI / 2, 0, 0], [1.1, 1, 0.85]);
@@ -660,7 +722,7 @@
       } else if (item.collection === 'muse') {
         add(slotGroup, sphere(0.026, 12), accent, [0, 1.32, 0.16], null, [1, 0.85, 0.35]);
         add(slotGroup, sphere(0.026, 12), accent, [-0.018, 1.305, 0.16], null, [1, 0.85, 0.35]);
-        add(slotGroup, new THREE.ConeGeometry(0.02, 0.035, 10), accent, [0, 1.285, 0.16], [0, 0, Math.PI]);
+        add(slotGroup, cone(0.02, 0.035, 10), accent, [0, 1.285, 0.16], [0, 0, Math.PI]);
       } else {
         add(slotGroup, box(0.085, 0.055, 0.01), accent, [0, 1.32, 0.16]);
         add(slotGroup, box(0.055, 0.012, 0.012), hi, [0, 1.32, 0.168]);
@@ -952,7 +1014,9 @@
       add(slotGroup, sphere(0.245, 18), main, [0, 1.45, -0.015], null, [1.17, 0.43, 0.9]);
       [-1, 1].forEach((side) => {
         add(slotGroup, sphere(0.128, 16), main, [side * 0.205, 1.445, 0], null, [1.06, 0.68, 1.02]);
-        makeSleeve(slotGroup, side, main, trim, { radius: 0.11, length: 0.48 });
+        const sleeve = makeSleeve(slotGroup, side, main, trim, { radius: 0.11, length: 0.48 });
+        add(sleeve.pivot, torus(0.088, 0.005, 20), trim, [0, -0.5, 0], [Math.PI / 2, 0, 0]);
+        add(sleeve.pivot, sphere(0.011, 10), metal, [0, -0.48, 0.086]);
       });
       const hood = add(slotGroup, torus(0.145, 0.055, 24), main, [0, 1.49, -0.06], [Math.PI / 2, 0, 0], [1.2, 1, 0.9]);
       hood.userData.slot = 'top';
@@ -964,19 +1028,16 @@
       });
       add(slotGroup, box(0.04, 0.04, 0.012), accent, [0.145, 1.33, 0.22]);
       add(slotGroup, box(0.02, 0.06, 0.012), cream, [-0.13, 1.36, 0.21], [0, 0, 0.25]);
-      [-1, 1].forEach((side) => {
-        add(slotGroup, torus(0.088, 0.005, 20), trim, [side * 0.22, 0.888, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, sphere(0.011, 10), metal, [side * 0.222, 0.902, 0.086]);
-      });
       add(slotGroup, torus(0.212, 0.007, 26), trim, [0, 0.955, 0], [Math.PI / 2, 0, 0], [1, 1, 0.78]);
     } else {
       const bodyHeight = racer ? 0.44 : 0.57;
       const topRadius = racer ? 0.235 : 0.245;
       add(slotGroup, cylinder(topRadius, racer ? 0.2 : 0.185, bodyHeight, 22), main, [0, racer ? 1.3 : 1.22, 0], null, [1, 1, racer ? 0.76 : 0.72]);
       add(slotGroup, sphere(0.235, 18), main, [0, racer ? 1.47 : 1.45, -0.005], null, [1.12, 0.43, 0.84]);
+      const sleeveBySide = new Map();
       [-1, 1].forEach((side) => {
         add(slotGroup, sphere(0.108, 16), main, [side * 0.19, 1.46, 0], null, [1.25, 0.72, 1.08]);
-        makeSleeve(slotGroup, side, main, trim, { radius: racer ? 0.105 : 0.103, length: 0.49, stripes: racer, stripeMat: accent });
+        sleeveBySide.set(side, makeSleeve(slotGroup, side, main, trim, { radius: racer ? 0.105 : 0.103, length: 0.49, stripes: racer, stripeMat: accent }));
       });
       if (!racer) {
         add(slotGroup, cylinder(0.19, 0.225, 0.26, 22), main, [0, 0.88, 0], null, [1, 1, 0.78]);
@@ -1006,12 +1067,13 @@
         add(slotGroup, box(0.057, 0.057, 0.012), accent, [0.155, 1.34, 0.17], [0, 0, -0.2]);
         add(slotGroup, box(0.022, 0.022, 0.012), metal, [-0.14, 1.41, 0.175], [0, 0, 0.78]);
         add(slotGroup, box(0.05, 0.032, 0.012), metal, [0, 1.0, 0.175]);
-        add(slotGroup, torus(0.1, 0.012, 18), accent, [-0.22, 1.08, 0], [Math.PI / 2, 0, 0]);
+        add(sleeveBySide.get(-1).pivot, torus(0.1, 0.012, 18), accent, [0, -0.36, 0], [Math.PI / 2, 0, 0]);
         [-1, 1].forEach((side) => {
           add(slotGroup, box(0.115, 0.026, 0.07), hi, [side * 0.16, 1.49, 0], [0, 0, side * 0.04]);
           add(slotGroup, sphere(0.015, 10), metal, [side * 0.15, 1.49, 0.045]);
-          add(slotGroup, box(0.075, 0.016, 0.025), accent, [side * 0.225, 1.03, 0.065]);
-          [0, 1, 2].forEach((index) => add(slotGroup, sphere(0.011, 8), metal, [side * 0.22, 0.92 + index * 0.022, 0.086]));
+          const sleeve = sleeveBySide.get(side).pivot;
+          add(sleeve, box(0.075, 0.016, 0.025), accent, [0, -0.4, 0.065]);
+          [0, 1, 2].forEach((index) => add(sleeve, sphere(0.011, 8), metal, [0, -0.48 - index * 0.022, 0.086]));
         });
         add(slotGroup, box(0.085, 0.012, 0.01), hi, [-0.115, 1.31, 0.172]);
         add(slotGroup, box(0.012, 0.035, 0.01), metal, [-0.12, 1.36, 0.173]);
@@ -1353,7 +1415,7 @@
     } else if (item.variant === 'mohawk') {
       add(slotGroup, sphere(0.15, 18), hair, [0, 1.82, 0], null, [1, 0.5, 1]);
       [0.18, 0.1, 0.02, -0.06, -0.14].forEach((z, index) => {
-        add(slotGroup, new THREE.ConeGeometry(0.055 - index * 0.005, 0.16 + (index % 2) * 0.04, 8), index % 2 ? hairHi : hair, [0, 1.94 - Math.abs(z) * 0.25, z]);
+        add(slotGroup, cone(0.055 - index * 0.005, 0.16 + (index % 2) * 0.04, 8), index % 2 ? hairHi : hair, [0, 1.94 - Math.abs(z) * 0.25, z]);
       });
       add(slotGroup, sphere(0.152, 16), hair, [0, 1.81, -0.03], null, [0.96, 0.35, 0.95]);
     } else {
@@ -1480,7 +1542,7 @@
         const second = tube([[-0.1, 1.47, 0.1], [-0.05, 1.4, 0.15], [0, 1.37, 0.16], [0.05, 1.4, 0.15], [0.1, 1.47, 0.1]], 0.003, metal);
         second.userData.slot = 'accessory';
         slotGroup.add(second);
-        add(slotGroup, new THREE.ConeGeometry(0.023, 0.045, 4), accent, [0, 1.285, 0.17], [0, 0, Math.PI]);
+        add(slotGroup, cone(0.023, 0.045, 4), accent, [0, 1.285, 0.17], [0, 0, Math.PI]);
         add(slotGroup, sphere(0.012, 10), metal, [0, 1.39, 0.165]);
         add(slotGroup, sphere(0.009, 8), accent, [0, 1.27, 0.172]);
       }
@@ -1488,16 +1550,24 @@
     };
 
     const addRings = () => {
+      const hands = new Map();
       [-1, 1].forEach((side) => {
-        const x = side * 0.223;
-        add(slotGroup, torus(0.05, 0.006, 16), metal, [side * 0.22, 0.925, 0.02], [Math.PI / 2, 0, 0]);
+        const hand = new THREE.Group();
+        hand.position.set(0, -0.65, 0);
+        const armScaler = new THREE.Group();
+        armScaler.scale.x = state.body === 'slim' ? 0.93 : state.body === 'strong' ? 1.07 : 1;
+        slotGroup.add(armScaler);
+        hand.scale.x = 1 / armScaler.scale.x;
+        armPivot(armScaler, side).add(hand);
+        hands.set(side, hand);
+        add(hand, torus(0.05, 0.006, 16), metal, [0, 0.135, 0.02], [Math.PI / 2, 0, 0]);
         [0, 1, 2].forEach((index) => {
-          add(slotGroup, torus(0.015 + index * 0.002, 0.004, 14), index === 1 ? accent : metal, [x + side * (index * 0.009 - 0.01), 0.795 - index * 0.012, 0.045], [Math.PI / 2, 0, 0]);
-          add(slotGroup, sphere(0.006, 8), index === 2 ? dark : accent, [x + side * (index * 0.009 - 0.01), 0.795 - index * 0.012, 0.058]);
+          add(hand, torus(0.015 + index * 0.002, 0.004, 14), index === 1 ? accent : metal, [side * (index * 0.009 - 0.01), 0.005 - index * 0.012, 0.045], [Math.PI / 2, 0, 0]);
+          add(hand, sphere(0.006, 8), index === 2 ? dark : accent, [side * (index * 0.009 - 0.01), 0.005 - index * 0.012, 0.058]);
         });
-        add(slotGroup, torus(0.012, 0.0035, 12), accent, [x, 0.82, 0.045], [Math.PI / 2, 0, 0]);
+        add(hand, torus(0.012, 0.0035, 12), accent, [0, 0.03, 0.045], [Math.PI / 2, 0, 0]);
       });
-      addBrandMark(slotGroup, item, [0.223, 0.82, 0.06], 0.28, accent);
+      addBrandMark(hands.get(1), item, [0, 0.03, 0.06], 0.28, accent);
     };
 
     const addEarrings = () => {
@@ -1529,56 +1599,63 @@
       const face = material(dialConfig.face, { roughness: 0.34, metalness: dialConfig.style === 'digital' ? 0.2 : 0.06 });
       const handMat = material(dialConfig.ink, { roughness: 0.38 });
       const second = material(dialConfig.accent, { roughness: 0.35 });
-      const wx = -0.223;
-      const wy = 0.845;
+      const armScaler = new THREE.Group();
+      armScaler.scale.x = state.body === 'slim' ? 0.93 : state.body === 'strong' ? 1.07 : 1;
+      slotGroup.add(armScaler);
+      const pivot = armPivot(armScaler, -1);
+      const watchGroup = new THREE.Group();
+      watchGroup.position.set(0, -0.595, 0);
+      pivot.add(watchGroup);
+      const wx = 0;
+      const wy = 0;
       const wz = 0.045;
-      add(slotGroup, torus(0.052, 0.011, 20), strap, [wx, wy, 0.018], [Math.PI / 2, 0, 0]);
-      add(slotGroup, box(0.062, 0.04, 0.085), strap, [wx, wy + 0.058, 0.034]);
-      add(slotGroup, box(0.062, 0.04, 0.085), strap, [wx, wy - 0.058, 0.034]);
+      add(watchGroup, torus(0.052, 0.011, 20), strap, [wx, wy, 0.018], [Math.PI / 2, 0, 0]);
+      add(watchGroup, box(0.062, 0.04, 0.085), strap, [wx, wy + 0.058, 0.034]);
+      add(watchGroup, box(0.062, 0.04, 0.085), strap, [wx, wy - 0.058, 0.034]);
       if (strapId === 'twotone') {
-        add(slotGroup, box(0.016, 0.038, 0.088), material('#c9a45c', { roughness: 0.32, metalness: 0.6 }), [wx, wy + 0.058, 0.035]);
-        add(slotGroup, box(0.016, 0.038, 0.088), material('#c9a45c', { roughness: 0.32, metalness: 0.6 }), [wx, wy - 0.058, 0.035]);
+        add(watchGroup, box(0.016, 0.038, 0.088), material('#c9a45c', { roughness: 0.32, metalness: 0.6 }), [wx, wy + 0.058, 0.035]);
+        add(watchGroup, box(0.016, 0.038, 0.088), material('#c9a45c', { roughness: 0.32, metalness: 0.6 }), [wx, wy - 0.058, 0.035]);
       } else if (strapId === 'nato') {
         [0.05, 0.064].forEach((offset) => {
-          add(slotGroup, box(0.06, 0.005, 0.087), material('#b9bcc2', { roughness: 0.6 }), [wx, wy + offset, 0.034]);
-          add(slotGroup, box(0.06, 0.005, 0.087), material('#b9bcc2', { roughness: 0.6 }), [wx, wy - offset, 0.034]);
+          add(watchGroup, box(0.06, 0.005, 0.087), material('#b9bcc2', { roughness: 0.6 }), [wx, wy + offset, 0.034]);
+          add(watchGroup, box(0.06, 0.005, 0.087), material('#b9bcc2', { roughness: 0.6 }), [wx, wy - offset, 0.034]);
         });
       }
-      add(slotGroup, box(0.01, 0.008, 0.06), accent, [wx - 0.028, wy + 0.03, 0.075]);
-      add(slotGroup, box(0.01, 0.008, 0.06), accent, [wx - 0.028, wy - 0.03, 0.075]);
-      add(slotGroup, cylinder(0.039, 0.039, 0.016, 24), metal, [wx, wy, 0.078], [Math.PI / 2, 0, 0]);
-      add(slotGroup, new THREE.CircleGeometry(0.033, 24), face, [wx, wy, 0.087]);
-      add(slotGroup, torus(0.039, 0.004, 22), metal, [wx, wy, 0.087]);
-      add(slotGroup, cylinder(0.009, 0.009, 0.014, 10), metal, [wx + 0.042, wy, 0.078], [0, 0, Math.PI / 2]);
-      addBrandMark(slotGroup, item, [wx, wy + 0.019, 0.093], 0.3, second);
+      add(watchGroup, box(0.01, 0.008, 0.06), accent, [wx - 0.028, wy + 0.03, 0.075]);
+      add(watchGroup, box(0.01, 0.008, 0.06), accent, [wx - 0.028, wy - 0.03, 0.075]);
+      add(watchGroup, cylinder(0.039, 0.039, 0.016, 24), metal, [wx, wy, 0.078], [Math.PI / 2, 0, 0]);
+      add(watchGroup, new THREE.CircleGeometry(0.033, 24), face, [wx, wy, 0.087]);
+      add(watchGroup, torus(0.039, 0.004, 22), metal, [wx, wy, 0.087]);
+      add(watchGroup, cylinder(0.009, 0.009, 0.014, 10), metal, [wx + 0.042, wy, 0.078], [0, 0, Math.PI / 2]);
+      addBrandMark(watchGroup, item, [wx, wy + 0.019, 0.093], 0.3, second);
       const style = dialConfig.style;
       if (style === 'digital') {
-        add(slotGroup, box(0.042, 0.02, 0.003), material('#1d2622', { roughness: 0.32 }), [wx, wy + 0.008, 0.09]);
-        add(slotGroup, box(0.032, 0.006, 0.003), material(dialConfig.ink, { roughness: 0.3 }), [wx, wy + 0.007, 0.092]);
-        add(slotGroup, box(0.023, 0.004, 0.003), material(dialConfig.ink, { roughness: 0.3 }), [wx, wy - 0.004, 0.092]);
+        add(watchGroup, box(0.042, 0.02, 0.003), material('#1d2622', { roughness: 0.32 }), [wx, wy + 0.008, 0.09]);
+        add(watchGroup, box(0.032, 0.006, 0.003), material(dialConfig.ink, { roughness: 0.3 }), [wx, wy + 0.007, 0.092]);
+        add(watchGroup, box(0.023, 0.004, 0.003), material(dialConfig.ink, { roughness: 0.3 }), [wx, wy - 0.004, 0.092]);
       } else {
         [0, 1, 2, 3].forEach((index) => {
           const angle = index * Math.PI / 2;
-          add(slotGroup, box(0.004, 0.009, 0.003), second, [wx + Math.sin(angle) * 0.025, wy + Math.cos(angle) * 0.025, 0.09], [0, 0, -angle]);
+          add(watchGroup, box(0.004, 0.009, 0.003), second, [wx + Math.sin(angle) * 0.025, wy + Math.cos(angle) * 0.025, 0.09], [0, 0, -angle]);
         });
         if (style === 'chrono' || style === 'panda') {
-          add(slotGroup, cylinder(0.008, 0.008, 0.002, 16), second, [wx - 0.013, wy + 0.012, 0.09], [Math.PI / 2, 0, 0]);
-          add(slotGroup, cylinder(0.008, 0.008, 0.002, 16), second, [wx + 0.013, wy + 0.012, 0.09], [Math.PI / 2, 0, 0]);
-          add(slotGroup, cylinder(0.007, 0.007, 0.002, 16), second, [wx, wy - 0.013, 0.09], [Math.PI / 2, 0, 0]);
+          add(watchGroup, cylinder(0.008, 0.008, 0.002, 16), second, [wx - 0.013, wy + 0.012, 0.09], [Math.PI / 2, 0, 0]);
+          add(watchGroup, cylinder(0.008, 0.008, 0.002, 16), second, [wx + 0.013, wy + 0.012, 0.09], [Math.PI / 2, 0, 0]);
+          add(watchGroup, cylinder(0.007, 0.007, 0.002, 16), second, [wx, wy - 0.013, 0.09], [Math.PI / 2, 0, 0]);
         } else if (style === 'moon') {
-          add(slotGroup, cylinder(0.008, 0.008, 0.002, 16), material('#e8dcc4', { roughness: 0.5 }), [wx, wy - 0.014, 0.09], [Math.PI / 2, 0, 0]);
+          add(watchGroup, cylinder(0.008, 0.008, 0.002, 16), material('#e8dcc4', { roughness: 0.5 }), [wx, wy - 0.014, 0.09], [Math.PI / 2, 0, 0]);
         } else if (style === 'skeleton') {
-          add(slotGroup, torus(0.009, 0.0018, 12), second, [wx - 0.012, wy - 0.006, 0.09]);
-          add(slotGroup, torus(0.006, 0.0015, 12), second, [wx + 0.012, wy + 0.01, 0.09]);
+          add(watchGroup, torus(0.009, 0.0018, 12), second, [wx - 0.012, wy - 0.006, 0.09]);
+          add(watchGroup, torus(0.006, 0.0015, 12), second, [wx + 0.012, wy + 0.01, 0.09]);
         } else if (style === 'guilloche') {
-          add(slotGroup, torus(0.017, 0.0012, 20), material(dialConfig.accent, { roughness: 0.4 }), [wx, wy, 0.089]);
-          add(slotGroup, torus(0.026, 0.001, 20), material(dialConfig.accent, { roughness: 0.4 }), [wx, wy, 0.089]);
+          add(watchGroup, torus(0.017, 0.0012, 20), material(dialConfig.accent, { roughness: 0.4 }), [wx, wy, 0.089]);
+          add(watchGroup, torus(0.026, 0.001, 20), material(dialConfig.accent, { roughness: 0.4 }), [wx, wy, 0.089]);
         } else if (style === 'gmt') {
-          add(slotGroup, box(0.003, 0.024, 0.003), second, [wx, wy + 0.012, 0.093], [0, 0, -0.5]);
+          add(watchGroup, box(0.003, 0.024, 0.003), second, [wx, wy + 0.012, 0.093], [0, 0, -0.5]);
         }
-        add(slotGroup, box(0.004, 0.021, 0.004), handMat, [wx, wy + 0.01, 0.091], [0, 0, -0.35]);
-        add(slotGroup, box(0.003, 0.029, 0.004), handMat, [wx + 0.008, wy + 0.014, 0.092], [0, 0, -1.1]);
-        add(slotGroup, box(0.002, 0.032, 0.003), second, [wx - 0.006, wy + 0.015, 0.093], [0, 0, -0.7]);
+        add(watchGroup, box(0.004, 0.021, 0.004), handMat, [wx, wy + 0.01, 0.091], [0, 0, -0.35]);
+        add(watchGroup, box(0.003, 0.029, 0.004), handMat, [wx + 0.008, wy + 0.014, 0.092], [0, 0, -1.1]);
+        add(watchGroup, box(0.002, 0.032, 0.003), second, [wx - 0.006, wy + 0.015, 0.093], [0, 0, -0.7]);
       }
     };
 
@@ -1603,10 +1680,6 @@
     } else {
       addGlasses('round');
       addLayeredChain(false);
-      add(slotGroup, torus(0.014, 0.004, 12), metal, [0.223, 0.8, 0.045], [Math.PI / 2, 0, 0]);
-      add(slotGroup, cylinder(0.03, 0.03, 0.018, 16), metal, [-0.225, 0.93, 0.03], [Math.PI / 2, 0, 0]);
-      add(slotGroup, torus(0.035, 0.006, 14), metal, [-0.225, 0.93, 0.03], [Math.PI / 2, 0, 0]);
-      add(slotGroup, torus(0.015, 0.004, 12), accent, [-0.223, 0.78, 0.05], [Math.PI / 2, 0, 0]);
     }
     tagGroup(slotGroup, 'accessory');
     root.add(slotGroup);
@@ -1620,12 +1693,17 @@
       root.remove(child);
       clearGroup(child);
     }
-    const bodyScale = state.body === 'slim' ? 0.94 : state.body === 'strong' ? 1.065 : 1;
-    root.scale.x = bodyScale;
+    const bodyWidth = state.body === 'slim' ? 0.93 : state.body === 'strong' ? 1.07 : 1;
     addBody();
-    addTop(new THREE.Group());
-    addBottom(new THREE.Group());
-    addShoes(new THREE.Group());
+    const topGroup = new THREE.Group();
+    addTop(topGroup);
+    topGroup.scale.x *= bodyWidth;
+    const bottomGroup = new THREE.Group();
+    addBottom(bottomGroup);
+    bottomGroup.scale.x *= bodyWidth;
+    const shoesGroup = new THREE.Group();
+    addShoes(shoesGroup);
+    shoesGroup.scale.x *= bodyWidth;
     addHair(new THREE.Group());
     addAccessory(new THREE.Group());
 
@@ -1661,7 +1739,14 @@
 
   function sync(force) {
     state = API.getState();
-    const nextSignature = JSON.stringify({ equipped: state.equipped, skin: state.skin, body: state.body });
+    const nextSignature = JSON.stringify({
+      equipped: state.equipped,
+      skin: state.skin,
+      body: state.body,
+      hairTexture: state.hairTexture,
+      watchDial: state.watchDial,
+      watchStrap: state.watchStrap
+    });
     if (!force && nextSignature === signature) return;
     signature = nextSignature;
     snapshotCache = { signature: '', url: '' };
@@ -1688,6 +1773,12 @@
 
   function snapshot() {
     if (snapshotCache.signature === signature && snapshotCache.url) return snapshotCache.url;
+    const hiddenStage = stage.clientWidth < 2 || stage.clientHeight < 2;
+    if (hiddenStage) {
+      renderer.setSize(lastGoodSize.width, lastGoodSize.height, false);
+      camera.aspect = lastGoodSize.width / lastGoodSize.height;
+      camera.updateProjectionMatrix();
+    }
     const previousRotation = rotation;
     const previousZoom = zoom;
     const previousViewRotation = viewRotation;
@@ -1707,6 +1798,7 @@
     root.rotation.y = viewRotation;
     applyCamera();
     renderer.render(scene, camera);
+    if (hiddenStage) resize();
     snapshotCache = { signature, url };
     return url;
   }
@@ -1714,6 +1806,7 @@
   function resize() {
     const width = Math.max(1, stage.clientWidth);
     const height = Math.max(1, stage.clientHeight);
+    if (width > 2 && height > 2) lastGoodSize = { width, height };
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
@@ -1844,16 +1937,14 @@
 
   const lookScreen = document.querySelector('.screen[data-screen="look"]');
   const dropModal = document.getElementById('dropModal');
-  let lastRenderAt = 0;
-  function animate(now) {
+  function animate() {
     requestAnimationFrame(animate);
-    const delta = Math.min(clock.getDelta(), 0.05);
     const visible = Boolean(lookScreen && lookScreen.classList.contains('is-active'))
+      && !document.hidden
       && !document.querySelector('.sheet.is-open')
       && !(dropModal && dropModal.classList.contains('is-open'));
     if (!visible) return;
-    if (now - lastRenderAt < 30) return;
-    lastRenderAt = now;
+    const delta = Math.min(clock.getDelta(), 0.05);
     if (!dragStart) {
       if (performance.now() - lastInteraction > 2600) {
         rotation += delta * 0.18;

@@ -1,12 +1,16 @@
 {
   "name": "lukap-tma",
-  "version": "20.0.0",
+  "version": "21.0.0",
   "private": true,
   "description": "LUKAP — Telegram Mini App fashion-gacha prototype",
   "scripts": {
+    "prestart": "npm run build",
     "start": "node server.js",
     "check": "node scripts/check-static.js",
+    "prebuild": "npm test",
     "build": "node scripts/check-static.js && node scripts/build-static.js",
+    "test": "node --test tests/*.test.js",
+    "simulate": "node scripts/economy-sim.js",
     "deploy:cf": "npm run build && npx wrangler pages deploy dist --project-name lukap-tma"
   },
   "engines": {

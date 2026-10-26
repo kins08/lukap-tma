@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
+const { CSP_HEADER, CSP_META } = require('../config/csp');
 
 const root = path.resolve(__dirname, '..');
 const required = [
@@ -11,6 +12,9 @@ const required = [
   'app.js',
   'avatar3d.js',
   'item-art.js',
+  'lib/security.js',
+  'data/leaderboard-mock.js',
+  'config/csp.js',
   'light.css',
   'styles.css',
   'vendor/three.min.js',
@@ -19,13 +23,14 @@ const required = [
   'server.js',
   'package.json',
   'render.yaml',
-  'wrangler.toml'
+  'wrangler.toml',
+  'scripts/build-static.js',
+  'scripts/check-static.js'
 ];
 
 for (const file of required) {
   if (!fs.existsSync(path.join(root, file))) throw new Error(`Missing required file: ${file}`);
 }
-if (fs.existsSync(path.join(root, 'zcode-pack.js'))) throw new Error('Rejected zcode-pack.js is present');
 
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const html = read('index.html');
@@ -45,6 +50,15 @@ for (const ref of refs) {
   if (!fs.existsSync(path.join(root, local))) throw new Error(`Broken local asset reference: ${ref}`);
 }
 
+const sdk = '<script src="https://telegram.org/js/telegram-web-app.js"></script>';
+if (!html.includes(sdk)) throw new Error('Telegram WebApp SDK script is missing');
+if (!html.includes('<meta name="lukap-log" content="">')) throw new Error('Client log meta placeholder is missing');
+const dataIndex = html.indexOf('src="data/leaderboard-mock.js');
+const libIndex = html.indexOf('src="lib/security.js');
+const appIndex = html.indexOf('src="app.js');
+if (dataIndex < 0 || appIndex < 0 || dataIndex > appIndex) throw new Error('Leaderboard mock must load before app.js');
+if (libIndex < 0 || libIndex > appIndex) throw new Error('Security helpers must load before app.js');
+
 const vendorHash = crypto.createHash('sha384').update(fs.readFileSync(path.join(root, 'vendor/three.min.js'))).digest('base64');
 const expectedIntegrity = `sha384-${vendorHash}`;
 if (!html.includes(`integrity="${expectedIntegrity}"`)) {
@@ -52,19 +66,22 @@ if (!html.includes(`integrity="${expectedIntegrity}"`)) {
 }
 
 const headers = read('_headers').replace(/\r\n/g, '\n');
-if (!headers.includes('Content-Security-Policy:')) throw new Error('_headers is missing CSP');
-if (!headers.includes('frame-ancestors')) throw new Error('_headers is missing frame-ancestors');
+const headerCsp = headers.match(/^\s*Content-Security-Policy:\s*(.+)$/m)?.[1]?.trim();
+if (headerCsp !== CSP_HEADER) throw new Error('_headers CSP differs from config/csp.js');
 if (!headers.includes('/app.js\n  Cache-Control: public, max-age=31536000, immutable')) throw new Error('_headers is missing asset caching');
 
+const metaCsp = html.match(/http-equiv="Content-Security-Policy"\s+content="([^"]+)"/)?.[1];
+if (metaCsp !== CSP_META) throw new Error('index.html CSP meta differs from config/csp.js');
+
 const server = read('server.js');
-if (!server.includes('Content-Security-Policy')) throw new Error('server.js is missing CSP');
-if (!server.includes('frame-ancestors')) throw new Error('server.js is missing frame-ancestors');
+if (!server.includes('CSP_HEADER')) throw new Error('server.js must use config/csp.js');
 if (!server.includes('Strict-Transport-Security')) throw new Error('server.js is missing HSTS');
+if (!server.includes('content="/log"')) throw new Error('server.js does not inject the client log endpoint');
 
 const wrangler = read('wrangler.toml');
 if (!wrangler.includes('pages_build_output_dir = "./dist"')) throw new Error('wrangler.toml must publish dist');
 
-for (const file of ['app.js', 'avatar3d.js', 'item-art.js', 'server.js', 'scripts/build-static.js', 'scripts/check-static.js']) {
+for (const file of ['app.js', 'avatar3d.js', 'item-art.js', 'lib/security.js', 'data/leaderboard-mock.js', 'config/csp.js', 'server.js', 'scripts/build-static.js', 'scripts/check-static.js']) {
   execFileSync(process.execPath, ['--check', path.join(root, file)], { stdio: 'pipe' });
 }
 

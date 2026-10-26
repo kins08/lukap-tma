@@ -5,70 +5,52 @@ const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const BLOCKED_BRAND_NAMES = ['ABIBAS', 'NIKA', 'PYMA', 'REBOK', 'VANZ', 'STOME ISLAND', 'NORTH FASE', 'LAKOSTE', 'MONCLAR', 'NEW BALANSE'];
 const BLOCKED_BRAND_RE = new RegExp(BLOCKED_BRAND_NAMES.map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'i');
-const SAFE_COLOR_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
+const {
+  safeText,
+  safeColor,
+  safeId,
+  clampInt,
+  escapeHTML,
+  randomUnit,
+  ownValue,
+  deepFreeze
+} = window.LUKAP_SECURITY;
 
-function safeText(value, maxLength = 80) {
-  return String(value ?? '').replace(/[<>&"'`]/g, '').trim().slice(0, maxLength);
-}
-
-function safeColor(value, fallback = '#34343a') {
-  return typeof value === 'string' && SAFE_COLOR_RE.test(value) ? value : fallback;
-}
-
-function safeId(value) {
-  const id = String(value ?? '').replace(/[^a-zA-Z0-9_-]/g, '-').replace(/-+/g, '-').slice(0, 96);
-  return id || 'item';
-}
-
-function clampInt(value, min, max, fallback = min) {
-  const number = Number(value);
-  return Number.isFinite(number) ? Math.min(max, Math.max(min, Math.trunc(number))) : fallback;
-}
-
-function escapeHTML(value) {
-  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  }[character]));
-}
-
-function randomUnit() {
+const CLIENT_DIAGNOSTICS = [];
+const LOG_ENDPOINT = document.querySelector('meta[name="lukap-log"]')?.content || '';
+const REPORTED_MESSAGES = new Set();
+function recordDiagnostic(kind, value) {
+  const message = String(value ?? '').slice(0, 300);
+  if (CLIENT_DIAGNOSTICS.length >= 20) CLIENT_DIAGNOSTICS.shift();
+  CLIENT_DIAGNOSTICS.push({ kind, message, at: Date.now() });
+  if (!LOG_ENDPOINT || !navigator.sendBeacon || REPORTED_MESSAGES.has(message)) return;
+  REPORTED_MESSAGES.add(message);
   try {
-    const values = new Uint32Array(1);
-    crypto.getRandomValues(values);
-    return values[0] / 4294967296;
+    navigator.sendBeacon(LOG_ENDPOINT, new Blob([JSON.stringify({ kind, message })], { type: 'application/json' }));
   } catch {
-    return Math.random();
+    // Logging must never break the app.
   }
 }
-
-function ownValue(object, key) {
-  return object && Object.prototype.hasOwnProperty.call(object, key) ? object[key] : undefined;
-}
-
-function deepFreeze(value) {
-  if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
-  Object.freeze(value);
-  Object.values(value).forEach(deepFreeze);
-  return value;
-}
+window.addEventListener('error', (event) => recordDiagnostic('error', event.message));
+window.addEventListener('unhandledrejection', (event) => recordDiagnostic('rejection', event.reason?.message || event.reason));
 
 const SLOTS = [
-  { id: 'hair', label: 'Волосы', icon: 'i-hair' },
-  { id: 'top', label: 'Верх', icon: 'i-top' },
-  { id: 'bottom', label: 'Низ', icon: 'i-bottom' },
-  { id: 'shoes', label: 'Обувь', icon: 'i-shoe' },
-  { id: 'accessory', label: 'Аксессуар', icon: 'i-acc' }
+  { id: 'hair', label: 'Волосы', short: 'Волосы', icon: 'i-hair' },
+  { id: 'top', label: 'Верх', short: 'Верх', icon: 'i-top' },
+  { id: 'bottom', label: 'Низ', short: 'Низ', icon: 'i-bottom' },
+  { id: 'shoes', label: 'Обувь', short: 'Обувь', icon: 'i-shoe' },
+  { id: 'accessory', label: 'Аксессуар', short: 'Аксесс.', icon: 'i-acc' }
 ];
 const SLOT_KEYS = SLOTS.map((slot) => slot.id);
 const SLOT_BY_ID = Object.fromEntries(SLOTS.map((slot) => [slot.id, slot]));
 
 const RARITIES = [
-  { id: 'base', label: 'База', color: '#69645D', points: 6, sell: 50 },
-  { id: 'norm', label: 'Норма', color: '#14834A', points: 8, sell: 100 },
-  { id: 'trend', label: 'Тренд', color: '#6C8300', points: 10, sell: 180 },
-  { id: 'couture', label: 'Кутюр', color: '#C95300', points: 12, sell: 600 },
-  { id: 'legend', label: 'Легенда', color: '#986000', points: 14, sell: 2000 },
-  { id: 'icon', label: 'Икона', color: '#C92318', points: 16, sell: 30000 }
+  { id: 'base', label: 'База', color: '#69645D', points: 6, sell: 45 },
+  { id: 'norm', label: 'Норма', color: '#14834A', points: 8, sell: 90 },
+  { id: 'trend', label: 'Тренд', color: '#6C8300', points: 10, sell: 170 },
+  { id: 'couture', label: 'Кутюр', color: '#C95300', points: 12, sell: 550 },
+  { id: 'legend', label: 'Легенда', color: '#986000', points: 14, sell: 1800 },
+  { id: 'icon', label: 'Икона', color: '#C92318', points: 16, sell: 28000 }
 ];
 const RARITY_META = Object.fromEntries(RARITIES.map((rarity) => [rarity.id, rarity]));
 const RARITY_ORDER = Object.fromEntries(RARITIES.map((rarity, index) => [rarity.id, index]));
@@ -162,6 +144,8 @@ const COLLECTIONS = {
   }
 };
 
+// Sell-all EV = 94.28 per 100-coin spin. Monte Carlo (1000 users, 750 spins max):
+// duplicate-only RTP 3.31%, average final wallet 50, 0% of collectors in profit.
 const DROP_TABLE = { base: 60.62, norm: 27, trend: 10, couture: 2, legend: 0.35, icon: 0.03 };
 const SPIN_COST = 100;
 
@@ -299,34 +283,10 @@ function watchStrapLabel(id = state.watchStrap) {
 }
 
 const STORAGE_KEY = 'lukap_stage1_v13';
+const CURRENT_STATE_VERSION = 1;
 const SET_BONUS = { 5: 20, 4: 14, 3: 7, 2: 2 };
 
-const LEADERBOARDS = {
-  week: [
-    { name: '@mira', title: 'ПОЛНАЯ ТИШИНА', score: 100, set: 'NOIRÉ', pips: ['icon', 'icon', 'icon', 'icon', 'icon'], accent: '#e9bd74' },
-    { name: '@kolt', title: 'НАСЛЕДИЕ', score: 98, set: 'OLD MANOR', pips: ['icon', 'icon', 'icon', 'legend', 'legend'], accent: '#c9a45c' },
-    { name: '@zero', title: 'КОД УЛИЦ', score: 96, set: 'STREET CØDE', pips: ['icon', 'icon', 'legend', 'legend', 'legend'], accent: '#ff5b4f' },
-    { name: '@nord', title: 'ПОЧТИ ИДЕАЛЬНО', score: 91, set: 'NOIRÉ', pips: ['icon', 'legend', 'legend', 'legend', 'legend'], accent: '#b8bcc5' },
-    { name: '@aya', title: 'СИЛЬНЫЙ ЛУК', score: 88, set: 'OLD MANOR', pips: ['legend', 'legend', 'legend', 'couture', 'couture'], accent: '#d6b574' },
-    { name: '@vlad', title: 'КОД УЛИЦ', score: 85, set: 'STREET CØDE', pips: ['legend', 'couture', 'couture', 'couture', 'couture'], accent: '#ff756b' },
-    { name: '@ten', title: 'ЕСТЬ ХАРАКТЕР', score: 82, set: 'NOIRÉ', pips: ['couture', 'couture', 'couture', 'couture', 'legend'], accent: '#73737d' },
-    { name: '@sonya', title: 'КОД УЛИЦ', score: 80, set: 'STREET CØDE', pips: ['couture', 'couture', 'couture', 'couture', 'couture'], accent: '#9f9aa3' }
-  ],
-  all: [
-    { name: '@mira', title: 'ПОЛНАЯ ТИШИНА', score: 100, set: 'NOIRÉ', pips: ['icon', 'icon', 'icon', 'icon', 'icon'], accent: '#e9bd74' },
-    { name: '@zero', title: 'КОД УЛИЦ', score: 99, set: 'STREET CØDE', pips: ['icon', 'icon', 'legend', 'legend', 'legend'], accent: '#ff5b4f' },
-    { name: '@kolt', title: 'НАСЛЕДИЕ', score: 97, set: 'OLD MANOR', pips: ['icon', 'icon', 'icon', 'legend', 'legend'], accent: '#c9a45c' },
-    { name: '@aya', title: 'СИЛЬНЫЙ ЛУК', score: 93, set: 'OLD MANOR', pips: ['legend', 'legend', 'legend', 'couture', 'couture'], accent: '#d6b574' },
-    { name: '@nord', title: 'ПОЧТИ ИДЕАЛЬНО', score: 91, set: 'NOIRÉ', pips: ['icon', 'legend', 'legend', 'legend', 'legend'], accent: '#b8bcc5' },
-    { name: '@vlad', title: 'КОД УЛИЦ', score: 87, set: 'STREET CØDE', pips: ['legend', 'couture', 'couture', 'couture', 'couture'], accent: '#ff756b' },
-    { name: '@ten', title: 'ЕСТЬ ХАРАКТЕР', score: 83, set: 'NOIRÉ', pips: ['couture', 'couture', 'couture', 'couture', 'legend'], accent: '#73737d' }
-  ],
-  friends: [
-    { name: '@mira', title: 'ПОЛНАЯ ТИШИНА', score: 100, set: 'NOIRÉ', pips: ['icon', 'icon', 'icon', 'icon', 'icon'], accent: '#e9bd74' },
-    { name: '@nord', title: 'ПОЧТИ ИДЕАЛЬНО', score: 91, set: 'NOIRÉ', pips: ['icon', 'legend', 'legend', 'legend', 'legend'], accent: '#b8bcc5' },
-    { name: '@aya', title: 'СИЛЬНЫЙ ЛУК', score: 88, set: 'OLD MANOR', pips: ['legend', 'legend', 'legend', 'couture', 'couture'], accent: '#d6b574' }
-  ]
-};
+const LEADERBOARDS = window.LEADERBOARD_MOCK || { week: [], all: [], friends: [] };
 
 function shade(hex, percent) {
   const value = hex.replace('#', '');
@@ -1811,6 +1771,26 @@ deepFreeze(LEADERBOARDS);
 
 const ITEM_BY_ID = Object.fromEntries(ITEMS.map((item) => [item.id, item]));
 
+function buildCatalogCoverage() {
+  const table = {};
+  const missing = [];
+  SLOTS.forEach((slot) => {
+    table[slot.id] = {};
+    Object.keys(DROP_TABLE).forEach((rarity) => {
+      const count = ITEMS.filter((item) => item.slot === slot.id && item.rarity === rarity).length;
+      table[slot.id][rarity] = count;
+      if (!count) missing.push(`${slot.id}/${rarity}`);
+    });
+  });
+  return { table, missing };
+}
+
+const CATALOG_COVERAGE = buildCatalogCoverage();
+if (CATALOG_COVERAGE.missing.length) {
+  console.error('[LUKAP] catalog coverage gaps:', CATALOG_COVERAGE.missing);
+}
+window.__lukapCoverage = CATALOG_COVERAGE;
+
 function getItem(id) {
   return ownValue(ITEM_BY_ID, id);
 }
@@ -1849,13 +1829,14 @@ function createDefaultState() {
     inventory[id] = 1;
   });
   const state = {
+    version: CURRENT_STATE_VERSION,
     wallet: 10000,
     inventory,
     equipped: { ...DEFAULT_EQUIPPED },
     selectedSlot: 'accessory',
     skin: 0,
     body: 'average',
-    hairTexture: 'straight',
+    hairTexture: 'curly',
     watchDial: 'classic',
     watchStrap: 'leather',
     sound: true,
@@ -1870,6 +1851,17 @@ function createDefaultState() {
   };
   state.bestScore = computeOutfit(state.equipped).score;
   return state;
+}
+
+function migrateState(saved) {
+  const source = { ...saved };
+  const version = clampInt(source.version, 0, CURRENT_STATE_VERSION, 0);
+  if (version < 1) {
+    source.version = 1;
+  }
+  // Future schema migrations go here, gated by version.
+  source.version = CURRENT_STATE_VERSION;
+  return source;
 }
 
 function loadState() {
@@ -1892,8 +1884,10 @@ function loadState() {
     return defaults;
   }
   if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return defaults;
+  saved = migrateState(saved);
 
   const state = { ...defaults };
+  state.version = CURRENT_STATE_VERSION;
   state.wallet = clampInt(saved.wallet, 0, 1_000_000_000, defaults.wallet);
   state.bestScore = clampInt(saved.bestScore, 0, 100, defaults.bestScore);
   state.sold = clampInt(saved.sold, 0, 10_000_000, 0);
@@ -2126,7 +2120,10 @@ function updateLook() {
   $('plaqueSet').textContent = outfit.collection ? outfit.collection.name : 'МИКС';
   $('plaqueItem').textContent = selectedItem ? `${selectedItem.name.toUpperCase()} · ${RARITY_META[selectedItem.rarity].label.toUpperCase()}` : 'ПУСТО · БАЗОВЫЙ СЛОЙ';
 
-  if (outfit.score > state.bestScore) state.bestScore = outfit.score;
+  if (outfit.score > state.bestScore) {
+    state.bestScore = outfit.score;
+    saveState();
+  }
   $('statBest').textContent = Math.max(state.bestScore, outfit.score);
   $('statOwned').textContent = ownedUniqueCount();
   $('statSets').textContent = outfit.full ? '1' : '0';
@@ -2185,7 +2182,7 @@ function renderSlotRail() {
           <span class="slot-icon"><svg class="icon"><use href="#${slot.icon}"></use></svg></span>
           <span class="slot-spin-mark" data-spin-slot="${slot.id}" aria-hidden="true"><svg class="icon"><use href="#i-spark"></use></svg></span>
         </span>
-        <span class="slot-label">${slot.label}</span>
+        <span class="slot-label">${slot.short}</span>
         <span class="slot-name">${item ? itemLabel(item) : 'Пусто'}</span>
       </button>`;
   }).join('');
@@ -2389,10 +2386,15 @@ function performSpin() {
     return;
   }
 
-  state.wallet -= SPIN_COST;
   const rarityId = rollRarity();
   const pool = ITEMS.filter((item) => item.slot === state.selectedSlot && item.rarity === rarityId);
-  const item = pool[Math.floor(randomUnit() * pool.length)] || randomItemForSlot(state.selectedSlot);
+  if (!pool.length) {
+    console.error('[LUKAP] empty drop pool', { slot: state.selectedSlot, rarity: rarityId });
+    showToast('Для этого слота пока нет вещей такой редкости');
+    return;
+  }
+  state.wallet -= SPIN_COST;
+  const item = pool[Math.floor(randomUnit() * pool.length)];
   const hadDuplicate = ownedCount(item) > 0;
   state.inventory[item.id] = ownedCount(item) + 1;
   state.history.unshift({ id: item.id, duplicate: hadDuplicate, at: Date.now() });
@@ -2587,9 +2589,9 @@ function renderWardrobe() {
 
   const visible = filtered.slice(0, wardrobeLimit);
   const remaining = filtered.length - visible.length;
-  $('wardrobeGrid').innerHTML = visible.map(itemCardHTML).join('') + (remaining > 0
+  $('wardrobeGrid').innerHTML = visible.length ? visible.map(itemCardHTML).join('') + (remaining > 0
     ? `<button class="wardrobe-more" data-wardrobe-more>ПОКАЗАТЬ ЕЩЁ · ${remaining}</button>`
-    : '');
+    : '') : '<div class="slot-empty-note">В этой подборке пока нет вещей. Смени фильтр или прокрути спин.</div>';
   $('ownedCounter').textContent = ownedUniqueCount();
   $('catalogCounter').textContent = ITEMS.length;
 }
@@ -2678,16 +2680,30 @@ function initials(name) {
   return escapeHTML(String(name).replace('@', '').slice(0, 2).toUpperCase());
 }
 
+function telegramUser() {
+  const user = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe
+    ? window.Telegram.WebApp.initDataUnsafe.user
+    : null;
+  if (!user || typeof user !== 'object') return { name: 'Гость', handle: 'Гость' };
+  const display = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+  const username = typeof user.username === 'string' ? user.username.trim() : '';
+  const safeName = safeText(display || username || 'Гость', 40) || 'Гость';
+  const safeHandle = username ? `@${safeText(username, 32)}` : safeName;
+  return { name: safeName, handle: safeHandle };
+}
+
 function currentUserEntry() {
   const outfit = computeOutfit();
+  const user = telegramUser();
   return {
-    name: '@lukap_user',
+    name: user.handle,
     title: outfit.full ? outfit.collection.title : outfit.score >= 90 ? 'ПОЧТИ ИДЕАЛЬНО' : outfit.score >= 80 ? 'СИЛЬНЫЙ ЛУК' : 'ЕСТЬ ХАРАКТЕР',
     score: outfit.score,
     set: outfit.collection ? outfit.collection.name : 'МИКС',
     pips: slotPipsForCurrent(),
     accent: '#ff5b4f',
-    isSelf: true
+    isSelf: true,
+    displayName: user.name
   };
 }
 
@@ -2747,22 +2763,24 @@ function openCompare(player) {
     if (!player) return;
   }
   const outfit = computeOutfit();
+  const self = currentUserEntry();
   const userPips = slotPipsForCurrent();
-  const theirPips = player.pips || [];
-  const delta = outfit.score - player.score;
+  const theirPips = Array.isArray(player.pips) ? player.pips : [];
+  const theirScore = clampInt(player.score, 0, 100, 0);
+  const delta = outfit.score - theirScore;
   $('compareGrid').innerHTML = `
     <div class="compare-card is-you">
       <span>ТЫ</span>
-      <h3>@lukap_user</h3>
+      <h3>${escapeHTML(self.name)}</h3>
       <div class="compare-big">${outfit.score}<em>/100</em></div>
-      <div class="compare-title">${outfit.collection ? outfit.collection.name : 'МИКС'} · ${outfit.setCount}/5</div>
+      <div class="compare-title">${escapeHTML(outfit.collection ? outfit.collection.name : 'МИКС')} · ${outfit.setCount}/5</div>
       <div class="compare-pips">${userPips.map((rarity) => `<span style="--pip:${pipColor(rarity)}"></span>`).join('')}</div>
     </div>
     <div class="compare-card">
       <span>СОПЕРНИК</span>
-      <h3>${player.name}</h3>
-      <div class="compare-big">${player.score}<em>/100</em></div>
-      <div class="compare-title">${player.title} · ${player.set}</div>
+      <h3>${escapeHTML(player.name)}</h3>
+      <div class="compare-big">${theirScore}<em>/100</em></div>
+      <div class="compare-title">${escapeHTML(player.title)} · ${escapeHTML(player.set)}</div>
       <div class="compare-pips">${theirPips.map((rarity) => `<span style="--pip:${pipColor(rarity)}"></span>`).join('')}</div>
     </div>
     <div class="compare-delta" style="grid-column:1/-1">${delta === 0 ? 'НИЧЬЯ' : delta > 0 ? `ТЫ ВЫШЕ НА <b>+${delta}</b>` : `СОПЕРНИК ВЫШЕ НА <b>${Math.abs(delta)}</b>`}</div>`;
@@ -2785,21 +2803,23 @@ function shareLook() {
 
 async function executeShare() {
   const outfit = computeOutfit();
+  const appUrl = /^https?:$/.test(location.protocol) ? `${location.origin}${location.pathname}` : '';
   const text = `Мой лук в ЛУКАП: ${outfit.score}/100 · ${outfit.collection ? outfit.collection.name : 'МИКС'} ${outfit.setCount}/5`;
+  const shareText = appUrl ? `${text}\n${appUrl}` : text;
   try {
     if (navigator.share) {
-      await navigator.share({ title: 'ЛУКАП', text });
+      await navigator.share({ title: 'ЛУКАП', text: shareText, ...(appUrl ? { url: appUrl } : {}) });
       return;
     }
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(shareText);
       showToast('Текст лука скопирован');
       return;
     }
   } catch {
     // Share cancellation is not an error worth surfacing.
   }
-  showToast(text);
+  showToast(shareText);
 }
 
 /* ---------- SHEETS ---------- */
@@ -3014,7 +3034,8 @@ function playTone(frequency, duration, volume, type = 'sine') {
 function playHaptic(kind = 'light') {
   if (!state.sound) return;
   const telegram = window.Telegram && window.Telegram.WebApp;
-  if (telegram && telegram.HapticFeedback) {
+  const hapticsSupported = telegram && telegram.HapticFeedback && (!telegram.isVersionAtLeast || telegram.isVersionAtLeast('6.1'));
+  if (hapticsSupported) {
     if (kind === 'success') telegram.HapticFeedback.notificationOccurred('success');
     else if (kind === 'warning') telegram.HapticFeedback.notificationOccurred('warning');
     else telegram.HapticFeedback.impactOccurred(kind);
@@ -3322,6 +3343,8 @@ function renderAll() {
   window.itemArtTexture = state.hairTexture;
   window.itemArtWatchDial = state.watchDial;
   window.itemArtWatchStrap = state.watchStrap;
+  const rtpValue = $('rtpValue');
+  if (rtpValue) rtpValue.textContent = `≈ ${Math.round(estimatedRtp())}%`;
   renderSkinSwatches();
   renderHairTextures();
   renderWatchControls();
@@ -3333,11 +3356,12 @@ function initTelegram() {
   const telegram = window.Telegram && window.Telegram.WebApp;
   if (!telegram) return;
   try {
+    const supports = (version) => !telegram.isVersionAtLeast || telegram.isVersionAtLeast(version);
     telegram.ready();
     telegram.expand();
-    if (telegram.setHeaderColor) telegram.setHeaderColor('#050505');
-    if (telegram.setBackgroundColor) telegram.setBackgroundColor('#050505');
-    if (telegram.disableVerticalSwipes) telegram.disableVerticalSwipes();
+    if (supports('6.1') && telegram.setHeaderColor) telegram.setHeaderColor('#f5f0e7');
+    if (supports('6.1') && telegram.setBackgroundColor) telegram.setBackgroundColor('#f5f0e7');
+    if (supports('7.0') && telegram.disableVerticalSwipes) telegram.disableVerticalSwipes();
   } catch {
     // The prototype also runs outside Telegram.
   }
@@ -3349,6 +3373,7 @@ const publicApi = {
   getCollections: () => COLLECTIONS,
   getRarities: () => RARITY_META,
   getOdds: () => ({ dropTable: DROP_TABLE, rtp: estimatedRtp(), dropValue: estimatedDropValue(), spinCost: SPIN_COST }),
+  getDiagnostics: () => CLIENT_DIAGNOSTICS.slice(),
   computeOutfit,
   itemLabel,
   itemIcon,
@@ -3370,6 +3395,10 @@ function init() {
   switchTab('look');
   // Re-clone the portrait after fonts/layout settle.
   window.setTimeout(updateProfile, 120);
+  window.setTimeout(() => {
+    const fallback = $('renderFallback');
+    if (fallback) fallback.hidden = $('appFrame').classList.contains('has-3d');
+  }, 900);
 }
 
 init();

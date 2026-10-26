@@ -3,9 +3,7 @@ services:
     name: lukap-tma
     runtime: node
     plan: free
+    buildCommand: npm run build
     startCommand: node server.js
     healthCheckPath: /healthz
     autoDeploy: true
-    envVars:
-      - key: NODE_VERSION
-        value: 24.18.0
