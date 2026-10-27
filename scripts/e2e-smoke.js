@@ -164,7 +164,7 @@ async function main() {
         overflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - innerWidth,
         has3d: document.getElementById('appFrame').classList.contains('has-3d')
       })`);
-      check(`${tag} catalog 1250`, base.items === 1250, String(base.items));
+      check(`${tag} catalog 1537`, base.items === 1537, String(base.items));
       check(`${tag} coverage complete`, base.coverage.length === 0, base.coverage.join(','));
       check(`${tag} no horizontal overflow`, base.overflow <= 0, String(base.overflow));
       check(`${tag} WebGL active`, base.has3d);

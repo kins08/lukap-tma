@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700;800&display=swap" rel="stylesheet" referrerpolicy="no-referrer" crossorigin="anonymous">
-  <link rel="stylesheet" href="styles.css?v=22">
-  <link rel="stylesheet" href="light.css?v=22">
+  <link rel="stylesheet" href="styles.css?v=24">
+  <link rel="stylesheet" href="light.css?v=24">
 </head>
 <body>
   <div class="page-ambient"></div>
@@ -82,6 +82,9 @@
       <circle cx="7.2" cy="12" r="3.3"/><circle cx="16.8" cy="12" r="3.3"/>
       <path d="M10.5 11.6c.8-.8 2.2-.8 3 0M3.9 11.1 1.8 9.7M20.1 11.1l2.1-1.4"/>
     </symbol>
+    <symbol id="i-belt" viewBox="0 0 24 24">
+      <path d="M3 9h18v6H3zM7 8.2h4.6v7.6H7zM8.4 12h2"/>
+    </symbol>
     <symbol id="i-coin" viewBox="0 0 24 24">
       <circle cx="12" cy="12" r="8.4"/>
       <path d="M9.4 8.4h5.2M9.4 15.6h5.2M12.8 8.4v7.2M8.9 12h4.7"/>
@@ -114,9 +117,9 @@
         <span class="brand-stage">PROTO</span>
       </button>
       <button class="balance-pill" id="balanceBtn" aria-label="Монеты и бонусы">
-        <span class="coin-mark"><svg class="icon"><use href="#i-diamond"></use></svg></span>
+        <span class="coin-mark"><svg class="icon" aria-hidden="true"><use href="#i-diamond"></use></svg></span>
         <span class="balance-value" id="balanceVal">10 000</span>
-        <span class="balance-plus"><svg class="icon"><use href="#i-plus"></use></svg></span>
+        <span class="balance-plus"><svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg></span>
       </button>
     </header>
 
@@ -126,7 +129,7 @@
           <span class="live-dot"></span>
           <span class="live-label">LIVE</span>
           <span class="live-text" id="dropStrip">@mira выбила «Минус» · NOIRÉ · ИКОНА</span>
-          <span class="live-tail"><svg class="icon"><use href="#i-chevron"></use></svg></span>
+          <span class="live-tail"><svg class="icon" aria-hidden="true"><use href="#i-chevron"></use></svg></span>
         </div>
 
         <div class="look-head">
@@ -396,6 +399,14 @@
                 <path d="M190 114c5 2 8 6 9 11" fill="none" stroke="var(--acc-accent)" stroke-width=".8" opacity=".55"/>
               </g>
 
+              <g class="acc-variant acc-belt">
+                <path d="M126 222h68" stroke="var(--acc-main)" stroke-width="7" stroke-linecap="round"/>
+                <rect x="153" y="215" width="16" height="14" rx="2.5" fill="none" stroke="var(--acc-metal, #d2d7de)" stroke-width="2"/>
+                <path d="M161 218v8M154 222h5" fill="none" stroke="var(--acc-metal, #d2d7de)" stroke-width="1.2"/>
+                <circle cx="140" cy="222" r="1.5" fill="var(--acc-metal, #d2d7de)"/>
+                <circle cx="182" cy="222" r="1.5" fill="var(--acc-metal, #d2d7de)"/>
+              </g>
+
               <g class="acc-variant acc-visor">
                 <path d="M128 97c15-7 48-7 64 0l-2 15c-8 5-17 7-30 7s-22-2-30-7Z" fill="#101114" stroke="var(--acc-main)" stroke-width="1.3"/>
                 <path d="M132 102c15-5 40-5 56 0l-2 8c-12 3-29 4-42 1l-10-3Z" fill="var(--acc-detail)" opacity=".7"/>
@@ -412,11 +423,11 @@
 
           <div class="stage-floor"></div>
           <div class="avatar-hotspots" id="avatarHotspots" aria-label="Быстрое управление деталями">
-            <button class="avatar-hotspot hs-hair" data-slot="hair" aria-label="Волосы"><svg class="icon"><use href="#i-hair"></use></svg></button>
-            <button class="avatar-hotspot hs-acc" data-slot="accessory" aria-label="Аксессуар"><svg class="icon"><use href="#i-acc"></use></svg></button>
-            <button class="avatar-hotspot hs-top" data-slot="top" aria-label="Верх"><svg class="icon"><use href="#i-top"></use></svg></button>
-            <button class="avatar-hotspot hs-bottom" data-slot="bottom" aria-label="Низ"><svg class="icon"><use href="#i-bottom"></use></svg></button>
-            <button class="avatar-hotspot hs-shoes" data-slot="shoes" aria-label="Обувь"><svg class="icon"><use href="#i-shoe"></use></svg></button>
+            <button class="avatar-hotspot hs-hair" data-slot="hair" aria-label="Волосы"><svg class="icon" aria-hidden="true"><use href="#i-hair"></use></svg></button>
+            <button class="avatar-hotspot hs-acc" data-slot="accessory" aria-label="Аксессуар"><svg class="icon" aria-hidden="true"><use href="#i-acc"></use></svg></button>
+            <button class="avatar-hotspot hs-top" data-slot="top" aria-label="Верх"><svg class="icon" aria-hidden="true"><use href="#i-top"></use></svg></button>
+            <button class="avatar-hotspot hs-bottom" data-slot="bottom" aria-label="Низ"><svg class="icon" aria-hidden="true"><use href="#i-bottom"></use></svg></button>
+            <button class="avatar-hotspot hs-shoes" data-slot="shoes" aria-label="Обувь"><svg class="icon" aria-hidden="true"><use href="#i-shoe"></use></svg></button>
           </div>
           <div class="zoom-controls" id="zoomControls" aria-label="Масштаб 3D">
             <button data-zoom="in" aria-label="Приблизить">+</button>
@@ -424,11 +435,11 @@
           </div>
           <span class="stage-tap-hint">СВАЙП · ЗУМ · ТАП · СНЯТЬ</span>
           <div class="stage-plaque" id="stagePlaque">
-            <span class="plaque-mark"><svg class="icon"><use href="#i-diamond"></use></svg></span>
+            <span class="plaque-mark"><svg class="icon" aria-hidden="true"><use href="#i-diamond"></use></svg></span>
             <span class="plaque-text"><b id="plaqueSet">NOIRÉ</b><small id="plaqueItem">МИНУС · ИКОНА</small></span>
           </div>
           <div class="perfect-badge" id="perfectBadge">
-            <svg class="icon"><use href="#i-crown"></use></svg>
+            <svg class="icon" aria-hidden="true"><use href="#i-crown"></use></svg>
             <span>ИДЕАЛЬНЫЙ ЛУК</span>
           </div>
         </div>
@@ -444,12 +455,12 @@
           </div>
           <button class="primary-btn spin-main" id="openSpinBtn">
             <span>КРУТИТЬ</span>
-            <i class="spin-glyph"><svg class="icon"><use href="#i-spark"></use></svg></i>
+            <i class="spin-glyph"><svg class="icon" aria-hidden="true"><use href="#i-spark"></use></svg></i>
           </button>
         </div>
         <p class="harmony-note">Пять случайных Икон — 80. Полный сет — 100.</p>
         <button class="bonus-strip" id="bonusBtn">
-          <span class="bonus-icon"><svg class="icon"><use href="#i-spark"></use></svg></span>
+          <span class="bonus-icon"><svg class="icon" aria-hidden="true"><use href="#i-spark"></use></svg></span>
           <span><b>БОНУС ДНЯ</b><small>+500 монет к балансу</small></span>
           <em id="bonusLabel">ЗАБРАТЬ</em>
         </button>
@@ -464,6 +475,7 @@
           <div class="owned-counter"><b id="ownedCounter">21</b> / <span id="catalogCounter">177</span></div>
         </div>
         <div class="filter-scroll" id="slotFilters"></div>
+        <div class="filter-scroll hair-length-row" id="hairLengthFilters" hidden></div>
         <div class="filter-scroll collections-row" id="wardrobeCollections"></div>
         <div class="progress-strip" id="collectionProgress"></div>
         <p class="wardrobe-hint">Тап по вещи — сразу надеть или снять. Пустой слот показывает базовый слой.</p>
@@ -493,7 +505,7 @@
             <span class="eyebrow">ПРОФИЛЬ</span>
             <h1>@lukap_user</h1>
           </div>
-          <button class="icon-btn" id="settingsBtn" aria-label="Настройки"><svg class="icon"><use href="#i-settings"></use></svg></button>
+          <button class="icon-btn" id="settingsBtn" aria-label="Настройки"><svg class="icon" aria-hidden="true"><use href="#i-settings"></use></svg></button>
         </div>
         <div class="profile-card">
           <div class="profile-portrait" id="profilePortrait"></div>
@@ -510,7 +522,7 @@
           <div><b id="statSets">1</b><span>сет</span></div>
         </div>
         <button class="primary-btn share-main" id="shareLookBtn">
-          <svg class="icon"><use href="#i-share"></use></svg>
+          <svg class="icon" aria-hidden="true"><use href="#i-share"></use></svg>
           <span>ПОДЕЛИТЬСЯ ЛУКОМ</span>
         </button>
         <div class="profile-actions" id="profileActions">
@@ -579,19 +591,19 @@
 
     <nav class="bottom-nav" aria-label="Навигация">
       <button class="nav-btn is-active" data-tab="look">
-        <span class="nav-icon"><svg class="icon"><use href="#i-hanger"></use></svg></span>
+        <span class="nav-icon"><svg class="icon" aria-hidden="true"><use href="#i-hanger"></use></svg></span>
         <span>Лук</span>
       </button>
       <button class="nav-btn" data-tab="wardrobe">
-        <span class="nav-icon"><svg class="icon"><use href="#i-top"></use></svg></span>
+        <span class="nav-icon"><svg class="icon" aria-hidden="true"><use href="#i-top"></use></svg></span>
         <span>Гардероб</span>
       </button>
       <button class="nav-btn" data-tab="leaders">
-        <span class="nav-icon"><svg class="icon"><use href="#i-crown"></use></svg></span>
+        <span class="nav-icon"><svg class="icon" aria-hidden="true"><use href="#i-crown"></use></svg></span>
         <span>Лидеры</span>
       </button>
       <button class="nav-btn" data-tab="profile">
-        <span class="nav-icon"><svg class="icon"><use href="#i-diamond"></use></svg></span>
+        <span class="nav-icon"><svg class="icon" aria-hidden="true"><use href="#i-diamond"></use></svg></span>
         <span>Профиль</span>
       </button>
     </nav>
@@ -605,10 +617,10 @@
           <span class="eyebrow">ПРОКРУТ</span>
           <h2 id="spinSheetTitle">АКСЕССУАР</h2>
         </div>
-        <button class="icon-btn sheet-close" data-close="spinSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+        <button class="icon-btn sheet-close" data-close="spinSheet" aria-label="Закрыть"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
       </div>
       <div class="pool-info" id="spinPool">
-        <span class="pool-info-mark"><svg class="icon"><use href="#i-spark"></use></svg></span>
+        <span class="pool-info-mark"><svg class="icon" aria-hidden="true"><use href="#i-spark"></use></svg></span>
         <span><b>ОДИН ПРОКРУТ</b><small>ВСЕ 6 РЕДКОСТЕЙ · ЛЮБАЯ КОЛЛЕКЦИЯ</small></span>
       </div>
       <div class="reel-panel">
@@ -625,8 +637,8 @@
       <div class="spin-odds" id="spinOdds" aria-label="Шансы редкостей на один прокрут"></div>
       <div class="spin-sheet-meta">
         <div class="sheet-meta-actions">
-          <button class="text-action" id="oddsBtn"><svg class="icon"><use href="#i-diamond"></use></svg> ШАНСЫ</button>
-          <button class="text-action" id="slotWardrobeBtn"><svg class="icon"><use href="#i-hanger"></use></svg> ШКАФ</button>
+          <button class="text-action" id="oddsBtn"><svg class="icon" aria-hidden="true"><use href="#i-diamond"></use></svg> ШАНСЫ</button>
+          <button class="text-action" id="slotWardrobeBtn"><svg class="icon" aria-hidden="true"><use href="#i-hanger"></use></svg> ШКАФ</button>
         </div>
         <span id="sheetBalance">Монеты 10 000</span>
       </div>
@@ -641,7 +653,7 @@
           <span class="eyebrow">ПРИМЕРОЧНАЯ · 3D</span>
           <h2 id="slotSheetTitle">ВЕРХ</h2>
         </div>
-        <button class="icon-btn" data-close="slotSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+        <button class="icon-btn" data-close="slotSheet" aria-label="Закрыть"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
       </div>
       <div class="tryon-status" id="slotSheetCount">Базовый слой</div>
       <div class="hair-texture-panel" id="hairTexturePanel" hidden>
@@ -663,7 +675,7 @@
           <span class="eyebrow">БАЛАНС</span>
           <h2>Бонусы</h2>
         </div>
-        <button class="icon-btn sheet-close" data-close="topupSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+        <button class="icon-btn sheet-close" data-close="topupSheet" aria-label="Закрыть"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
       </div>
       <div class="wallet-hero">
         <span>У ТЕБЯ</span>
@@ -672,12 +684,12 @@
       </div>
       <div class="bonus-methods">
         <div class="bonus-method">
-          <div class="bonus-method-icon"><svg class="icon"><use href="#i-spark"></use></svg></div>
+          <div class="bonus-method-icon"><svg class="icon" aria-hidden="true"><use href="#i-spark"></use></svg></div>
           <div class="bonus-method-copy"><b>Бонус дня</b><span>+500 монет за вход</span></div>
           <button class="mini-action solid" id="bonusClaimSheet">ЗАБРАТЬ</button>
         </div>
         <div class="bonus-method">
-          <div class="bonus-method-icon"><svg class="icon"><use href="#i-diamond"></use></svg></div>
+          <div class="bonus-method-icon"><svg class="icon" aria-hidden="true"><use href="#i-diamond"></use></svg></div>
           <div class="bonus-method-copy"><b>Лишние копии</b><span>Верни дубли в оборот</span></div>
           <button class="mini-action" id="sellDupesSheet">ПРОДАТЬ</button>
         </div>
@@ -697,7 +709,7 @@
           <span class="eyebrow">ОТКРЫТЫЕ ДАННЫЕ</span>
           <h2>Шансы</h2>
         </div>
-        <button class="icon-btn sheet-close" data-close="oddsSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+        <button class="icon-btn sheet-close" data-close="oddsSheet" aria-label="Закрыть"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
       </div>
       <div class="odds-content" id="oddsContent"></div>
       <p class="panel-foot">Шансы фиксированы для коллекции и слота. Результат каждого прокрута определяет сервер; в прототипе — локальный демо-ролл.</p>
@@ -712,7 +724,7 @@
           <h2 id="itemSheetName">«Минус»</h2>
           <span class="item-sheet-meta" id="itemSheetMeta">NOIRÉ · АКСЕССУАР</span>
         </div>
-        <button class="icon-btn sheet-close" data-close="itemSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+        <button class="icon-btn sheet-close" data-close="itemSheet" aria-label="Закрыть"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
       </div>
       <div class="item-facts">
         <div><span>К гармонии</span><b id="itemSheetPoints">+16</b></div>
@@ -729,7 +741,7 @@
           <span class="eyebrow">СРАВНЕНИЕ</span>
           <h2>Кто круче</h2>
         </div>
-        <button class="icon-btn sheet-close" data-close="compareSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+        <button class="icon-btn sheet-close" data-close="compareSheet" aria-label="Закрыть"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
       </div>
       <div class="compare-grid" id="compareGrid"></div>
       <p class="panel-foot">Разница считается по гармонии, затем по редкости пяти слотов.</p>
@@ -742,7 +754,7 @@
           <span class="eyebrow">КАРТОЧКА</span>
           <h2>Поделиться луком</h2>
         </div>
-        <button class="icon-btn sheet-close" data-close="shareSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+        <button class="icon-btn sheet-close" data-close="shareSheet" aria-label="Закрыть"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
       </div>
       <div class="share-card" id="shareCard">
         <div class="share-card-top"><span class="share-brand">ЛУКАП</span><span class="share-serial">LK / 001</span></div>
@@ -751,7 +763,7 @@
         <div class="share-avatar" id="shareAvatar"></div>
         <div class="share-bottom"><span>@lukap_user</span><span>СОБЕРИ СВОЙ ЛУК</span></div>
       </div>
-      <button class="primary-btn" id="shareActionBtn"><svg class="icon"><use href="#i-share"></use></svg><span>ПОДЕЛИТЬСЯ</span></button>
+      <button class="primary-btn" id="shareActionBtn"><svg class="icon" aria-hidden="true"><use href="#i-share"></use></svg><span>ПОДЕЛИТЬСЯ</span></button>
     </section>
 
     <section class="sheet info-sheet" id="historySheet" aria-hidden="true">
@@ -761,7 +773,7 @@
           <span class="eyebrow">ПРОФИЛЬ</span>
           <h2>История дропов</h2>
         </div>
-        <button class="icon-btn sheet-close" data-close="historySheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+        <button class="icon-btn sheet-close" data-close="historySheet" aria-label="Закрыть"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
       </div>
       <div class="history-list" id="historyList"></div>
       <p class="panel-foot">Предметы остаются в гардеробе. Продать лишние копии можно в профиле.</p>
@@ -774,7 +786,7 @@
           <span class="eyebrow">ПРОФИЛЬ</span>
           <h2>Достижения</h2>
         </div>
-        <button class="icon-btn sheet-close" data-close="achievementsSheet" aria-label="Закрыть"><svg class="icon"><use href="#i-close"></use></svg></button>
+        <button class="icon-btn sheet-close" data-close="achievementsSheet" aria-label="Закрыть"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
       </div>
       <div id="achievementsContent"></div>
     </section>
@@ -797,13 +809,13 @@
   </div>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="lib/security.js?v=22"></script>
-  <script src="lib/outfit.js?v=22"></script>
-  <script src="lib/state.js?v=22"></script>
-  <script src="data/leaderboard-mock.js?v=22"></script>
-  <script src="item-art.js?v=22"></script>
+  <script src="lib/security.js?v=24"></script>
+  <script src="lib/outfit.js?v=24"></script>
+  <script src="lib/state.js?v=24"></script>
+  <script src="data/leaderboard-mock.js?v=24"></script>
+  <script src="item-art.js?v=24"></script>
   <script src="vendor/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu"></script>
-  <script src="app.js?v=22"></script>
-  <script src="avatar3d.js?v=22"></script>
+  <script src="app.js?v=24"></script>
+  <script src="avatar3d.js?v=24"></script>
 </body>
 </html>

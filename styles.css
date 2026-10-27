@@ -516,7 +516,8 @@ svg { display: block; }
 
 .avatar-svg[data-acc="glasses"] .acc-glasses,
 .avatar-svg[data-acc="gold"] .acc-gold,
-.avatar-svg[data-acc="visor"] .acc-visor { display: block; }
+.avatar-svg[data-acc="visor"] .acc-visor,
+.avatar-svg[data-acc="belt"] .acc-belt { display: block; }
 
 .body-scale {
   transform-origin: 160px 300px;
@@ -731,7 +732,7 @@ svg { display: block; }
 
 .primary-btn:active { transform: translateY(1px) scale(.995); filter: brightness(.94); }
 
-.primary-btn:disabled { opacity: .55; filter: saturate(.7); }
+.primary-btn:disabled { opacity: .55; filter: saturate(.7); color: var(--muted-2); background: var(--surface-3); cursor: not-allowed; }
 
 .primary-btn .icon { width: 17px; height: 17px; }
 
@@ -804,7 +805,7 @@ svg { display: block; }
   letter-spacing: .08em;
 }
 
-.bonus-strip:disabled { opacity: .55; }
+.bonus-strip:disabled { opacity: .55; color: var(--muted-2); background: var(--surface-2); cursor: not-allowed; }
 
 .bonus-strip:disabled em { color: var(--muted-2); }
 
@@ -940,6 +941,7 @@ svg { display: block; }
   padding-bottom: 8px;
 }
 
+.filter-scroll[hidden] { display: none; }
 .filter-scroll::-webkit-scrollbar { display: none; }
 
 .filter-chip {

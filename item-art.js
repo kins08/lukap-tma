@@ -386,6 +386,18 @@
           <rect x="87" y="190" width="10" height="5" rx="1" fill="${cream}" opacity=".8"/>
         </g>`;
     }
+    if (item.puffer) {
+      content += `<g opacity=".55" fill="none" stroke="${light}" stroke-width="1.1"><path d="M84 110 C100 104 140 104 156 110"/><path d="M82 132 C100 126 140 126 158 132"/><path d="M81 154 C100 148 140 148 159 154"/><path d="M84 176 C102 170 138 170 156 176"/></g>`;
+    }
+    if (item.turtleneck) {
+      content += `<path d="M100 82 C106 72 112 68 120 68 C128 68 134 72 140 82 L136 92 C130 86 126 84 120 84 C114 84 110 86 104 92Z" fill="${main}" stroke="${light}" stroke-width="1" opacity=".85"/>`;
+    }
+    if (item.cardigan) {
+      content += `<path d="M120 88 L120 196" stroke="${detail}" stroke-width="1.6" opacity=".65"/><g fill="${metal}">${[104, 126, 148, 170].map((y) => `<circle cx="120" cy="${y}" r="2"/>`).join('')}</g>`;
+    }
+    if (item.zip) {
+      content += `<path d="M120 90 L120 198" stroke="${metal}" stroke-width="2" opacity=".8"/><circle cx="120" cy="104" r="2.6" fill="${metal}"/>`;
+    }
     if (item.brand && ['shirt', 'bomber', 'vest'].includes(variant)) {
       content = `${content}<g opacity=".94">${brandLockup(item, variant === 'shirt' ? 96 : 120, 118, accent, { scale: 1.18 })}</g>`;
     }
@@ -418,6 +430,12 @@
         <path d="M61 210 C88 219 152 219 165 210" fill="none" stroke="${accent}" stroke-width="4" opacity=".6"/>
         <path d="M58 212 C88 221 152 221 168 212" fill="none" stroke="${light}" stroke-width="1" opacity=".45"/>
         <path d="M120 128 L120 210" stroke="${light}" stroke-width="1" opacity=".35"/>
+        <path d="M86 ${rise + 22} C94 ${rise + 33} 104 ${rise + 38} 112 ${rise + 36} M154 ${rise + 22} C146 ${rise + 33} 136 ${rise + 38} 128 ${rise + 36}" stroke="${light}" stroke-width=".9" fill="none" opacity=".55"/>
+        <path d="M90 ${rise + 40} L104 ${rise + 46} M90 ${rise + 46} L103 ${rise + 52} M136 ${rise + 40} L150 ${rise + 46} M137 ${rise + 46} L149 ${rise + 52}" stroke="${detail}" stroke-width=".8" fill="none" opacity=".38"/>
+        <circle cx="86" cy="${rise + 21}" r="1.2" fill="${metal}"/>
+        <circle cx="154" cy="${rise + 21}" r="1.2" fill="${metal}"/>
+        <path d="M94 148 C100 154 110 156 120 154 M146 148 C140 154 130 156 120 154 M92 160 C101 166 110 168 120 166 M148 160 C139 166 130 168 120 166" stroke="${light}" stroke-width=".8" fill="none" opacity=".4"/>
+        <path d="M84 204 C95 209 145 209 156 204" stroke="${detail}" stroke-width="1" fill="none" opacity=".35"/>
         <rect x="84" y="${rise + 2}" width="8" height="4" rx="1" fill="${accent}" opacity=".8"/>
         <circle cx="120" cy="${rise + 10}" r="2.5" fill="${metal}"/>
       `;
@@ -511,6 +529,10 @@
         <path d="M84 104 L108 104 L107 126 L85 126Z" fill="${dark}" opacity=".4"/>
         <path d="M132 104 L156 104 L155 126 L133 126Z" fill="${dark}" opacity=".4"/>
         <path d="M120 82 L120 112" stroke="${dark}" stroke-width="2" opacity=".65"/>
+        <path d="M88 ${rise + 22} C94 ${rise + 29} 102 ${rise + 32} 110 ${rise + 30} M152 ${rise + 22} C146 ${rise + 29} 138 ${rise + 32} 130 ${rise + 30}" stroke="${light}" stroke-width=".9" fill="none" opacity=".55"/>
+        <path d="M92 ${rise + 36} L104 ${rise + 40} M92 ${rise + 41} L103 ${rise + 45} M148 ${rise + 36} L136 ${rise + 40} M148 ${rise + 41} L137 ${rise + 45}" stroke="${detail}" stroke-width=".8" fill="none" opacity=".38"/>
+        <circle cx="87" cy="${rise + 21}" r="1.2" fill="${metal}"/>
+        <circle cx="153" cy="${rise + 21}" r="1.2" fill="${metal}"/>
         <rect x="84" y="${rise + 4}" width="9" height="4" rx="1" fill="${accent}" opacity=".78"/>
         <circle cx="120" cy="${rise + 11}" r="2.3" fill="${metal}"/>
       `;
@@ -576,6 +598,7 @@
         <path d="M124 176 C139 173 158 174 174 181 L173 194 C152 198 133 197 119 191Z" fill="${metal}" opacity=".9"/>
         <path d="M72 188 C92 194 123 195 148 190" stroke="${detail}" stroke-width="2" opacity=".7" fill="none"/>
         <path d="M80 47 L144 47" stroke="${accent}" stroke-width="4" opacity=".8"/>
+        ${item.uggs ? `<path d="M72 61 C100 54 130 54 154 62 L152 80 C128 74 100 74 74 81Z" fill="#efe4d2" opacity=".92"/><path d="M74 63 C100 57 128 57 152 64" stroke="#d8c7b2" stroke-width="1.2" fill="none"/>` : ''}
         <path d="M63 205 C102 216 155 213 184 204" stroke="${light}" stroke-width="1" opacity=".35" fill="none" stroke-dasharray="4 3"/>
         <rect x="91" y="104" width="22" height="10" rx="2" fill="${accent}" opacity=".75"/>
         <circle cx="102" cy="109" r="2.3" fill="${metal}"/>
@@ -759,6 +782,9 @@
     const p = item.palette;
     const id = nextArtId(item);
     const metal = `url(#${id}-metal)`;
+    const main = p.main;
+    const light = mix(main, '#ffffff', .22);
+    const dark = mix(main, '#000000', .3);
     const accent = p.accent;
     const detail = p.detail;
     const variant = item.variant;
@@ -788,7 +814,82 @@
             : '';
     let content = '';
 
-    if (variant === 'watch') {
+    if (variant === 'beanie') {
+      content = `
+        <path d="M64 135 C64 92 87 62 120 62 C153 62 176 92 176 135 L164 140 C160 112 146 96 120 96 C94 96 80 112 76 140Z" fill="${main}"/>
+        <path d="M76 140 C80 112 94 96 120 96 C146 96 160 112 164 140 C158 149 148 154 120 154 C92 154 82 149 76 140Z" fill="${light}" opacity=".35"/>
+        <path d="M66 135 C66 126 76 120 86 120 L154 120 C164 120 174 126 174 135 L172 152 C160 160 146 164 120 164 C94 164 80 160 68 152Z" fill="${dark}"/>
+        <path d="M70 137 C82 143 98 147 120 147 C142 147 158 143 170 137" stroke="${light}" stroke-width="1.4" opacity=".55" fill="none"/>
+        <path d="M72 145 L168 145 M72 151 L168 151" stroke="${detail}" stroke-width="1" opacity=".35"/>
+        <circle cx="120" cy="56" r="12" fill="${accent}"/>
+        <circle cx="116" cy="52" r="4" fill="${light}" opacity=".55"/>
+        <path d="M95 82 C104 74 114 70 120 70 M145 82 C136 74 126 70 120 70" stroke="${light}" stroke-width="1.2" opacity=".4" fill="none"/>
+        ${item.brand ? `<g opacity=".8">${brandLockup(item, 120, 158, accent, { scale: .55 })}</g>` : ''}
+        <text x="90" y="194" font-family="Manrope, Arial, sans-serif" font-size="4.7" letter-spacing="1.3" fill="#7b6856" opacity=".5">LK / BEANIE</text>
+      `;
+    } else if (variant === 'scarf') {
+      content = `
+        <path d="M78 104 C92 88 108 82 120 82 C132 82 148 88 162 104 L156 128 C144 116 132 112 120 112 C108 112 96 116 84 128Z" fill="${main}"/>
+        <path d="M84 128 C82 146 86 162 94 176 L110 172 C102 157 100 144 104 130Z" fill="${light}" opacity=".5"/>
+        <path d="M156 128 C158 148 154 166 146 180 L130 176 C138 160 140 146 136 130Z" fill="${light}" opacity=".35"/>
+        <path d="M86 124 C100 110 112 106 120 106 C128 106 140 110 154 124" stroke="${light}" stroke-width="2" opacity=".7" fill="none"/>
+        <path d="M96 170 L112 166 M146 174 L130 170" stroke="${detail}" stroke-width="2" opacity=".5"/>
+        ${[0, 1, 2, 3].map((i) => `<path d="M${92 + i * 4} 176 L${90 + i * 4} 192 M${132 + i * 4} 180 L${130 + i * 4} 196" stroke="${accent}" stroke-width="1.1" opacity=".7"/>`).join('')}
+        <path d="M90 96 C104 84 112 80 120 80 C128 80 138 84 150 96" stroke="${main}" stroke-width="5" opacity=".5" fill="none"/>
+        ${item.brand ? `<g opacity=".78">${brandLockup(item, 120, 196, accent, { scale: .52 })}</g>` : ''}
+        <text x="92" y="207" font-family="Manrope, Arial, sans-serif" font-size="4.5" letter-spacing="1.2" fill="#7b6856" opacity=".45">LK / SCARF</text>
+      `;
+    } else if (variant === 'bag') {
+      content = `
+        <path d="M84 92 C84 78 96 68 110 70 C124 72 132 84 130 96" fill="none" stroke="${metal}" stroke-width="4"/>
+        <path d="M80 108 L160 108 L168 196 C154 204 86 204 72 196Z" fill="${main}"/>
+        <path d="M72 150 L168 150 L166 196 C152 204 88 204 74 196Z" fill="${dark}" opacity=".45"/>
+        <path d="M80 108 L160 108 L160 126 L80 126Z" fill="${light}" opacity=".35"/>
+        <rect x="112" y="116" width="26" height="18" rx="3" fill="${metal}"/>
+        <rect x="117" y="121" width="16" height="8" rx="2" fill="${detail}" opacity=".55"/>
+        <path d="M122 134 L122 158" stroke="${metal}" stroke-width="3"/>
+        <path d="M80 108 C96 116 144 116 160 108" stroke="${light}" stroke-width="1.2" opacity=".5" fill="none"/>
+        <path d="M78 192 C92 200 148 200 162 192" stroke="${accent}" stroke-width="1.4" opacity=".55" fill="none"/>
+        <path d="M84 136 L96 136 M144 136 L156 136" stroke="${light}" stroke-width="1" opacity=".5"/>
+        ${item.brand ? `<g opacity=".82">${brandLockup(item, 120, 188, accent, { scale: .55 })}</g>` : ''}
+        <text x="94" y="214" font-family="Manrope, Arial, sans-serif" font-size="4.6" letter-spacing="1.2" fill="#7b6856" opacity=".45">LK / BAG</text>
+      `;
+    } else if (variant === 'belt') {
+      const beltStyle = item.beltMaterial || 'leather';
+      const strapPath = 'M38 138 C84 126 156 118 198 116 L198 138 C156 140 84 148 38 160Z';
+      const shine = beltStyle === 'patent'
+        ? `<path d="M48 142 C90 131 150 123 190 121" stroke="${mix(main, '#ffffff', .55)}" stroke-width="2" opacity=".45" fill="none"/>`
+        : '';
+      const beltBody = beltStyle === 'chain'
+        ? `${Array.from({ length: 13 }).map((_, index) => {
+          const x = 44 + index * 11;
+          const y = 127 + Math.sin(index * 0.8) * 3;
+          return `<ellipse cx="${x}" cy="${y}" rx="7.5" ry="5.6" fill="none" stroke="${metal}" stroke-width="2.2" transform="rotate(${index % 2 ? 24 : -24} ${x} ${y})"/>`;
+        }).join('')}
+          <circle cx="42" cy="127" r="13" fill="none" stroke="${metal}" stroke-width="4"/>
+          <circle cx="42" cy="127" r="5" fill="${metal}"/>`
+        : `
+          <path d="${strapPath}" fill="${main}"/>
+          <path d="M40 139 C86 127 156 119 196 117" stroke="${light}" stroke-width="1.5" opacity=".45" fill="none"/>
+          <path d="M40 157 C86 145 156 137 196 135" stroke="${dark}" stroke-width="4" opacity=".5" fill="none"/>
+          ${shine}
+          ${beltStyle === 'webbing'
+            ? `<path d="M50 146 C94 135 154 127 192 125 M50 151 C94 140 154 132 192 130" stroke="${accent}" stroke-width="1" opacity=".55" fill="none"/>`
+            : `<path d="M50 143 C96 132 156 124 190 122 M50 154 C96 143 156 135 190 133" stroke="${accent}" stroke-width="1" stroke-dasharray="2 3" opacity=".65" fill="none"/>`}
+          ${beltStyle === 'suede'
+            ? `<circle cx="48" cy="146" r="21" fill="none" stroke="${metal}" stroke-width="4"/><path d="M48 128 L67 146 L48 164" stroke="${metal}" stroke-width="2.2" fill="none"/>`
+            : `<rect x="38" y="126" width="34" height="40" rx="5" fill="none" stroke="${metal}" stroke-width="5"/><path d="M55 130 L55 160 M55 145 L82 143" stroke="${metal}" stroke-width="3"/>`}
+          ${[122, 142, 162, 182].map((x) => `<circle cx="${x}" cy="${122 - (x - 120) * 0.025}" r="2.1" fill="${detail}" opacity=".8"/>`).join('')}
+          <path d="M198 114 L212 112 L212 140 L198 138Z" fill="${main}"/>
+          <path d="M202 118 L208 117" stroke="${light}" stroke-width="1.2" opacity=".6"/>
+        `;
+      content = `
+        <ellipse cx="120" cy="188" rx="78" ry="9" fill="#0f0c0a" opacity=".18"/>
+        <g transform="rotate(-4 120 132)">${beltBody}</g>
+        ${item.brand ? `<g opacity=".8">${brandLockup(item, 120, 180, accent, { scale: .55 })}</g>` : ''}
+        <text x="94" y="206" font-family="Manrope, Arial, sans-serif" font-size="4.6" letter-spacing="1.2" fill="#7b6856" opacity=".45">LK / BELT</text>
+      `;
+    } else if (variant === 'watch') {
       const ticks = style === 'digital'
         ? ''
         : Array.from({ length: 12 }).map((_, index) => {
@@ -1073,6 +1174,44 @@
         <path d="M72 144 C78 155 85 160 94 162 M168 144 C162 155 155 160 146 162" stroke="${hair}" stroke-width="6" opacity=".85" fill="none"/>
         <path d="M80 100 L80 116 C75 119 72 112 73 104 M160 100 L160 116 C165 119 168 112 167 104" fill="${mix(skin, dark, .25)}"/>
       `;
+    } else if (variant === 'long') {
+      hairMarkup = `
+        <path d="M78 104 C70 70 92 44 121 44 C151 44 171 70 162 104 L176 184 C166 196 150 198 137 188 L141 108 C132 100 108 100 99 108 L103 188 C90 198 74 196 64 184Z" fill="${hair}"/>
+        <path d="M119 48 L119 108 L121 48" stroke="${dark}" stroke-width="1.4" opacity=".45" fill="none"/>
+        <path d="M90 60 C104 47 137 47 152 61 C136 58 123 62 111 72 C103 65 96 61 90 60Z" fill="${hi}" opacity=".5"/>
+        <path d="M84 112 C78 136 78 160 86 178 M156 112 C162 136 162 160 154 178" stroke="${dark}" stroke-width="1" opacity=".35" fill="none"/>
+        <path d="M98 100 C94 126 94 152 101 174 M142 100 C146 126 146 152 139 174" stroke="${hi}" stroke-width="1" opacity=".55" fill="none"/>
+        <path d="M104 112 C110 118 116 120 121 118 C127 120 133 118 138 112" stroke="${dark}" stroke-width="1.1" opacity=".4" fill="none"/>
+      `;
+    } else if (variant === 'waves') {
+      hairMarkup = `
+        <path d="M76 104 C68 70 92 44 122 44 C153 44 172 70 163 104 C170 124 164 144 174 158 C164 172 152 176 140 168 C148 150 144 132 146 112 C134 104 108 104 96 112 C98 132 94 150 102 168 C90 176 76 172 66 158 C76 144 70 124 76 104Z" fill="${hair}"/>
+        <path d="M86 110 C80 130 82 148 90 164 C86 146 88 128 94 112Z" fill="${hi}" opacity=".4"/>
+        <path d="M154 110 C160 130 158 148 150 164 C154 146 152 128 146 112Z" fill="${hi}" opacity=".4"/>
+        <path d="M83 126 C78 140 80 152 86 160 M157 126 C162 140 160 152 154 160" stroke="${dark}" stroke-width="1" opacity=".4" fill="none"/>
+        <path d="M92 60 C106 47 137 47 151 61 C132 58 112 62 101 74 C97 66 95 62 92 60Z" fill="${hi}" opacity=".55"/>
+        <path d="M98 100 C94 120 96 138 102 154 M142 100 C146 120 144 138 138 154" stroke="${hi}" stroke-width="1.1" opacity=".5" fill="none"/>
+        <path d="M120 48 L120 108" stroke="${dark}" stroke-width="1.2" opacity=".35" fill="none"/>
+      `;
+    } else if (variant === 'lob') {
+      hairMarkup = `
+        <path d="M78 106 C70 72 91 46 120 46 C150 46 170 72 162 106 L166 142 C158 150 150 152 143 144 L144 106 C134 100 106 100 96 106 L97 144 C90 152 82 150 74 142Z" fill="${hair}"/>
+        <path d="M98 84 C106 74 134 74 142 84 C136 92 128 96 120 96 C112 96 104 92 98 84Z" fill="${mix(hair, hi, .28)}" opacity=".9"/>
+        <path d="M100 100 C108 95 132 95 140 100 L140 112 C130 106 110 106 100 112Z" fill="${hi}" opacity=".32"/>
+        <path d="M79 116 C78 128 80 138 85 145 M161 116 C162 128 160 138 155 145" stroke="${hi}" stroke-width="1.1" opacity=".4" fill="none"/>
+        <path d="M120 96 L120 110" stroke="${dark}" stroke-width="1.2" opacity=".4"/>
+        <path d="M90 132 C98 137 106 138 113 136 M150 132 C142 137 134 138 127 136" stroke="${dark}" stroke-width=".9" opacity=".32" fill="none"/>
+        <path d="M96 70 C108 59 132 59 144 70" stroke="${hi}" stroke-width="1.2" opacity=".45" fill="none"/>
+      `;
+    } else if (variant === 'buzz') {
+      hairMarkup = `
+        <path d="M82 100 C82 72 99 52 120 52 C142 52 158 72 158 100 C150 90 140 84 120 84 C100 84 90 90 82 100Z" fill="${hair}"/>
+        <path d="M86 98 C94 88 105 83 120 83 C135 83 146 88 154 98 C142 94 131 92 120 92 C109 92 98 94 86 98Z" fill="${mix(hair, hi, .28)}" opacity=".75"/>
+        <path d="M88 90 C98 79 108 74 120 74 C132 74 142 79 152 90" fill="none" stroke="${hi}" stroke-width="1.3" opacity=".5"/>
+        ${[[94, 91], [101, 86], [109, 82], [120, 80], [131, 82], [139, 86], [146, 91], [97, 97], [143, 97]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.2" fill="${hi}" opacity=".55"/>`).join('')}
+        <path d="M84 102 C91 107 100 109 108 107 M156 102 C149 107 140 109 132 107" stroke="${dark}" stroke-width="1" opacity=".4" fill="none"/>
+        <path d="M92 108 C98 112 105 113 111 112 M148 108 C142 112 135 113 129 112" stroke="${dark}" stroke-width=".8" opacity=".3" fill="none"/>
+      `;
     } else {
       hairMarkup = `
         <path d="M78 102 C72 70 94 46 123 46 C153 46 171 72 162 104 C157 98 151 94 145 92 C137 80 126 76 114 79 C102 82 93 90 88 103 C84 103 81 103 78 102Z" fill="${hair}"/>
@@ -1207,7 +1346,7 @@
       return shoesArt(item);
     }
     if (item.slot === 'hair') return hairArt(item);
-    if (['rings', 'chain', 'pearls', 'earrings', 'watch'].includes(item.variant)) return extendedAccessoryArt(item);
+    if (['rings', 'chain', 'pearls', 'earrings', 'watch', 'beanie', 'scarf', 'bag', 'belt'].includes(item.variant)) return extendedAccessoryArt(item);
     return accessoryArt(item);
   };
 })();

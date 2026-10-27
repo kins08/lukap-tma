@@ -81,10 +81,12 @@
     fabricContext.fillStyle = 'rgba(0,0,0,.14)';
     fabricContext.fillRect(0, i, 96, 1);
   }
+  const maxAnisotropy = renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() : 1;
   const fabricBump = new THREE.CanvasTexture(fabricCanvas);
   fabricBump.wrapS = THREE.RepeatWrapping;
   fabricBump.wrapT = THREE.RepeatWrapping;
   fabricBump.repeat.set(4, 4);
+  fabricBump.anisotropy = Math.min(4, maxAnisotropy);
 
   const fabricNormalCanvas = document.createElement('canvas');
   fabricNormalCanvas.width = 128;
@@ -112,14 +114,136 @@
   fabricNormal.wrapS = THREE.RepeatWrapping;
   fabricNormal.wrapT = THREE.RepeatWrapping;
   fabricNormal.repeat.set(8, 8);
+  fabricNormal.anisotropy = Math.min(4, maxAnisotropy);
 
-  const BASE_DISTANCE = 3.9;
-  const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 30);
-  camera.position.set(0, 1.03, BASE_DISTANCE);
-  camera.lookAt(0, 0.95, 0);
+  const denimNormalCanvas = document.createElement('canvas');
+  denimNormalCanvas.width = 128;
+  denimNormalCanvas.height = 128;
+  const denimNormalContext = denimNormalCanvas.getContext('2d');
+  const denimNormalImage = denimNormalContext.createImageData(128, 128);
+  for (let y = 0; y < 128; y += 1) {
+    for (let x = 0; x < 128; x += 1) {
+      const phase = ((x + y) / 128) * Math.PI * 20;
+      const slub = Math.sin((x * 0.7 + y * 0.2) * 0.6) * 0.08;
+      const dx = Math.cos(phase) * 0.55 + slub;
+      const dy = Math.cos(phase) * 0.55 + slub * 0.4;
+      const nx = -dx * 0.48;
+      const ny = -dy * 0.48;
+      const length = Math.hypot(nx, ny, 1);
+      const offset = (y * 128 + x) * 4;
+      denimNormalImage.data[offset] = Math.round((nx / length * 0.5 + 0.5) * 255);
+      denimNormalImage.data[offset + 1] = Math.round((ny / length * 0.5 + 0.5) * 255);
+      denimNormalImage.data[offset + 2] = Math.round((1 / length * 0.5 + 0.5) * 255);
+      denimNormalImage.data[offset + 3] = 255;
+    }
+  }
+  denimNormalContext.putImageData(denimNormalImage, 0, 0);
+  const denimNormal = new THREE.CanvasTexture(denimNormalCanvas);
+  denimNormal.wrapS = THREE.RepeatWrapping;
+  denimNormal.wrapT = THREE.RepeatWrapping;
+  denimNormal.repeat.set(9, 9);
+  denimNormal.anisotropy = Math.min(4, maxAnisotropy);
 
-  scene.add(new THREE.HemisphereLight(0xfff7ec, 0x5c4c3b, 0.38));
-  const keyLight = new THREE.DirectionalLight(0xfff3e2, 1.16);
+  const denimRoughCanvas = document.createElement('canvas');
+  denimRoughCanvas.width = 128;
+  denimRoughCanvas.height = 128;
+  const denimRoughContext = denimRoughCanvas.getContext('2d');
+  const denimRoughImage = denimRoughContext.createImageData(128, 128);
+  for (let y = 0; y < 128; y += 1) {
+    for (let x = 0; x < 128; x += 1) {
+      const slub = Math.sin(x * 0.23 + y * 0.11) * 10 + Math.sin(x * 0.07) * 6;
+      const value = Math.max(0, Math.min(255, 210 + slub));
+      const offset = (y * 128 + x) * 4;
+      denimRoughImage.data[offset] = value;
+      denimRoughImage.data[offset + 1] = value;
+      denimRoughImage.data[offset + 2] = value;
+      denimRoughImage.data[offset + 3] = 255;
+    }
+  }
+  denimRoughContext.putImageData(denimRoughImage, 0, 0);
+  const denimRoughness = new THREE.CanvasTexture(denimRoughCanvas);
+  denimRoughness.wrapS = THREE.RepeatWrapping;
+  denimRoughness.wrapT = THREE.RepeatWrapping;
+  denimRoughness.repeat.set(7, 7);
+  denimRoughness.anisotropy = Math.min(4, maxAnisotropy);
+
+  const denimWeaveCanvas = document.createElement('canvas');
+  denimWeaveCanvas.width = 64;
+  denimWeaveCanvas.height = 64;
+  const denimWeaveContext = denimWeaveCanvas.getContext('2d');
+  const denimWeaveImage = denimWeaveContext.createImageData(64, 64);
+  for (let y = 0; y < 64; y += 1) {
+    for (let x = 0; x < 64; x += 1) {
+      const twill = Math.sin((x + y) * 0.75) * 12 + Math.sin(x * 0.31 + y * 0.73) * 5;
+      const value = Math.max(0, Math.min(255, 232 + twill));
+      const offset = (y * 64 + x) * 4;
+      denimWeaveImage.data[offset] = value;
+      denimWeaveImage.data[offset + 1] = value;
+      denimWeaveImage.data[offset + 2] = value;
+      denimWeaveImage.data[offset + 3] = 255;
+    }
+  }
+  denimWeaveContext.putImageData(denimWeaveImage, 0, 0);
+  const denimWeave = new THREE.CanvasTexture(denimWeaveCanvas);
+  denimWeave.wrapS = THREE.RepeatWrapping;
+  denimWeave.wrapT = THREE.RepeatWrapping;
+  denimWeave.repeat.set(16, 16);
+  denimWeave.anisotropy = Math.min(4, maxAnisotropy);
+
+  const skinBumpCanvas = document.createElement('canvas');
+  skinBumpCanvas.width = 64;
+  skinBumpCanvas.height = 64;
+  const skinBumpContext = skinBumpCanvas.getContext('2d');
+  const skinBumpImage = skinBumpContext.createImageData(64, 64);
+  for (let y = 0; y < 64; y += 1) {
+    for (let x = 0; x < 64; x += 1) {
+      const grain = Math.sin(x * 1.7 + y * 0.9) * 6 + Math.sin(x * 0.4 - y * 1.3) * 4;
+      const value = Math.max(0, Math.min(255, 128 + grain));
+      const offset = (y * 64 + x) * 4;
+      skinBumpImage.data[offset] = value;
+      skinBumpImage.data[offset + 1] = value;
+      skinBumpImage.data[offset + 2] = value;
+      skinBumpImage.data[offset + 3] = 255;
+    }
+  }
+  skinBumpContext.putImageData(skinBumpImage, 0, 0);
+  const skinBump = new THREE.CanvasTexture(skinBumpCanvas);
+  skinBump.wrapS = THREE.RepeatWrapping;
+  skinBump.wrapT = THREE.RepeatWrapping;
+  skinBump.repeat.set(4, 4);
+  skinBump.anisotropy = Math.min(4, maxAnisotropy);
+
+  const hairBumpCanvas = document.createElement('canvas');
+  hairBumpCanvas.width = 128;
+  hairBumpCanvas.height = 128;
+  const hairBumpContext = hairBumpCanvas.getContext('2d');
+  const hairBumpImage = hairBumpContext.createImageData(128, 128);
+  for (let y = 0; y < 128; y += 1) {
+    for (let x = 0; x < 128; x += 1) {
+      const strand = Math.sin(x * 0.46 + Math.sin(y * 0.09) * 0.7) * 20;
+      const fine = Math.sin(x * 1.12 + y * 0.17) * 8;
+      const value = Math.max(0, Math.min(255, 128 + strand + fine));
+      const offset = (y * 128 + x) * 4;
+      hairBumpImage.data[offset] = value;
+      hairBumpImage.data[offset + 1] = value;
+      hairBumpImage.data[offset + 2] = value;
+      hairBumpImage.data[offset + 3] = 255;
+    }
+  }
+  hairBumpContext.putImageData(hairBumpImage, 0, 0);
+  const hairBump = new THREE.CanvasTexture(hairBumpCanvas);
+  hairBump.wrapS = THREE.RepeatWrapping;
+  hairBump.wrapT = THREE.RepeatWrapping;
+  hairBump.repeat.set(3, 2);
+  hairBump.anisotropy = Math.min(4, maxAnisotropy);
+
+  const BASE_DISTANCE = 4.05;
+  const camera = new THREE.PerspectiveCamera(31, 1, 0.05, 30);
+  camera.position.set(0, 1.04, BASE_DISTANCE);
+  camera.lookAt(0, 0.96, 0);
+
+  scene.add(new THREE.HemisphereLight(0xfff7ec, 0x5c4c3b, 0.46));
+  const keyLight = new THREE.DirectionalLight(0xfff3e2, 1.3);
   keyLight.position.set(-2.2, 3.8, 3.3);
   keyLight.castShadow = true;
   keyLight.shadow.mapSize.set(2048, 2048);
@@ -129,16 +253,23 @@
   keyLight.shadow.camera.right = 2;
   keyLight.shadow.camera.top = 3;
   keyLight.shadow.camera.bottom = -0.5;
-  keyLight.shadow.bias = -0.0003;
+  keyLight.shadow.bias = -0.00018;
+  keyLight.shadow.normalBias = 0.018;
   keyLight.shadow.radius = 5;
   scene.add(keyLight);
-  const fillLight = new THREE.DirectionalLight(0xffe0c8, 0.3);
+  const fillLight = new THREE.DirectionalLight(0xffe0c8, 0.38);
   fillLight.position.set(2.6, 1.4, 2.1);
   scene.add(fillLight);
-  const rimLight = new THREE.PointLight(0xff4131, 1.2, 5.5);
+  const rimLight = new THREE.PointLight(0xff4131, 0.95, 5.5);
   rimLight.position.set(1.9, 2.0, -1.5);
   scene.add(rimLight);
-  const topLight = new THREE.PointLight(0xfff8ed, 0.3, 4);
+  const backLight = new THREE.DirectionalLight(0xffd6bd, 0.3);
+  backLight.position.set(-1.4, 2.4, -2.8);
+  scene.add(backLight);
+  const topLight = new THREE.PointLight(0xfff8ed, 0.36, 4);
+  const edgeLight = new THREE.DirectionalLight(0xffead8, 0.26);
+  edgeLight.position.set(-2.4, 2.4, -2.2);
+  scene.add(edgeLight);
   topLight.position.set(0, 3.2, 0.8);
   scene.add(topLight);
 
@@ -147,8 +278,8 @@
   shadowCanvas.height = 128;
   const shadowContext = shadowCanvas.getContext('2d');
   const shadowGradient = shadowContext.createRadialGradient(128, 64, 5, 128, 64, 112);
-  shadowGradient.addColorStop(0, 'rgba(65,44,25,.34)');
-  shadowGradient.addColorStop(0.52, 'rgba(65,44,25,.17)');
+  shadowGradient.addColorStop(0, 'rgba(65,44,25,.42)');
+  shadowGradient.addColorStop(0.52, 'rgba(65,44,25,.21)');
   shadowGradient.addColorStop(1, 'rgba(65,44,25,0)');
   shadowContext.fillStyle = shadowGradient;
   shadowContext.fillRect(0, 0, 256, 128);
@@ -162,7 +293,7 @@
   scene.add(shadowPlane);
   const shadowReceiver = new THREE.Mesh(
     new THREE.PlaneGeometry(1.45, 0.9),
-    new THREE.ShadowMaterial({ color: 0x533a24, opacity: 0.18 })
+    new THREE.ShadowMaterial({ color: 0x533a24, opacity: 0.22 })
   );
   shadowReceiver.rotation.x = -Math.PI / 2;
   shadowReceiver.position.set(0, 0.004, 0.02);
@@ -203,6 +334,10 @@
   let lastInteraction = performance.now();
   let snapshotCache = { signature: '', url: '' };
   let lastGoodSize = { width: 720, height: 900 };
+  let idleBlend = 0;
+  let idleTime = 0;
+  let equipPulse = 0;
+  const reduceMotion = Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   const SKIN_TONES = ['#c68b63', '#8e5a3e', '#e0af88'];
   const WHITE = new THREE.Color(0xffffff);
@@ -236,12 +371,38 @@
         params.normalScale = new THREE.Vector2(0.1, 0.1);
       }
     }
+    if ('denim' in params) {
+      const denim = params.denim;
+      delete params.denim;
+      if (denim) {
+        params.bumpMap = fabricBump;
+        params.bumpScale = 0.0035;
+        params.normalMap = denimNormal;
+        params.normalScale = new THREE.Vector2(0.85, 0.85);
+        params.roughnessMap = denimRoughness;
+        params.map = denimWeave;
+      }
+    }
     return new THREE.MeshStandardMaterial(params);
   }
 
   function cloth(value, options) {
     return material(value, { fabric: true, ...(options || {}) });
   }
+  function skinMaterial(value, roughness) {
+    const mat = new THREE.MeshPhysicalMaterial({
+      color: toColor(value),
+      roughness: roughness ?? 0.64,
+      metalness: 0,
+      clearcoat: 0.035,
+      clearcoatRoughness: 0.72,
+      envMapIntensity: 0.28,
+      bumpMap: skinBump,
+      bumpScale: 0.0006
+    });
+    return mat;
+  }
+
 
   function metalMaterial(value) {
     const metal = new THREE.MeshStandardMaterial({
@@ -433,7 +594,7 @@
     return points[points.length - 1][1];
   }
 
-  function profileLegMesh(side, topY, bottomY, rxPoints, cxPoints, depth, mat) {
+  function profileLegMesh(side, topY, bottomY, rxPoints, cxPoints, depth, mat, zShiftPoints) {
     const height = Math.max(0.05, topY - bottomY);
     const geometry = new THREE.CylinderGeometry(1, 1, height, 24, 14, true);
     const positions = geometry.attributes.position;
@@ -442,10 +603,12 @@
       const t = (height / 2 - y) / height;
       const rx = sampleProfile(rxPoints, t);
       const cx = sampleProfile(cxPoints, t);
+      const depthValue = Array.isArray(depth) ? sampleProfile(depth, t) : depth;
+      const shift = zShiftPoints ? sampleProfile(zShiftPoints, t) : 0;
       const nx = positions.getX(index);
       const nz = positions.getZ(index);
       positions.setX(index, nx * rx + side * cx);
-      positions.setZ(index, nz * rx * depth);
+      positions.setZ(index, nz * rx * depthValue + shift);
     }
     geometry.computeVertexNormals();
     const mesh = new THREE.Mesh(geometry, mat);
@@ -501,17 +664,8 @@
   }
 
   function addBody() {
-    const skin = new THREE.MeshStandardMaterial({
-      color: toColor(SKIN_TONES[state.skin] || SKIN_TONES[0]),
-      roughness: 0.78,
-      metalness: 0,
-      envMapIntensity: 0.35
-    });
-    const skinDark = new THREE.MeshStandardMaterial({
-      color: toColor(SKIN_TONES[state.skin] || SKIN_TONES[0]).multiplyScalar(0.86),
-      roughness: 0.82,
-      envMapIntensity: 0.35
-    });
+    const skin = skinMaterial(SKIN_TONES[state.skin] || SKIN_TONES[0], 0.66);
+    const skinDark = skinMaterial(new THREE.Color(SKIN_TONES[state.skin] || SKIN_TONES[0]).multiplyScalar(0.86), 0.72);
     const bodyWidth = state.body === 'slim' ? 0.93 : state.body === 'strong' ? 1.07 : 1;
     const body = new THREE.Group();
     body.scale.x = bodyWidth;
@@ -528,6 +682,12 @@
         skin
       );
       leg.userData.slot = 'bottom';
+      const equippedBottom = API.getItems().find((entry) => entry.id === state.equipped.bottom);
+      const shortBottom = equippedBottom && ['jorts', 'capri', 'skirt'].includes(equippedBottom.cut || equippedBottom.variant);
+      if (equippedBottom && !shortBottom) {
+        leg.visible = false;
+        leg.raycast = () => {};
+      }
       body.add(leg);
       pickables.push(leg);
       const ankle = add(body, sphere(0.043, 12), skinDark, [side * 0.085, 0.09, 0]);
@@ -535,25 +695,49 @@
       pickables.push(ankle);
 
       const arm = armPivot(body, side);
+      const shoulder = add(arm, sphere(0.062, 16), skin, [0, -0.006, 0], null, [1.06, 0.86, 1]);
+      shoulder.castShadow = false;
+      shoulder.userData.slot = 'top';
+      pickables.push(shoulder);
       const upperArm = add(arm, cylinder(0.052, 0.045, 0.32, 14), skin, [0, -0.16, 0]);
+      upperArm.castShadow = false;
       upperArm.userData.slot = 'top';
       pickables.push(upperArm);
       const elbow = add(arm, sphere(0.05, 12), skin, [0, -0.32, 0], null, [1, 0.85, 1]);
+      elbow.castShadow = false;
       elbow.userData.slot = 'top';
       pickables.push(elbow);
       const forearm = add(arm, cylinder(0.045, 0.037, 0.29, 14), skin, [0, -0.465, 0]);
+      forearm.castShadow = false;
       forearm.userData.slot = 'top';
       pickables.push(forearm);
+      const wrist = add(arm, sphere(0.035, 12), skin, [0, -0.612, 0], null, [1, 0.82, 0.95]);
+      wrist.castShadow = false;
+      wrist.userData.slot = 'top';
+      pickables.push(wrist);
       const handGroup = new THREE.Group();
       handGroup.position.set(0, -0.65, 0.015);
       handGroup.scale.x = 1 / bodyWidth;
       arm.add(handGroup);
       const hand = add(handGroup, sphere(0.058, 14), skin, [0, 0, 0], null, [0.9, 1.1, 0.5]);
+      hand.castShadow = false;
       hand.userData.slot = 'accessory';
       pickables.push(hand);
       const thumb = add(handGroup, sphere(0.023, 10), skin, [-side * 0.025, 0.02, 0.035], [0.2, 0, side * 0.45], [0.7, 1.15, 0.55]);
+      thumb.castShadow = false;
       thumb.userData.slot = 'accessory';
       pickables.push(thumb);
+      [0, 1, 2, 3].forEach((index) => {
+        const x = (index - 1.5) * 0.016;
+        const finger = add(handGroup, cylinder(0.0072, 0.0052, 0.044, 8), skin, [x, -0.045, 0.004], [0.08, 0, 0]);
+        finger.castShadow = false;
+        finger.userData.slot = 'accessory';
+        pickables.push(finger);
+        const tip = add(handGroup, sphere(0.0062, 8), skin, [x, -0.068, 0.007], null, [0.9, 1.1, 0.8]);
+        tip.castShadow = false;
+        tip.userData.slot = 'accessory';
+        pickables.push(tip);
+      });
     });
 
     const torsoProfile = [
@@ -586,10 +770,24 @@
     const head = add(headGroup, sphere(0.148, 24), skin, [0, 1.73, 0], null, [1, 1.15, 0.94]);
     head.userData.slot = 'hair';
     pickables.push(head);
+    const jaw = add(headGroup, sphere(0.11, 20), skin, [0, 1.682, 0.014], null, [0.86, 0.66, 0.9]);
+    jaw.userData.slot = 'hair';
+    pickables.push(jaw);
+    const chin = add(headGroup, sphere(0.038, 14), skin, [0, 1.632, 0.068], null, [1.4, 0.52, 0.9]);
+    chin.userData.slot = 'hair';
+    pickables.push(chin);
+    const nose = add(headGroup, sphere(0.018, 12), skin, [0, 1.735, 0.134], null, [0.7, 1.3, 0.9]);
+    nose.userData.slot = 'hair';
+    pickables.push(nose);
+    add(headGroup, cylinder(0.008, 0.011, 0.046, 10), skin, [0, 1.765, 0.122], [0.18, 0, 0]).userData.slot = 'hair';
     [-1, 1].forEach((side) => {
       const ear = add(headGroup, sphere(0.03, 12), skin, [side * 0.14, 1.72, 0], null, [0.55, 1, 0.7]);
       ear.userData.slot = 'hair';
       pickables.push(ear);
+      add(headGroup, sphere(0.016, 8), skinDark, [side * 0.142, 1.72, 0.018], null, [0.4, 0.7, 0.3]).userData.slot = 'hair';
+      const trap = add(headGroup, sphere(0.062, 14), skin, [side * 0.064, 1.512, -0.006], null, [1.2, 0.45, 0.85]);
+      trap.userData.slot = 'top';
+      pickables.push(trap);
     });
 
     if (state.equipped.hair === null) {
@@ -693,6 +891,10 @@
       if (variant === 'longsleeve') {
         add(slotGroup, torus(radius * 0.96, 0.009, 24), trim, [0, bodyBottom, 0], [Math.PI / 2, 0, 0], [1, 1, 0.73]);
         add(slotGroup, box(0.05, 0.016, 0.012), cream, [-0.02, bodyBottom + 0.012, 0.15]);
+        if (item.turtleneck) {
+          add(slotGroup, cylinder(0.082, 0.095, 0.13, 18), main, [0, 1.55, 0], null, [1, 1, 0.9]);
+          add(slotGroup, torus(0.09, 0.007, 18), trim, [0, 1.615, 0], [Math.PI / 2, 0, 0]);
+        }
       }
     } else if (variant === 'bomber') {
       [-1, 1].forEach((side) => {
@@ -707,6 +909,9 @@
       add(slotGroup, box(0.085, 0.048, 0.012), accent, [-0.125, 1.34, 0.18]);
       add(slotGroup, box(0.045, 0.032, 0.012), cream, [0.13, 1.34, 0.18]);
       add(slotGroup, box(0.07, 0.018, 0.01), hi, [0.13, 1.3, 0.18]);
+      if (item.puffer) {
+        [1.08, 1.2, 1.32, 1.44].forEach((y) => add(slotGroup, torus(radius * 0.97, 0.006, 24), trim, [0, y, 0], [Math.PI / 2, 0, 0], [1, 1, 0.8]));
+      }
     } else if (variant === 'vest') {
       [-1, 1].forEach((side) => {
         add(slotGroup, torus(0.072, 0.007, 18), dark, [side * 0.19, 1.37, 0], [Math.PI / 2, 0, 0], [1, 1, 0.9]);
@@ -725,6 +930,10 @@
       add(slotGroup, box(0.038, 0.35, 0.012), trim, [0, 1.27, 0.17]);
       [1.4, 1.31, 1.22, 1.13, 1.04].forEach((y) => add(slotGroup, sphere(0.009, 8), metal, [0, y, 0.18]));
       add(slotGroup, box(0.085, 0.07, 0.012), dark, [-0.115, 1.32, 0.15]);
+      if (item.cardigan) {
+        add(slotGroup, box(0.012, 0.4, 0.012), dark, [0, 1.27, 0.174]);
+        [1.42, 1.32, 1.22, 1.12].forEach((y) => add(slotGroup, sphere(0.009, 8), metal, [0, y, 0.184]));
+      }
       add(slotGroup, box(0.075, 0.012, 0.014), hi, [-0.115, 1.33, 0.158]);
       add(slotGroup, box(0.07, 0.012, 0.012), hi, [0.13, 1.12, 0.15]);
     }
@@ -748,43 +957,558 @@
     }
   }
 
+
+  const FULL_SEAT_DEPTH = [[0, 0.94], [0.12, 1.25], [0.22, 1.5], [0.32, 1.32], [0.42, 1.08], [0.55, 0.98], [1, 0.94]];
+  const FULL_SEAT_SHIFT = [[0, 0], [0.12, -0.015], [0.22, -0.025], [0.32, -0.014], [0.45, -0.004], [1, 0]];
+  const FITTED_SEAT_DEPTH = [[0, 0.94], [0.12, 1.18], [0.22, 1.35], [0.32, 1.15], [0.42, 0.98], [0.55, 0.9], [1, 0.88]];
+  const SHORT_SEAT_DEPTH = [[0, 0.94], [0.2, 1.3], [0.4, 1.35], [0.6, 1.05], [1, 0.94]];
+  const SHORT_SEAT_SHIFT = [[0, 0], [0.2, -0.015], [0.4, -0.01], [0.6, 0], [1, 0]];
+
+  const BOTTOM_LEG_PROFILES = {
+    flare: {
+      rx: [[0, 0.16], [0.1, 0.125], [0.22, 0.094], [0.38, 0.078], [0.52, 0.069], [0.62, 0.06], [0.72, 0.067], [0.84, 0.09], [1, 0.132]],
+      center: [[0, 0.035], [0.1, 0.062], [0.2, 0.088], [0.27, 0.098], [0.6, 0.1], [1, 0.13]],
+      depth: FITTED_SEAT_DEPTH,
+      shift: FULL_SEAT_SHIFT
+    },
+    bootcut: {
+      rx: [[0, 0.16], [0.1, 0.125], [0.22, 0.093], [0.38, 0.077], [0.52, 0.067], [0.62, 0.058], [0.75, 0.065], [1, 0.098]],
+      center: [[0, 0.035], [0.1, 0.062], [0.2, 0.088], [0.27, 0.098], [0.6, 0.099], [1, 0.112]],
+      depth: FITTED_SEAT_DEPTH,
+      shift: FULL_SEAT_SHIFT
+    },
+    wide: {
+      rx: [[0, 0.16], [0.1, 0.13], [0.2, 0.112], [0.35, 0.108], [0.6, 0.118], [1, 0.132]],
+      center: [[0, 0.04], [0.1, 0.07], [0.2, 0.1], [0.3, 0.12], [0.6, 0.135], [1, 0.15]],
+      depth: FULL_SEAT_DEPTH,
+      shift: FULL_SEAT_SHIFT
+    },
+    cargo: {
+      rx: [[0, 0.16], [0.1, 0.13], [0.2, 0.105], [0.5, 0.1], [0.8, 0.102], [1, 0.11]],
+      center: [[0, 0.04], [0.1, 0.068], [0.2, 0.095], [0.3, 0.11], [1, 0.13]],
+      depth: FULL_SEAT_DEPTH,
+      shift: FULL_SEAT_SHIFT
+    },
+    baggy: {
+      rx: [[0, 0.16], [0.1, 0.13], [0.22, 0.115], [0.4, 0.132], [0.7, 0.126], [1, 0.12]],
+      center: [[0, 0.04], [0.1, 0.075], [0.2, 0.11], [0.28, 0.128], [0.5, 0.145], [1, 0.16]],
+      depth: FULL_SEAT_DEPTH,
+      shift: FULL_SEAT_SHIFT
+    },
+    parachute: {
+      rx: [[0, 0.155], [0.12, 0.12], [0.25, 0.13], [0.5, 0.135], [0.75, 0.12], [0.88, 0.09], [1, 0.075]],
+      center: [[0, 0.04], [0.1, 0.075], [0.2, 0.112], [0.3, 0.135], [0.5, 0.15], [0.75, 0.155], [1, 0.13]],
+      depth: [[0, 0.94], [0.12, 1.0], [0.22, 1.1], [0.32, 1.0], [1, 0.94]],
+      shift: [[0, 0], [0.2, -0.01], [0.4, 0], [1, 0]]
+    },
+    track: {
+      rx: [[0, 0.16], [0.1, 0.12], [0.22, 0.095], [0.55, 0.07], [0.8, 0.062], [1, 0.07]],
+      center: [[0, 0.04], [0.1, 0.07], [0.2, 0.09], [0.27, 0.098], [1, 0.09]],
+      depth: FULL_SEAT_DEPTH,
+      shift: FULL_SEAT_SHIFT
+    },
+    leggings: {
+      rx: [[0, 0.16], [0.1, 0.13], [0.22, 0.1], [0.3, 0.064], [0.6, 0.052], [0.85, 0.043], [1, 0.042]],
+      center: [[0, 0.04], [0.1, 0.07], [0.2, 0.09], [0.27, 0.1], [1, 0.086]],
+      depth: FULL_SEAT_DEPTH,
+      shift: FULL_SEAT_SHIFT
+    },
+    straight: {
+      rx: [[0, 0.16], [0.1, 0.125], [0.22, 0.1], [0.6, 0.082], [1, 0.086]],
+      center: [[0, 0.04], [0.1, 0.07], [0.2, 0.09], [0.27, 0.1], [1, 0.092]],
+      depth: FULL_SEAT_DEPTH,
+      shift: FULL_SEAT_SHIFT
+    },
+    tailored: {
+      rx: [[0, 0.16], [0.1, 0.125], [0.22, 0.1], [0.6, 0.08], [1, 0.075]],
+      center: [[0, 0.04], [0.1, 0.07], [0.2, 0.09], [0.27, 0.1], [1, 0.092]],
+      depth: FULL_SEAT_DEPTH,
+      shift: FULL_SEAT_SHIFT
+    },
+    jorts: {
+      rx: [[0, 0.16], [0.1, 0.13], [0.3, 0.11], [0.5, 0.11], [0.6, 0.105], [1, 0.116]],
+      center: [[0, 0.04], [0.1, 0.065], [0.3, 0.09], [0.5, 0.105], [0.56, 0.11], [1, 0.13]],
+      depth: SHORT_SEAT_DEPTH,
+      shift: SHORT_SEAT_SHIFT,
+      hem: 0.55
+    },
+    capri: {
+      rx: [[0, 0.16], [0.1, 0.13], [0.22, 0.11], [0.35, 0.095], [0.55, 0.086], [1, 0.082]],
+      center: [[0, 0.04], [0.1, 0.06], [0.3, 0.082], [0.42, 0.095], [1, 0.094]],
+      depth: [[0, 0.94], [0.15, 1.3], [0.3, 1.4], [0.45, 1.15], [1, 0.94]],
+      shift: SHORT_SEAT_SHIFT,
+      hem: 0.43
+    }
+  };
+
+  function bottomPlan(item, waistY) {
+    const cut = item.bootcut ? 'bootcut' : item.capri ? 'capri' : (item.cut || item.variant || 'straight');
+    const profile = BOTTOM_LEG_PROFILES[cut] || BOTTOM_LEG_PROFILES.straight;
+    const hemY = profile.hem || 0.13;
+    const topY = waistY - 0.005;
+    const topOuter = sampleProfile(profile.center, 0) + sampleProfile(profile.rx, 0);
+    const hipR = Math.min(0.23, Math.max(0.172, topOuter));
+    return { cut, profile, hemY, topY, waistY, hipR };
+  }
+
+  function trouserSurfaceZ(plan, x, y, sign) {
+    const span = Math.max(0.001, plan.topY - plan.hemY);
+    const t = Math.max(0, Math.min(1, (plan.topY - y) / span));
+    const frame = legFrame(plan, t);
+    let best = 0;
+    [-1, 1].forEach((side) => {
+      const dx = x - side * frame.cx;
+      if (Math.abs(dx) >= frame.rx) return;
+      const z = Math.sqrt(1 - (dx / frame.rx) ** 2) * frame.rx * frame.depth + frame.shift;
+      if (z > best) best = z;
+    });
+    return best * sign;
+  }
+
+  function legFrame(plan, t) {
+    const depth = Array.isArray(plan.profile.depth) ? sampleProfile(plan.profile.depth, t) : plan.profile.depth;
+    return {
+      rx: sampleProfile(plan.profile.rx, t),
+      cx: sampleProfile(plan.profile.center, t),
+      depth,
+      shift: plan.profile.shift ? sampleProfile(plan.profile.shift, t) : 0,
+      y: plan.topY - t * (plan.topY - plan.hemY)
+    };
+  }
+
+  function addTrouserSeam(slotGroup, points, mat, radius) {
+    const seam = tube(points, radius, mat);
+    seam.userData.slot = 'bottom';
+    slotGroup.add(seam);
+    return seam;
+  }
+
+  function addTrouserLegDetails(slotGroup, item, plan, side, mats) {
+    const { stitch, crease, metal, hi, dark, main, denim, style } = mats;
+    const fullLength = plan.hemY < 0.24;
+    const sporty = style === 'sport' || style === 'technical';
+    const thread = denim ? stitch : crease;
+    const seamMat = sporty ? dark : thread;
+    const outer = [];
+    const inner = [];
+    const front = [];
+    const back = [];
+    const steps = 12;
+    for (let index = 0; index <= steps; index += 1) {
+      const t = 0.04 + (index / steps) * 0.94;
+      const frame = legFrame(plan, t);
+      const rz = frame.rx * frame.depth;
+      outer.push([side * (frame.cx + frame.rx * 0.965), frame.y, rz * 0.24 + frame.shift]);
+      inner.push([side * (frame.cx - frame.rx * 0.965), frame.y, rz * 0.06 + frame.shift]);
+      front.push([side * frame.cx, frame.y, rz * 1.008 + frame.shift]);
+      back.push([side * frame.cx, frame.y, -rz * 1.004 + frame.shift]);
+    }
+    if (denim) {
+      addTrouserSeam(slotGroup, outer.map(([x, y, z]) => [x + side * 0.0015, y, z + 0.001]), main, 0.0036);
+      addTrouserSeam(slotGroup, inner.map(([x, y, z]) => [x - side * 0.0015, y, z]), main, 0.003);
+    }
+    addTrouserSeam(slotGroup, outer, seamMat, denim ? 0.003 : sporty ? 0.0012 : 0.0014);
+    if (denim) {
+      addTrouserSeam(slotGroup, outer.map(([x, y, z]) => [x - side * 0.008, y, z + 0.005]), stitch, 0.0019);
+    }
+    addTrouserSeam(slotGroup, inner, denim ? stitch : sporty ? dark : crease, denim ? 0.0022 : sporty ? 0.001 : 0.0012);
+    if (fullLength && !sporty) {
+      addTrouserSeam(slotGroup, front, crease, denim ? 0.0026 : 0.0018);
+      addTrouserSeam(slotGroup, back, crease, 0.0018);
+    }
+
+    if (plan.cut === 'track' || plan.cut === 'leggings') {
+      const stripe = [];
+      const stripeDark = [];
+      for (let index = 0; index <= 10; index += 1) {
+        const t = 0.06 + (index / 10) * 0.9;
+        const frame = legFrame(plan, t);
+        stripe.push([side * (frame.cx + frame.rx * 0.992), frame.y, 0]);
+        stripeDark.push([side * (frame.cx + frame.rx * 0.958), frame.y, frame.rx * frame.depth * 0.12 + frame.shift]);
+      }
+      addTrouserSeam(slotGroup, stripe, hi, 0.0045);
+      addTrouserSeam(slotGroup, stripeDark, dark, 0.0018);
+    }
+
+    if (plan.cut === 'parachute') {
+      [0.34, 0.58].forEach((t) => {
+        const frame = legFrame(plan, t);
+        const ringPoints = [];
+        for (let index = 0; index <= 12; index += 1) {
+          const angle = (index / 12) * Math.PI * 2;
+          ringPoints.push([
+            side * frame.cx + Math.cos(angle) * frame.rx * 1.004,
+            frame.y,
+            Math.sin(angle) * frame.rx * frame.depth * 1.004 + frame.shift
+          ]);
+        }
+        addTrouserSeam(slotGroup, ringPoints, crease, 0.0012);
+      });
+    }
+
+    if (item.cargo || plan.cut === 'cargo') {
+      const t = fullLength ? 0.34 : 0.32;
+      const frame = legFrame(plan, t);
+      const theta = 0.62;
+      const nx = side * Math.cos(theta);
+      const nz = Math.sin(theta);
+      const tx = -side * Math.sin(theta);
+      const tz = Math.cos(theta);
+      const surfaceX = side * (frame.cx + frame.rx * Math.cos(theta));
+      const surfaceZ = frame.rx * frame.depth * Math.sin(theta) + frame.shift;
+      const px = surfaceX + nx * 0.018;
+      const pz = surfaceZ + nz * 0.018;
+      const angle = side === 1 ? -theta : Math.PI + theta;
+      const face = (dy, dz) => [px + nx * 0.0205 + tx * dz, frame.y + dy, pz + nz * 0.0205 + tz * dz];
+      const pocket = add(slotGroup, box(0.04, 0.15, 0.1), main, [px, frame.y, pz]);
+      pocket.rotation.y = angle;
+      pocket.castShadow = false;
+      const flap = add(slotGroup, box(0.044, 0.034, 0.106), main, [px + nx * 0.002, frame.y + 0.086, pz + nz * 0.002]);
+      flap.rotation.y = angle;
+      flap.castShadow = false;
+      addTrouserSeam(slotGroup, [face(0.079, -0.048), face(0.079, 0.048)], crease, 0.0014);
+      addTrouserSeam(slotGroup, [
+        face(-0.058, -0.044), face(-0.058, 0.044), face(0.05, 0.044), face(0.05, -0.044), face(-0.058, -0.044)
+      ], thread, 0.0017);
+      addTrouserSeam(slotGroup, [face(0.034, 0), face(-0.045, 0)], crease, 0.0013);
+      add(slotGroup, sphere(0.008, 10), metal, face(0.062, 0.026));
+    }
+
+    if (denim) {
+      [0.43, 0.48].forEach((t) => {
+        const frame = legFrame(plan, t);
+        const rz = frame.rx * frame.depth;
+        addTrouserSeam(slotGroup, [
+          [side * (frame.cx - frame.rx * 0.52), frame.y + 0.018, rz * 0.86 + frame.shift],
+          [side * (frame.cx + frame.rx * 0.02), frame.y, rz * 0.995 + frame.shift],
+          [side * (frame.cx + frame.rx * 0.54), frame.y - 0.016, rz * 0.84 + frame.shift]
+        ], crease, 0.0015);
+      });
+      [0.92, 0.97].forEach((t) => {
+        const frame = legFrame(plan, t);
+        const rz = frame.rx * frame.depth;
+        addTrouserSeam(slotGroup, [
+          [side * (frame.cx - frame.rx * 0.55), frame.y + 0.012, rz * 0.83 + frame.shift],
+          [side * (frame.cx + frame.rx * 0.05), frame.y - 0.006, rz * 0.99 + frame.shift],
+          [side * (frame.cx + frame.rx * 0.6), frame.y + 0.004, rz * 0.82 + frame.shift]
+        ], crease, 0.0014);
+      });
+      [0.34, 0.4, 0.46].forEach((t) => {
+        const frame = legFrame(plan, t);
+        const rz = -frame.rx * frame.depth;
+        const at = (fraction, dy) => [
+          side * (frame.cx + frame.rx * fraction),
+          frame.y + dy,
+          rz * Math.sqrt(Math.max(0, 1 - fraction * fraction)) * 0.995 + frame.shift
+        ];
+        addTrouserSeam(slotGroup, [at(-0.55, 0.02), at(0.05, 0), at(0.6, -0.018)], crease, 0.0011);
+      });
+    } else if (fullLength && !sporty) {
+      [0.36, 0.5].forEach((t) => {
+        const frame = legFrame(plan, t);
+        const rz = frame.rx * frame.depth;
+        addTrouserSeam(slotGroup, [
+          [side * (frame.cx - frame.rx * 0.5), frame.y + 0.02, rz * 0.86 + frame.shift],
+          [side * (frame.cx + frame.rx * 0.1), frame.y, rz * 0.995 + frame.shift],
+          [side * (frame.cx + frame.rx * 0.55), frame.y - 0.018, rz * 0.84 + frame.shift]
+        ], crease, 0.0018);
+      });
+    }
+
+    if (sporty) {
+      [0.4, 0.58].forEach((t) => {
+        const frame = legFrame(plan, t);
+        const rz = frame.rx * frame.depth;
+        addTrouserSeam(slotGroup, [
+          [side * (frame.cx - frame.rx * 0.46), frame.y + 0.012, rz * 0.88 + frame.shift],
+          [side * (frame.cx + frame.rx * 0.02), frame.y, rz * 0.995 + frame.shift],
+          [side * (frame.cx + frame.rx * 0.5), frame.y - 0.012, rz * 0.86 + frame.shift]
+        ], dark, 0.0011);
+      });
+      if (plan.cut === 'track') {
+        const zipPoints = [];
+        for (let index = 0; index <= 4; index += 1) {
+          const t = 0.86 + index * 0.028;
+          const frame = legFrame(plan, t);
+          const rz = frame.rx * frame.depth;
+          zipPoints.push([side * (frame.cx + frame.rx * 0.975), frame.y, rz * 0.2 + frame.shift]);
+        }
+        addTrouserSeam(slotGroup, zipPoints, dark, 0.0022);
+        for (let index = 0; index < 4; index += 1) {
+          const frame = legFrame(plan, 0.885 + index * 0.027);
+          const rz = frame.rx * frame.depth;
+          add(slotGroup, box(0.004, 0.007, 0.012), metal, [side * (frame.cx + frame.rx * 0.99), frame.y, rz * 0.2 + frame.shift + 0.007]);
+        }
+      } else if (plan.cut === 'leggings') {
+        const ankle = legFrame(plan, 0.94);
+        addTrouserSeam(slotGroup, [
+          [side * (ankle.cx - ankle.rx * 0.7), ankle.y, ankle.rx * ankle.depth * 0.7 + ankle.shift],
+          [side * (ankle.cx + ankle.rx * 0.7), ankle.y, ankle.rx * ankle.depth * 0.7 + ankle.shift]
+        ], dark, 0.0012);
+      } else if (plan.cut === 'parachute') {
+        const toggle = legFrame(plan, 0.86);
+        const tz = toggle.rx * toggle.depth * 0.2 + toggle.shift;
+        add(slotGroup, box(0.014, 0.024, 0.012), dark, [side * (toggle.cx + toggle.rx * 0.96), toggle.y, tz]);
+        add(slotGroup, torus(0.012, 0.0025, 12), metal, [side * (toggle.cx + toggle.rx * 0.99), toggle.y + 0.025, tz], [0, 0, Math.PI / 2]);
+        addTrouserSeam(slotGroup, [
+          [side * (toggle.cx + toggle.rx * 0.95), toggle.y - 0.02, tz],
+          [side * (toggle.cx + toggle.rx * 0.93), toggle.y - 0.08, tz + 0.006]
+        ], crease, 0.002);
+      }
+      const cuff = legFrame(plan, 1);
+      add(slotGroup, cylinder(cuff.rx * 0.99, cuff.rx * 0.97, 0.028, 24), plan.cut === 'leggings' ? main : dark, [side * cuff.cx, plan.hemY + 0.035, cuff.shift], null, [1, 1, cuff.depth]);
+    }
+
+    const hem = legFrame(plan, 1);
+    const hemCx = side * hem.cx;
+    add(slotGroup, torus(hem.rx * 0.985, denim ? 0.0028 : 0.0016, 24), thread, [hemCx, plan.hemY + 0.024, hem.shift], [Math.PI / 2, 0, 0], [1, 1, hem.depth]);
+    add(slotGroup, torus(hem.rx * 0.955, denim ? 0.0017 : 0.0011, 24), thread, [hemCx, plan.hemY + 0.042, hem.shift], [Math.PI / 2, 0, 0], [1, 1, hem.depth]);
+    if (plan.cut === 'jorts') {
+      for (let index = 0; index < 5; index += 1) {
+        const angle = 0.7 + index * 0.42;
+        add(slotGroup, box(0.0022, 0.024, 0.0022), hi, [side * hem.cx + Math.cos(angle) * hem.rx * 0.97, plan.hemY + 0.012, Math.sin(angle) * hem.rx * hem.depth * 0.97 + hem.shift]);
+      }
+    }
+  }
+
+  function addTrouserWaistDetails(slotGroup, item, plan, mats, denim) {
+    const { main, stitch, crease, metal, leather, dark, trim, style } = mats;
+    const waistY = plan.waistY;
+    const sporty = style === 'sport' || style === 'technical';
+    const thread = denim ? stitch : crease;
+    const frontZ = (x, y) => trouserSurfaceZ(plan, x, y, 1) + 0.0015;
+    const backZ = (x, y) => trouserSurfaceZ(plan, x, y, -1) - 0.0015;
+    const bandR = plan.hipR + 0.004;
+    const bandZ = (x, face) => face * Math.sqrt(Math.max(0, 1 - (x / bandR) ** 2)) * bandR * 0.82;
+
+    if (!sporty) {
+      const fly = [
+        [0.002, waistY - 0.005, frontZ(0.002, waistY - 0.005)],
+        [0.004, waistY - 0.045, frontZ(0.004, waistY - 0.045)],
+        [0.012, waistY - 0.085, frontZ(0.012, waistY - 0.085)],
+        [0.034, waistY - 0.105, frontZ(0.034, waistY - 0.105)],
+        [0.052, waistY - 0.115, frontZ(0.052, waistY - 0.115)]
+      ];
+      addTrouserSeam(slotGroup, fly, thread, denim ? 0.0024 : 0.0014);
+      if (denim) addTrouserSeam(slotGroup, fly.map(([x, y, z]) => [x + 0.008, y, z + 0.0015]), thread, 0.0015);
+      addTrouserSeam(slotGroup, [
+        [0, waistY - 0.12, frontZ(0, waistY - 0.12)],
+        [0, 0.79, frontZ(0, 0.79)],
+        [0, 0.715, frontZ(0, 0.715)]
+      ], crease, 0.0018);
+      if (denim) {
+        add(slotGroup, box(0.004, 0.09, 0.004), dark, [0.006, waistY - 0.055, frontZ(0.006, waistY - 0.055)]);
+        addTrouserSeam(slotGroup, [
+          [-0.03, 0.72, frontZ(0.03, 0.72)],
+          [0, 0.703, frontZ(0, 0.703)],
+          [0.03, 0.72, frontZ(0.03, 0.72)]
+        ], crease, 0.0018);
+      }
+      add(slotGroup, cylinder(0.012, 0.012, 0.006, 16), metal, [0, waistY + 0.012, bandZ(0, 1) + 0.004], [Math.PI / 2, 0, 0]);
+    }
+
+    if (!sporty) {
+      const loops = denim
+        ? [[-0.14, 1], [-0.08, 1], [0.08, 1], [0.14, 1], [-0.11, -1], [0, -1], [0.11, -1]]
+        : [[-0.13, 1], [-0.07, 1], [0.07, 1], [0.13, 1], [0, -1]];
+      loops.forEach(([x, face]) => {
+        const loopZ = bandZ(x, face) + face * 0.005;
+        add(slotGroup, box(0.014, 0.05, 0.011), main, [x, waistY + 0.006, loopZ]);
+        if (denim) addTrouserSeam(slotGroup, [[x - 0.005, waistY + 0.024, loopZ + face * 0.007], [x - 0.005, waistY - 0.014, loopZ + face * 0.007]], stitch, 0.0011);
+      });
+    }
+
+    if (!sporty) {
+      [-1, 1].forEach((side) => {
+        if (denim) {
+          const pocket = [0.15, 0.12, 0.09, 0.062].map((x, index) => {
+            const y = waistY - 0.006 - index * 0.026;
+            return [side * x, y, frontZ(side * x, y)];
+          });
+          addTrouserSeam(slotGroup, pocket.map(([x, y, z]) => [x, y, z - 0.0012]), crease, 0.0022);
+          addTrouserSeam(slotGroup, pocket, thread, 0.0021);
+          const rivet = pocket[0];
+          add(slotGroup, sphere(0.0055, 8), metal, [rivet[0], rivet[1], rivet[2] + 0.0025]);
+          if (side === 1) {
+            addTrouserSeam(slotGroup, [
+              [0.105, waistY - 0.04, frontZ(0.105, waistY - 0.04)],
+              [0.092, waistY - 0.064, frontZ(0.092, waistY - 0.064)],
+              [0.078, waistY - 0.082, frontZ(0.078, waistY - 0.082)]
+            ], thread, 0.0013);
+            add(slotGroup, sphere(0.004, 8), metal, [0.078, waistY - 0.082, frontZ(0.078, waistY - 0.082) + 0.0025]);
+          }
+        } else {
+          const pocket = [0.155, 0.125, 0.095].map((x, index) => {
+            const y = waistY - 0.014 - index * 0.038;
+            return [side * x, y, frontZ(side * x, y)];
+          });
+          addTrouserSeam(slotGroup, pocket, thread, 0.0016);
+          addTrouserSeam(slotGroup, pocket.map(([x, y, z]) => [x, y + 0.005, z - 0.001]), crease, 0.001);
+        }
+      });
+    }
+
+    if (plan.hemY < 0.6 && !sporty) {
+      if (denim) {
+        [-1, 1].forEach((side) => {
+          const cx = side * 0.082;
+          const top = waistY - (waistY > 0.94 ? 0.10 : 0.07);
+          const bottom = top - (waistY > 0.94 ? 0.10 : 0.08);
+          const half = 0.042;
+          const pocket = [
+            [cx - half, top], [cx + half, top], [cx + half, bottom + 0.022],
+            [cx, bottom], [cx - half, bottom + 0.022], [cx - half, top]
+          ].map(([x, y]) => [x, y, backZ(x, y) - 0.002]);
+          addTrouserSeam(slotGroup, pocket, thread, 0.0022);
+          addTrouserSeam(slotGroup, pocket.map(([x, y, z]) => [cx + (x - cx) * 0.88, y + 0.003, z - 0.001]), thread, 0.0012);
+          addTrouserSeam(slotGroup, [
+            [cx - 0.022, top - 0.004, backZ(cx - 0.022, top - 0.004) - 0.002],
+            [cx + 0.022, top - 0.004, backZ(cx + 0.022, top - 0.004) - 0.002]
+          ], thread, 0.0014);
+        });
+        const yoke = [-0.13, -0.07, 0, 0.07, 0.13].map((x) => {
+          const y = waistY - 0.045 - (1 - Math.abs(x) / 0.13) * 0.02;
+          return [x, y, backZ(x, y) - 0.002];
+        });
+        addTrouserSeam(slotGroup, yoke, thread, 0.0022);
+      } else {
+        [-1, 1].forEach((side) => {
+          const cx = side * 0.082;
+          const y = waistY - 0.105;
+          addTrouserSeam(slotGroup, [
+            [cx - 0.042, y, backZ(cx - 0.042, y) - 0.002],
+            [cx + 0.042, y, backZ(cx + 0.042, y) - 0.002]
+          ], thread, 0.0018);
+          addTrouserSeam(slotGroup, [
+            [cx - 0.042, y - 0.006, backZ(cx - 0.042, y - 0.006) - 0.002],
+            [cx + 0.042, y - 0.006, backZ(cx + 0.042, y - 0.006) - 0.002]
+          ], thread, 0.001);
+        });
+      }
+      addTrouserSeam(slotGroup, [
+        [0, waistY - 0.01, backZ(0, waistY - 0.01)],
+        [0, 0.8, backZ(0, 0.8)],
+        [0, 0.71, backZ(0, 0.71)]
+      ], crease, 0.0013);
+    }
+
+    if (denim) {
+      const patchX = 0.085;
+      const patchY = waistY - 0.055;
+      add(slotGroup, box(0.07, 0.046, 0.007), leather, [patchX, patchY, backZ(patchX, patchY) - 0.003]);
+      addBrandMark(slotGroup, item, [patchX, patchY, backZ(patchX, patchY) - 0.008], 0.4, stitch);
+      [-1, 1].forEach((side) => {
+        const base = Math.min(waistY - 0.12, 0.83);
+        for (let index = 0; index < 2; index += 1) {
+          const y0 = base - index * 0.026;
+          const points = [0.045, 0.085, 0.125].map((x, pointIndex) => {
+            const y = y0 + (pointIndex === 0 ? 0.012 : pointIndex === 1 ? -0.002 : -0.02);
+            return [side * x, y, frontZ(side * x, y) + 0.0015];
+          });
+          addTrouserSeam(slotGroup, points, crease, 0.0018);
+        }
+      });
+    }
+
+    if (sporty) {
+      add(slotGroup, box(0.028, 0.012, 0.006), metal, [0.12, waistY + 0.006, bandZ(0.12, 1) + 0.008]);
+      if (style === 'technical') {
+        add(slotGroup, torus(0.018, 0.003, 12), metal, [-0.16, waistY - 0.005, bandZ(-0.16, 1) + 0.006], [Math.PI / 2, 0, 0]);
+      }
+    }
+
+    addBrandMark(slotGroup, item, [0.1, waistY + 0.012, bandZ(0.1, 1) + 0.004], 0.6, denim ? stitch : trim);
+  }
+
   function addModernBottom(slotGroup, item, mats) {
-    const { main, hi, dark, trim, metal } = mats;
+    const { main, hi, dark, trim, metal, denim, stitch, leather } = mats;
     const crease = material(item.palette.main, { roughness: 0.86 });
     crease.color.multiplyScalar(0.7);
     const fit = item.fit || 'mid';
     const waistY = fit === 'high' ? 0.975 : fit === 'low' ? 0.855 : 0.925;
     const variant = item.variant;
-    add(slotGroup, cylinder(0.178, 0.166, 0.07, 22), main, [0, waistY, 0], null, [1, 1, 0.82]);
-    add(slotGroup, cylinder(0.182, 0.182, 0.022, 22), dark, [0, waistY + 0.045, 0], null, [1, 1, 0.82]);
-    add(slotGroup, box(0.06, 0.03, 0.014), metal, [0, waistY + 0.015, 0.15]);
-    [-0.128, -0.042, 0.042, 0.128].forEach((x) => add(slotGroup, box(0.017, 0.055, 0.014), dark, [x, waistY + 0.015, 0.145]));
-    const chain = tube([[-0.15, waistY, 0.145], [-0.12, waistY - 0.13, 0.16], [-0.065, waistY - 0.24, 0.15]], 0.007, metal);
-    chain.userData.slot = 'bottom';
-    slotGroup.add(chain);
-    add(slotGroup, box(0.047, 0.022, 0.012), metal, [0.14, waistY - 0.1, 0.15]);
-    add(slotGroup, sphere(0.012, 10), metal, [0.14, waistY - 0.13, 0.152]);
+    const plan = bottomPlan(item, waistY);
+    const style = denim ? 'denim' : (plan.cut === 'track' || plan.cut === 'leggings') ? 'sport' : plan.cut === 'parachute' ? 'technical' : 'tailored';
+    const waistR = plan.hipR + 0.004;
+    const depthScale = 0.82;
 
-    // pelvis bridge: closes the gap between waistband and leg tops on wide trousers
-    add(slotGroup, cylinder(0.174, 0.158, 0.25, 24), main, [0, waistY - 0.115, 0], null, [1, 1, 0.82]);
-    add(slotGroup, torus(0.171, 0.009, 24), dark, [0, waistY - 0.025, 0], [Math.PI / 2, 0, 0], [1, 1, 0.82]);
-    add(slotGroup, box(0.012, 0.19, 0.012), dark, [0, waistY - 0.15, 0.145]);
-    [-1, 1].forEach((side) => {
-      add(slotGroup, box(0.012, 0.14, 0.012), crease, [side * 0.155, waistY - 0.14, 0.02], [0, 0, side * 0.1]);
-    });
+    add(slotGroup, cylinder(waistR, waistR * 0.985, 0.055, 22), main, [0, waistY, 0], null, [1, 1, depthScale]);
+    add(slotGroup, cylinder(waistR * 1.006, waistR * 1.006, 0.01, 22), dark, [0, waistY + 0.03, 0], null, [1, 1, depthScale]);
+    add(slotGroup, cylinder(waistR * 0.99, waistR * 0.99, 0.009, 22), dark, [0, waistY + 0.022, 0], null, [1, 1, depthScale]);
 
     if (variant === 'skirt') {
       const length = item.length || 'midi';
       const hemY = length === 'mini' ? 0.64 : length === 'maxi' ? 0.16 : 0.4;
       const bottomR = length === 'mini' ? 0.215 : length === 'maxi' ? 0.27 : 0.24;
-      const skirt = new THREE.CylinderGeometry(0.17, bottomR, waistY - 0.03 - hemY, 32, 4, true);
+      const skirt = new THREE.CylinderGeometry(waistR * 0.97, bottomR, waistY - 0.03 - hemY, 32, 4, true);
       add(slotGroup, skirt, main, [0, (waistY + hemY) / 2, 0], null, [1, 1, 0.86]);
       add(slotGroup, torus(bottomR * 0.97, 0.01, 32), trim, [0, hemY, 0], [Math.PI / 2, 0, 0], [1, 1, 0.86]);
-      add(slotGroup, torus(0.173, 0.012, 28), dark, [0, waistY - 0.02, 0], [Math.PI / 2, 0, 0], [1, 1, 0.86]);
-      [-0.12, -0.06, 0, 0.06, 0.12].forEach((x) => {
-        add(slotGroup, box(0.004, waistY - hemY - 0.06, 0.004), hi, [x, (waistY + hemY) / 2, 0.145]);
-      });
-      add(slotGroup, box(0.012, (waistY - hemY) * 0.66, 0.008), dark, [0.07, hemY + (waistY - hemY) * 0.28, 0.18]);
+      add(slotGroup, torus(waistR * 0.985, 0.012, 28), dark, [0, waistY - 0.02, 0], [Math.PI / 2, 0, 0], [1, 1, 0.86]);
+      const thread = denim ? stitch : crease;
+      add(slotGroup, torus(waistR * 1.002, 0.0016, 28), thread, [0, waistY + 0.027, 0], [Math.PI / 2, 0, 0], [1, 1, depthScale]);
+      add(slotGroup, torus(waistR * 0.985, 0.0014, 28), thread, [0, waistY - 0.026, 0], [Math.PI / 2, 0, 0], [1, 1, depthScale]);
+      if (!denim) {
+        [-0.12, -0.06, 0, 0.06, 0.12].forEach((x) => {
+          add(slotGroup, box(0.004, waistY - hemY - 0.06, 0.004), hi, [x, (waistY + hemY) / 2, 0.145]);
+        });
+        add(slotGroup, box(0.012, (waistY - hemY) * 0.66, 0.008), dark, [0.07, hemY + (waistY - hemY) * 0.28, 0.18]);
+      } else {
+        const topY = waistY - 0.03;
+        const topR = waistR * 0.97;
+        const radiusAt = (y) => topR + (bottomR - topR) * Math.max(0, Math.min(1, (topY - y) / Math.max(0.001, topY - hemY)));
+        const frontZ = (x, y) => {
+          const radius = radiusAt(y);
+          return Math.sqrt(Math.max(0, 1 - (x / radius) ** 2)) * radius * 0.86;
+        };
+        const backZ = (x, y) => -frontZ(x, y);
+        const thread = stitch;
+        const sidePts = [[], []];
+        for (let index = 0; index <= 8; index += 1) {
+          const y = topY - (index / 8) * (topY - hemY - 0.02);
+          const radius = radiusAt(y);
+          sidePts[0].push([-radius * 0.985, y, 0]);
+          sidePts[1].push([radius * 0.985, y, 0]);
+        }
+        sidePts.forEach((points) => addTrouserSeam(slotGroup, points, thread, 0.0018));
+        addTrouserSeam(slotGroup, [
+          [0, topY - 0.005, frontZ(0, topY - 0.005)],
+          [0, topY - 0.06, frontZ(0, topY - 0.06)],
+          [0, topY - 0.105, frontZ(0, topY - 0.105)]
+        ], thread, 0.0018);
+        [-1, 1].forEach((side) => {
+          const pocket = [0.14, 0.105, 0.07].map((x, index) => {
+            const y = topY - 0.012 - index * 0.035;
+            return [side * x, y, frontZ(side * x, y)];
+          });
+          addTrouserSeam(slotGroup, pocket.map(([x, y, z]) => [x, y, z - 0.0012]), crease, 0.0018);
+          addTrouserSeam(slotGroup, pocket, thread, 0.0018);
+          add(slotGroup, sphere(0.005, 8), metal, [pocket[0][0], pocket[0][1], pocket[0][2] + 0.002]);
+          const cx = side * 0.072;
+          const pkTop = topY - 0.12;
+          const pkBottom = pkTop - 0.085;
+          const pent = [
+            [cx - 0.034, pkTop], [cx + 0.034, pkTop], [cx + 0.034, pkBottom + 0.02],
+            [cx, pkBottom], [cx - 0.034, pkBottom + 0.02], [cx - 0.034, pkTop]
+          ].map(([x, y]) => [x, y, backZ(x, y) - 0.002]);
+          addTrouserSeam(slotGroup, pent, thread, 0.0018);
+          addTrouserSeam(slotGroup, [
+            [cx - 0.02, pkTop - 0.004, backZ(cx - 0.02, pkTop - 0.004) - 0.002],
+            [cx + 0.02, pkTop - 0.004, backZ(cx + 0.02, pkTop - 0.004) - 0.002]
+          ], thread, 0.0011);
+        });
+        const yoke = [-0.11, -0.055, 0, 0.055, 0.11].map((x) => {
+          const y = topY - 0.075 - (1 - Math.abs(x) / 0.11) * 0.015;
+          return [x, y, backZ(x, y) - 0.002];
+        });
+        addTrouserSeam(slotGroup, yoke, thread, 0.0018);
+        const waistRForLoops = waistR;
+        [[-0.13, 1], [-0.065, 1], [0.065, 1], [0.13, 1], [-0.09, -1], [0, -1], [0.09, -1]].forEach(([x, face]) => {
+          const z = face * Math.sqrt(Math.max(0, 1 - (x / waistRForLoops) ** 2)) * waistRForLoops * 0.86;
+          add(slotGroup, box(0.013, 0.045, 0.01), main, [x, waistY + 0.004, z + face * 0.005]);
+          addTrouserSeam(slotGroup, [[x - 0.004, waistY + 0.02, z + face * 0.011], [x - 0.004, waistY - 0.012, z + face * 0.011]], thread, 0.001);
+        });
+        add(slotGroup, torus(bottomR * 0.965, 0.0016, 32), thread, [0, hemY + 0.022, 0], [Math.PI / 2, 0, 0], [1, 1, 0.86]);
+      }
       if (item.cargo) {
         add(slotGroup, box(0.085, 0.13, 0.05), main, [-0.16, 0.65, 0.02]);
         add(slotGroup, box(0.09, 0.018, 0.055), dark, [-0.16, 0.72, 0.02]);
@@ -797,108 +1521,26 @@
       return;
     }
 
-    const hemY = variant === 'jorts' ? 0.52 : 0.13;
-    const legTop = Math.min(0.93, waistY + 0.02);
     [-1, 1].forEach((side) => {
-      const x = side * (variant === 'baggy' ? 0.145 : variant === 'parachute' ? 0.16 : variant === 'flare' ? 0.115 : variant === 'jorts' ? 0.13 : 0.086);
-      if (variant === 'flare') {
-        const leg = profileLegMesh(
-          side, legTop, 0.13,
-          [[0, 0.095], [0.16, 0.102], [0.4, 0.086], [0.56, 0.07], [0.72, 0.1], [1, 0.15]],
-          [[0, 0.082], [0.56, 0.092], [1, 0.135]],
-          0.9,
-          main
-        );
-        slotGroup.add(leg);
-        const hemCx = sampleProfile([[0, 0.082], [0.56, 0.092], [1, 0.135]], 1);
-        add(slotGroup, torus(0.144, 0.008, 22), dark, [side * hemCx, 0.135, 0], [Math.PI / 2, 0, 0], [1, 1, 0.9]);
-        add(slotGroup, torus(0.084, 0.004, 18), crease, [side * 0.092, 0.5, 0], [Math.PI / 2, 0, 0], [1, 1, 0.9]);
-        add(slotGroup, box(0.012, 0.5, 0.012), hi, [side * 0.135, 0.48, 0.045]);
-        add(slotGroup, box(0.006, 0.36, 0.008), crease, [0, 0.32, 0.14]);
-        const flareKnee = tube([[side * 0.074, 0.58, 0.086], [side * 0.09, 0.53, 0.098], [side * 0.104, 0.48, 0.09]], 0.0018, crease);
-        flareKnee.userData.slot = 'bottom';
-        slotGroup.add(flareKnee);
-        const flareHem = tube([[side * 0.112, 0.3, 0.118], [side * 0.128, 0.27, 0.135], [side * 0.12, 0.23, 0.126]], 0.0016, crease);
-        flareHem.userData.slot = 'bottom';
-        slotGroup.add(flareHem);
-      } else if (variant === 'baggy') {
-        add(slotGroup, cylinder(0.135, 0.145, 0.79, 20), main, [x, 0.52, 0]);
-        add(slotGroup, torus(0.143, 0.01, 22), dark, [x, 0.17, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, torus(0.128, 0.006, 22), crease, [x, 0.235, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, torus(0.14, 0.005, 22), crease, [x, 0.205, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, box(0.09, 0.13, 0.052), main, [side * 0.195, 0.62, 0.04]);
-        add(slotGroup, box(0.095, 0.018, 0.057), dark, [side * 0.195, 0.69, 0.04]);
-        add(slotGroup, box(0.05, 0.02, 0.02), metal, [side * 0.195, 0.69, 0.075]);
-        add(slotGroup, box(0.008, 0.6, 0.008), hi, [x + side * 0.07, 0.5, 0.05]);
-      } else if (variant === 'parachute') {
-        const leg = profileLegMesh(
-          side, legTop, 0.13,
-          [[0, 0.12], [0.28, 0.165], [0.65, 0.16], [0.88, 0.105], [1, 0.085]],
-          [[0, 0.13], [1, 0.17]],
-          1,
-          main
-        );
-        slotGroup.add(leg);
-        add(slotGroup, torus(0.087, 0.014, 20), dark, [side * 0.17, 0.145, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, torus(0.15, 0.006, 24), crease, [side * 0.163, 0.28, 0], [Math.PI / 2, 0, 0], [1, 1, 0.95]);
-        add(slotGroup, box(0.062, 0.16, 0.052), main, [side * 0.225, 0.56, 0.02]);
-        add(slotGroup, box(0.067, 0.025, 0.057), dark, [side * 0.225, 0.63, 0.025]);
-        add(slotGroup, box(0.045, 0.018, 0.02), metal, [side * 0.225, 0.63, 0.058]);
-        add(slotGroup, box(0.01, 0.15, 0.01), hi, [side * 0.18, 0.45, 0.08]);
-        const balloonFold = tube([[side * 0.13, 0.46, 0.15], [side * 0.155, 0.42, 0.165], [side * 0.14, 0.37, 0.155]], 0.0018, crease);
-        balloonFold.userData.slot = 'bottom';
-        slotGroup.add(balloonFold);
-      } else if (variant === 'track') {
-        add(slotGroup, cylinder(0.1, 0.065, 0.78, 20), main, [x, 0.53, 0]);
-        add(slotGroup, torus(0.071, 0.012, 20), dark, [x, 0.16, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, box(0.025, 0.65, 0.012), hi, [x + side * 0.06, 0.5, 0.05]);
-        add(slotGroup, box(0.012, 0.5, 0.012), dark, [x + side * 0.062, 0.5, 0.05]);
-        add(slotGroup, torus(0.086, 0.01, 18), metal, [x, 0.5, 0], [Math.PI / 2, 0, 0]);
-      } else if (variant === 'jorts') {
-        add(slotGroup, cylinder(0.125, 0.135, 0.36, 20), main, [x, 0.72, 0], null, [1, 1, 0.9]);
-        add(slotGroup, torus(0.133, 0.01, 22), dark, [x, 0.55, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, box(0.1, 0.12, 0.052), main, [side * 0.185, 0.77, 0.02]);
-        add(slotGroup, box(0.105, 0.018, 0.057), dark, [side * 0.185, 0.83, 0.025]);
-        [0, 1, 2].forEach((index) => add(slotGroup, box(0.02, 0.03, 0.01), main, [x - 0.04 + index * 0.04, 0.535, 0.08], [0, 0, side * (index % 2 ? 0.2 : -0.2)]));
-      } else if (variant === 'wide') {
-        const wx = side * 0.135;
-        add(slotGroup, cylinder(0.115, 0.128, 0.72, 22), main, [wx, 0.56, 0], null, [1, 1, 0.92]);
-        add(slotGroup, cylinder(0.13, 0.132, 0.07, 22), dark, [wx, 0.21, 0], null, [1, 1, 0.92]);
-        add(slotGroup, box(0.008, 0.55, 0.008), hi, [wx + side * 0.07, 0.56, 0.06]);
-        add(slotGroup, box(0.008, 0.55, 0.008), dark, [wx - side * 0.055, 0.56, 0.06]);
-        if (item.cargo) {
-          add(slotGroup, box(0.078, 0.13, 0.048), main, [side * 0.22, 0.6, 0.03]);
-          add(slotGroup, box(0.083, 0.018, 0.052), dark, [side * 0.22, 0.67, 0.03]);
-          add(slotGroup, box(0.05, 0.018, 0.02), metal, [side * 0.22, 0.67, 0.062]);
-        }
-      }
-      if (variant !== 'flare' && variant !== 'parachute') {
-        const shorts = variant === 'jorts';
-        const narrow = variant === 'track';
-        const wide = variant === 'wide';
-        const foldX = wide ? side * 0.135 : x;
-        const kneeZ = narrow ? 0.066 : wide ? 0.105 : 0.142;
-        const hemZ = narrow ? 0.062 : wide ? 0.115 : 0.14;
-        const kneeY = shorts ? 0.74 : wide ? 0.6 : 0.53;
-        const hemYPos = shorts ? 0.585 : wide ? 0.27 : 0.255;
-        const kneeFold = tube([[foldX - side * 0.03, kneeY + 0.03, kneeZ - 0.01], [foldX + side * 0.004, kneeY, kneeZ], [foldX + side * 0.03, kneeY - 0.035, kneeZ - 0.008]], 0.0018, crease);
-        kneeFold.userData.slot = 'bottom';
-        slotGroup.add(kneeFold);
-        const hemFold = tube([[foldX - side * 0.026, hemYPos + 0.035, hemZ - 0.012], [foldX + side * 0.012, hemYPos, hemZ], [foldX - side * 0.006, hemYPos - 0.04, hemZ - 0.01]], 0.0016, crease);
-        hemFold.userData.slot = 'bottom';
-        slotGroup.add(hemFold);
-        add(slotGroup, box(0.03, 0.006, 0.008), crease, [foldX + side * 0.024, hemYPos - 0.052, hemZ - 0.008], [0, 0, side * 0.16]);
-        add(slotGroup, box(0.008, 0.36, 0.008), hi, [foldX - side * 0.045, 0.72, 0.06]);
-      }
+      const leg = profileLegMesh(side, plan.topY, plan.hemY, plan.profile.rx, plan.profile.center, plan.profile.depth, main, plan.profile.shift);
+      leg.position.z = side * 0.0015;
+      slotGroup.add(leg);
+      addTrouserLegDetails(slotGroup, item, plan, side, { main, hi, dark, crease, metal, stitch, denim, style });
     });
 
-    add(slotGroup, box(0.012, 0.12, 0.012), dark, [0, waistY - 0.02, 0.148]);
-    add(slotGroup, box(0.06, 0.012, 0.012), hi, [0, waistY - 0.01, 0.15]);
-    addBrandMark(slotGroup, item, [0.115, waistY + 0.016, 0.15], 0.72, trim);
+    addTrouserWaistDetails(slotGroup, item, plan, { main, trim, crease, metal, stitch, leather, dark, denim, style }, denim);
+
+    const thread = denim ? stitch : crease;
+    add(slotGroup, torus(waistR * 1.002, 0.0016, 28), thread, [0, waistY + 0.027, 0], [Math.PI / 2, 0, 0], [1, 1, depthScale]);
+    add(slotGroup, torus(waistR * 0.986, 0.0014, 28), thread, [0, waistY - 0.026, 0], [Math.PI / 2, 0, 0], [1, 1, depthScale]);
+
     if (variant === 'track' || variant === 'parachute') {
-      const cord = tube([[-0.035, waistY, 0.15], [-0.02, waistY - 0.14, 0.16], [0.01, waistY - 0.2, 0.15]], 0.006, hi);
-      cord.userData.slot = 'bottom';
-      slotGroup.add(cord);
+      [-1, 1].forEach((side) => {
+        const cord = tube([[side * 0.03, waistY - 0.005, 0.153], [side * 0.018, waistY - 0.062, 0.164], [side * 0.034, waistY - 0.1, 0.158]], 0.0035, hi);
+        cord.userData.slot = 'bottom';
+        slotGroup.add(cord);
+        add(slotGroup, sphere(0.006, 8), metal, [side * 0.034, waistY - 0.104, 0.158]);
+      });
     }
   }
 
@@ -1041,6 +1683,10 @@
         add(slotGroup, cylinder(0.008, 0.008, 0.24, 8), metal, [side * 0.055, 1.4, 0.2]);
         add(slotGroup, sphere(0.014, 8), metal, [side * 0.055, 1.28, 0.2]);
       });
+      if (item.zip) {
+        add(slotGroup, box(0.014, 0.5, 0.014), metal, [0, 1.24, 0.225]);
+        add(slotGroup, sphere(0.012, 8), metal, [0, 1.48, 0.23]);
+      }
       add(slotGroup, box(0.04, 0.04, 0.012), accent, [0.145, 1.33, 0.22]);
       add(slotGroup, box(0.02, 0.06, 0.012), cream, [-0.13, 1.36, 0.21], [0, 0, 0.25]);
       add(slotGroup, torus(0.212, 0.007, 26), trim, [0, 0.955, 0], [Math.PI / 2, 0, 0], [1, 1, 0.78]);
@@ -1105,6 +1751,7 @@
     }
     applyTopWidthScale(slotGroup, item);
     tagGroup(slotGroup, 'top');
+    slotGroup.traverse((object) => { if (object.isMesh) object.castShadow = false; });
     root.add(slotGroup);
   }
 
@@ -1116,18 +1763,23 @@
       return;
     }
     const palette = item.palette;
-    const main = cloth(palette.main, { roughness: 0.67 });
-    const hi = cloth(palette.accent, { roughness: 0.7 });
-    const dark = cloth(palette.detail, { roughness: 0.58 });
+    const cutKey = item.bootcut ? 'bootcut' : item.capri ? 'capri' : (item.cut || item.variant);
+    const denim = ['flare', 'bootcut', 'jorts', 'capri', 'cargo'].includes(cutKey) || /джинс|деним/i.test(item.name);
+    const main = material(palette.main, { roughness: denim ? 0.86 : 0.67, fabric: true, denim });
+    if (denim) main.color.multiplyScalar(0.94);
+    const hi = material(palette.accent, { roughness: denim ? 0.9 : 0.7, fabric: true, denim });
+    const dark = material(palette.detail, { roughness: denim ? 0.84 : 0.58, fabric: true, denim });
     dark.color.multiplyScalar(0.68);
-    const trim = cloth(palette.accent, { roughness: 0.72 });
+    const trim = material(palette.accent, { roughness: denim ? 0.82 : 0.72, fabric: true, denim });
     trim.color.multiplyScalar(0.66);
     const metal = metalMaterial(palette.metal);
+    const stitch = material(isLightColor(palette.main) ? '#5f4328' : '#e2b878', { roughness: 0.84 });
+    const leather = material('#5b3e2b', { roughness: 0.74 });
     const cargo = item.variant === 'cargo';
     const wide = item.variant === 'wide';
 
-    if (['flare', 'baggy', 'parachute', 'track', 'skirt', 'jorts', 'wide'].includes(item.variant)) {
-      addModernBottom(slotGroup, item, { main, hi, dark, trim, metal });
+    if (['flare', 'baggy', 'parachute', 'track', 'skirt', 'jorts', 'wide', 'cargo', 'tailored'].includes(item.variant)) {
+      addModernBottom(slotGroup, item, { main, hi, dark, trim, metal, denim, stitch, leather });
       applyBottomWidthScale(slotGroup, item);
       tagGroup(slotGroup, 'bottom');
       root.add(slotGroup);
@@ -1207,6 +1859,10 @@
         for (let index = 0; index < soleLayers; index += 1) {
           add(slotGroup, box(0.152, 0.008, 0.322), index % 2 ? light : material(palette.accent, { roughness: 0.52 }), [x, 0.034 + index * 0.009, 0.075]);
         }
+        if (item.uggs) {
+          add(slotGroup, torus(0.09, 0.018, 20), light, [x, 0.3, 0.02], [Math.PI / 2, 0, 0], [1, 1, 0.82]);
+          add(slotGroup, cylinder(0.083, 0.09, 0.08, 16), main, [x, 0.33, 0.02], null, [1, 1, 0.82]);
+        }
         addBrandMark(slotGroup, item, [x, 0.145, 0.145], 1.05, material(palette.accent, { roughness: 0.5 }));
       } else if (sneaker) {
         add(slotGroup, box(0.155, 0.06, 0.32), dark, [x, 0.035, 0.07]);
@@ -1257,18 +1913,28 @@
     }
     const palette = item.palette;
     const texture = state.hairTexture || 'straight';
-    const hair = material(palette.hair, { roughness: texture === 'straight' ? 0.5 : texture === 'wavy' ? 0.68 : 0.86 });
-    const hairHi = material(palette.hairHi, { roughness: texture === 'straight' ? 0.44 : texture === 'wavy' ? 0.6 : 0.74 });
+    const hair = material(palette.hair, { roughness: texture === 'straight' ? 0.5 : texture === 'wavy' ? 0.68 : 0.86, bumpMap: hairBump, bumpScale: 0.0016 });
+    const hairHi = material(palette.hairHi, { roughness: texture === 'straight' ? 0.44 : texture === 'wavy' ? 0.6 : 0.74, bumpMap: hairBump, bumpScale: 0.0014 });
     const curlHi = texture === 'curly'
-      ? material(new THREE.Color(palette.hair).lerp(new THREE.Color('#c39a72'), 0.44), { roughness: 0.64 })
+      ? material(new THREE.Color(palette.hair).lerp(new THREE.Color('#c39a72'), 0.44), { roughness: 0.64, bumpMap: hairBump, bumpScale: 0.0012 })
       : hairHi;
     const curlShadow = texture === 'curly'
-      ? material(new THREE.Color(palette.hair).multiplyScalar(0.66), { roughness: 0.9 })
+      ? material(new THREE.Color(palette.hair).multiplyScalar(0.66), { roughness: 0.9, bumpMap: hairBump, bumpScale: 0.0012 })
       : hair;
-    const fade = material(palette.hair, { roughness: 0.82, transparent: true, opacity: 0.42 });
+    const fade = material(palette.hair, { roughness: 0.82, transparent: true, opacity: 0.42, bumpMap: hairBump, bumpScale: 0.0012 });
+    const styleSeed = Number.isFinite(item.index) ? item.index : (item.id.length + String(item.name || '').length);
+    const sideMode = styleSeed % 4;
+    const hasSides = sideMode > 0;
+    const lengthBias = [0.9, 0.97, 1.04, 1.12][styleSeed % 4];
+    const addHairLock = (points, mat, radius) => {
+      const lock = tube(points, radius, mat);
+      lock.userData.slot = 'hair';
+      slotGroup.add(lock);
+    };
     if (item.variant === 'crop') {
-      add(slotGroup, sphere(0.155, 28), hair, [0, 1.805, -0.02], null, [1.02, 0.56, 1.0]);
-      add(slotGroup, sphere(0.132, 18), hair, [0, 1.772, -0.06], null, [1.0, 0.64, 0.8]);
+      const capMaterial = texture === 'straight' ? hair : curlShadow;
+      add(slotGroup, sphere(0.155, 28), capMaterial, [0, 1.805, -0.02], null, [1.02, 0.56, 1.0]);
+      add(slotGroup, sphere(0.132, 18), capMaterial, [0, 1.772, -0.06], null, [1.0, 0.64, 0.8]);
       add(slotGroup, sphere(0.1, 16), hair, [0, 1.835, 0.112], [0.12, 0, 0], [1.25, 0.24, 0.42]);
       const front = [
         [-0.102, 1.848, 0.088, -0.22, 0.9, 0.52, 0.72],
@@ -1327,6 +1993,10 @@
         add(slotGroup, sphere(0.045, 14), hairHi, [side * 0.145, 1.67, -0.03], [0, 0, side * 0.1], [0.45, 1.1, 0.55]);
       });
       add(slotGroup, sphere(0.08, 16), hairHi, [-0.03, 1.925, 0.03], [-0.1, 0, -0.16], [1.0, 0.18, 0.6]);
+      add(slotGroup, sphere(0.13, 20), hair, [0, 1.56, -0.155], null, [1.06, 1.7, 0.52]);
+      [-1, 1].forEach((side) => {
+        add(slotGroup, sphere(0.072, 16), hair, [side * 0.12, 1.58, -0.11], [0, 0, side * 0.04], [0.5, 1.7, 0.55]);
+      });
     } else if (item.variant === 'fade') {
       add(slotGroup, sphere(0.155, 30), hair, [0, 1.838, -0.03], null, [1.0, 0.62, 0.99]);
       [
@@ -1418,6 +2088,53 @@
         add(slotGroup, sphere(0.04, 14), index % 2 ? hairHi : hair, [x, y, z], [0.14, 0, rz], [sx, sy, sz]);
       });
       add(slotGroup, sphere(0.07, 14), hairHi, [-0.035, 1.905, 0.035], [-0.12, 0.1, -0.15], [0.9, 0.18, 0.55]);
+    } else if (item.variant === 'long') {
+      add(slotGroup, sphere(0.165, 30), hair, [0, 1.835, -0.025], null, [1.02, 0.78, 1.02]);
+      add(slotGroup, sphere(0.15, 24), hair, [0, 1.55, -0.16], null, [1.1, 1.8, 0.5]);
+      [-1, 1].forEach((side) => {
+        add(slotGroup, sphere(0.07, 18), hair, [side * 0.115, 1.6, -0.12], [0, 0, side * 0.03], [0.55, 1.7, 0.55]);
+        add(slotGroup, sphere(0.08, 18), hair, [side * 0.13, 1.62, -0.09], [0, 0, side * 0.05], [0.5, 2.2, 0.6]);
+        add(slotGroup, sphere(0.055, 14), hairHi, [side * 0.135, 1.52, 0.035], [0, 0, side * 0.04], [0.42, 1.6, 0.42]);
+        add(slotGroup, sphere(0.06, 16), hairHi, [side * 0.055, 1.86, 0.11], [0.1, 0, side * 0.3], [0.85, 0.55, 0.45]);
+      });
+      add(slotGroup, sphere(0.075, 14), hairHi, [-0.035, 1.9, 0.04], [-0.12, 0.1, -0.12], [0.95, 0.18, 0.55]);
+      [-1, 1].forEach((side) => {
+        add(slotGroup, sphere(0.07, 16), hair, [side * 0.105, 1.64, 0.07], [0, 0, side * 0.06], [0.55, 1.7, 0.45]);
+      });
+    } else if (item.variant === 'waves') {
+      add(slotGroup, sphere(0.168, 30), hair, [0, 1.84, -0.025], null, [1.04, 0.82, 1.03]);
+      add(slotGroup, sphere(0.15, 24), hair, [0, 1.56, -0.155], null, [1.08, 1.72, 0.54]);
+      [-1, 1].forEach((side) => {
+        add(slotGroup, sphere(0.085, 18), hair, [side * 0.135, 1.62, -0.1], [0, 0, side * 0.06], [0.55, 1.95, 0.6]);
+        add(slotGroup, sphere(0.06, 16), hairHi, [side * 0.055, 1.865, 0.11], [0.1, 0, side * 0.32], [0.85, 0.55, 0.45]);
+      });
+      add(slotGroup, sphere(0.08, 14), hairHi, [-0.035, 1.9, 0.04], [-0.12, 0.1, -0.14], [0.95, 0.18, 0.55]);
+      [-1, 1].forEach((side) => {
+        add(slotGroup, sphere(0.072, 16), hair, [side * 0.108, 1.65, 0.07], [0, 0, side * 0.06], [0.58, 1.65, 0.46]);
+      });
+    } else if (item.variant === 'lob') {
+      add(slotGroup, sphere(0.162, 30), hair, [0, 1.832, -0.028], null, [1.02, 0.72, 1.01]);
+      add(slotGroup, sphere(0.145, 22), hair, [0, 1.71, -0.065], null, [1.0, 1.15, 0.66]);
+      [-1, 1].forEach((side) => {
+        add(slotGroup, sphere(0.078, 18), hair, [side * 0.125, 1.68, 0.02], [0, 0, side * 0.06], [0.52, 1.45, 0.55]);
+        add(slotGroup, sphere(0.06, 14), hair, [side * 0.135, 1.62, 0.035], [0, 0, side * 0.04], [0.45, 1.0, 0.45]);
+        add(slotGroup, sphere(0.055, 14), hairHi, [side * 0.05, 1.86, 0.11], [0.1, 0, side * 0.28], [0.85, 0.58, 0.45]);
+      });
+      add(slotGroup, sphere(0.072, 14), hairHi, [-0.035, 1.9, 0.04], [-0.12, 0.1, -0.12], [0.9, 0.18, 0.55]);
+      [-1, 1].forEach((side) => {
+        add(slotGroup, sphere(0.064, 14), hair, [side * 0.105, 1.67, 0.06], [0, 0, side * 0.06], [0.52, 1.25, 0.44]);
+      });
+    } else if (item.variant === 'buzz') {
+      add(slotGroup, sphere(0.153, 26), hair, [0, 1.845, -0.018], null, [1.0, 0.5, 0.99]);
+      add(slotGroup, sphere(0.148, 20), hair, [0, 1.785, -0.045], null, [0.99, 0.34, 0.94]);
+      add(slotGroup, sphere(0.11, 16), hairHi, [0, 1.885, 0.045], [-0.12, 0, 0], [0.9, 0.18, 0.6]);
+      [-1, 1].forEach((side) => {
+        add(slotGroup, sphere(0.052, 12), fade, [side * 0.145, 1.79, 0.005], null, [0.28, 0.8, 0.5]);
+        for (let index = 0; index < 4; index += 1) {
+          add(slotGroup, sphere(0.009, 6), hairHi, [side * (0.095 + index * 0.014), 1.86 - index * 0.008, 0.105 - index * 0.01], null, [1.3, 0.5, 0.8]);
+        }
+      });
+      addHairLock([[-0.115, 1.885, 0.075], [-0.055, 1.905, 0.115], [0.0, 1.9, 0.128], [0.06, 1.9, 0.115], [0.115, 1.88, 0.075]], material(new THREE.Color(palette.hair).multiplyScalar(0.62)), 0.0035);
     } else if (item.variant === 'curls') {
       if (texture === 'curly') {
         add(slotGroup, sphere(0.158, 20), hair, [0, 1.82, -0.015], null, [1.02, 0.55, 1.02]);
@@ -1500,6 +2217,31 @@
       ].forEach(([x, y, z, rz], index) => {
         add(slotGroup, sphere(0.038, 12), index % 2 ? hairHi : hair, [x, y, z], [0, 0, rz], [0.48, 0.95, 0.42]);
       });
+    }
+    // Deterministic silhouette variety: some cuts have tight/shaved sides, some keep side mass,
+    // and every cut gets a small extra length offset so the catalog reads more diverse.
+    if (!hasSides) {
+      for (const child of slotGroup.children.slice()) {
+        if (!child.isMesh) continue;
+        const { x, y, z } = child.position;
+        const sidePiece = Math.abs(x) > 0.09 && z < 0.07;
+        const outerFront = Math.abs(x) > 0.14;
+        if ((sidePiece || outerFront) && y < 1.9 && z > -0.24) {
+          child.visible = false;
+          child.raycast = () => {};
+        }
+      }
+    }
+    if (lengthBias !== 1) {
+      for (const child of slotGroup.children) {
+        if (!child.isMesh || !child.visible) continue;
+        if (child.position.y < 1.88) {
+          child.scale.y *= lengthBias;
+          child.position.y -= (lengthBias - 1) * 0.055;
+        } else {
+          child.scale.y *= 0.95 + (lengthBias - 1) * 0.6;
+        }
+      }
     }
     tagGroup(slotGroup, 'hair');
     root.add(slotGroup);
@@ -1685,7 +2427,118 @@
       }
     };
 
-    if (item.variant === 'visor') {
+    const addBelt = () => {
+      const bottomItem = API.getItems().find((entry) => entry.id === state.equipped.bottom);
+      const fit = bottomItem?.fit || 'mid';
+      const waistY = fit === 'high' ? 0.975 : fit === 'low' ? 0.855 : 0.925;
+      const plan = bottomPlan(bottomItem || { cut: 'straight', variant: 'straight' }, waistY);
+      const cut = bottomItem?.cut || '';
+      const widthScale = ['baggy', 'parachute', 'flare', 'jorts'].includes(cut)
+        ? 1.07
+        : ['track', 'straight'].includes(cut) ? 0.94 : ['cargo', 'wide'].includes(cut) ? 1.04 : 1;
+      const bodyWidth = state.body === 'slim' ? 0.93 : state.body === 'strong' ? 1.07 : 1;
+      const beltR = Math.max(0.19, plan.hipR * widthScale * bodyWidth + 0.018);
+      const depthScale = 0.82;
+      const frontZ = beltR * depthScale;
+      const style = item.beltMaterial || 'leather';
+      const strap = style === 'patent'
+        ? material(palette.main, { roughness: 0.18, metalness: 0.08, envMapIntensity: 0.8 })
+        : style === 'suede'
+          ? material(palette.main, { roughness: 0.9, fabric: true })
+          : style === 'webbing'
+            ? cloth(palette.main, { roughness: 0.88 })
+            : material(palette.main, { roughness: 0.46 });
+      const thread = material(isLightColor(palette.main) ? '#6f4f2e' : '#e8c07a', { roughness: 0.82 });
+      const buckle = style === 'chain' ? metal : metalMaterial(palette.metal);
+      const bandHeight = style === 'webbing' ? 0.045 : 0.055;
+      const y = waistY + 0.004;
+
+      if (style === 'chain') {
+        add(slotGroup, new THREE.CylinderGeometry(beltR * 0.995, beltR * 0.995, 0.014, 40, 1, true), material(palette.detail, { roughness: 0.5 }), [0, y, 0], null, [1, 1, depthScale]);
+        const linkMat = metalMaterial(palette.metal);
+        for (let index = 0; index < 18; index += 1) {
+          const angle = (index / 18) * Math.PI * 2;
+          const link = add(slotGroup, torus(0.019, 0.004, 14), linkMat, [Math.cos(angle) * beltR, y, Math.sin(angle) * frontZ], [0, -angle, index % 2 ? Math.PI / 2 : 0]);
+          link.castShadow = false;
+        }
+      } else {
+        add(slotGroup, new THREE.CylinderGeometry(beltR, beltR * 1.002, bandHeight, 44, 1, true), strap, [0, y, 0], null, [1, 1, depthScale]);
+        if (style !== 'webbing') {
+          [-bandHeight / 2 + 0.008, bandHeight / 2 - 0.008].forEach((dy) => {
+            add(slotGroup, torus(beltR * 1.003, 0.0016, 44), thread, [0, y + dy, 0], [Math.PI / 2, 0, 0], [1, 1, depthScale]);
+          });
+        } else {
+          add(slotGroup, torus(beltR * 1.008, 0.0022, 44), material(palette.detail, { roughness: 0.8 }), [0, y + bandHeight / 2 - 0.004, 0], [Math.PI / 2, 0, 0], [1, 1, depthScale]);
+          add(slotGroup, torus(beltR * 1.008, 0.0018, 44), material(palette.detail, { roughness: 0.8 }), [0, y - bandHeight / 2 + 0.004, 0], [Math.PI / 2, 0, 0], [1, 1, depthScale]);
+        }
+      }
+
+      const buckleZ = frontZ + 0.012;
+      if (style === 'suede') {
+        add(slotGroup, torus(0.031, 0.006, 22), buckle, [0, y, buckleZ], null, [1.05, 0.9, 1]);
+        add(slotGroup, box(0.052, 0.006, 0.006), buckle, [0.012, y, buckleZ + 0.004]);
+      } else if (style === 'webbing') {
+        add(slotGroup, box(0.082, 0.052, 0.014), buckle, [0, y, buckleZ]);
+        add(slotGroup, box(0.042, 0.024, 0.018), material(palette.detail, { roughness: 0.4 }), [0, y, buckleZ + 0.004]);
+        add(slotGroup, box(0.006, 0.036, 0.012), buckle, [0, y, buckleZ + 0.008]);
+      } else if (style === 'chain') {
+        add(slotGroup, torus(0.038, 0.006, 24), buckle, [0, y, frontZ + 0.012]);
+        add(slotGroup, box(0.06, 0.01, 0.012), buckle, [0, y, frontZ + 0.018]);
+        for (let index = 0; index < 5; index += 1) {
+          add(slotGroup, torus(0.014 + index * 0.001, 0.003, 12), buckle, [0.02 + index * 0.006, y - 0.03 - index * 0.018, frontZ + 0.02], [Math.PI / 2, 0, 0]);
+        }
+      } else {
+        add(slotGroup, box(0.088, 0.009, 0.014), buckle, [0, y + 0.029, buckleZ]);
+        add(slotGroup, box(0.088, 0.009, 0.014), buckle, [0, y - 0.029, buckleZ]);
+        add(slotGroup, box(0.009, 0.067, 0.014), buckle, [-0.0395, y, buckleZ]);
+        add(slotGroup, box(0.009, 0.067, 0.014), buckle, [0.0395, y, buckleZ]);
+        add(slotGroup, box(0.054, 0.006, 0.006), buckle, [0.012, y, buckleZ + 0.004]);
+      }
+
+      if (style !== 'chain') {
+        const tailX = 0.098;
+        add(slotGroup, box(0.17, 0.043, 0.012), strap, [tailX, y, frontZ + 0.006]);
+        add(slotGroup, cylinder(0.021, 0.021, 0.012, 16), strap, [tailX + 0.084, y, frontZ + 0.006], [Math.PI / 2, 0, 0], [1, 1, 0.55]);
+        for (let index = 0; index < 3; index += 1) {
+          add(slotGroup, sphere(0.0045, 8), material(palette.detail, { roughness: 0.5 }), [tailX + 0.016 + index * 0.03, y, frontZ + 0.013]);
+        }
+        add(slotGroup, box(0.014, 0.062, 0.02), strap, [0.155, y, frontZ + 0.002]);
+        add(slotGroup, box(0.002, 0.05, 0.004), thread, [0.155, y, frontZ + 0.013]);
+      }
+      addBrandMark(slotGroup, item, [0.1, y, frontZ + 0.014], 0.38, buckle);
+    };
+
+    if (item.variant === 'belt') {
+      addBelt();
+    } else if (item.variant === 'beanie') {
+      const knit = cloth(palette.main, { roughness: 0.9 });
+      const knitHi = cloth(palette.accent, { roughness: 0.84 });
+      add(slotGroup, sphere(0.175, 20), knit, [0, 1.865, -0.012], null, [1.08, 0.9, 1.08]);
+      add(slotGroup, torus(0.158, 0.032, 24), knitHi, [0, 1.79, 0], [Math.PI / 2, 0, 0], [1, 1, 0.92]);
+      add(slotGroup, torus(0.16, 0.007, 24), material(palette.detail, { roughness: 0.8 }), [0, 1.817, 0], [Math.PI / 2, 0, 0], [1, 1, 0.92]);
+      add(slotGroup, sphere(0.03, 12), knitHi, [0, 2.04, 0.005], null, [0.9, 0.72, 0.9]);
+      addBrandMark(slotGroup, item, [0, 1.82, 0.166], 0.62, knitHi);
+    } else if (item.variant === 'scarf') {
+      const knit = cloth(palette.main, { roughness: 0.92 });
+      const knitHi = cloth(palette.accent, { roughness: 0.86 });
+      add(slotGroup, torus(0.118, 0.035, 24), knit, [0, 1.56, 0.01], [Math.PI / 2, 0, 0], [1, 1, 0.82]);
+      add(slotGroup, box(0.065, 0.36, 0.032), knit, [-0.082, 1.3, 0.19], [0.12, 0, 0.08]);
+      add(slotGroup, box(0.062, 0.3, 0.03), knit, [0.084, 1.25, 0.185], [0.18, 0, -0.08]);
+      add(slotGroup, box(0.018, 0.22, 0.006), knitHi, [0.084, 1.24, 0.202], [0.18, 0, -0.08]);
+      add(slotGroup, torus(0.02, 0.005, 14), knitHi, [-0.082, 1.115, 0.2], [Math.PI / 2, 0, 0]);
+      add(slotGroup, torus(0.018, 0.004, 14), knitHi, [0.084, 1.1, 0.195], [Math.PI / 2, 0, 0]);
+      addBrandMark(slotGroup, item, [-0.082, 1.14, 0.21], 0.42, knitHi);
+    } else if (item.variant === 'bag') {
+      const bodyMat = cloth(palette.main, { roughness: 0.62 });
+      const strapMat = material(palette.detail, { roughness: 0.5 });
+      add(slotGroup, box(0.2, 0.17, 0.075), bodyMat, [0.215, 0.94, 0.16], [0, -0.12, 0]);
+      add(slotGroup, box(0.205, 0.045, 0.08), strapMat, [0.215, 1.035, 0.16], [0, -0.12, 0]);
+      add(slotGroup, box(0.05, 0.028, 0.012), metal, [0.215, 0.985, 0.202]);
+      const strap = tube([[-0.15, 1.47, 0.06], [-0.18, 1.24, 0.14], [-0.1, 1.02, 0.17], [0.06, 0.98, 0.18], [0.17, 1.2, 0.13], [0.16, 1.46, 0.06]], 0.012, strapMat);
+      strap.userData.slot = 'accessory';
+      slotGroup.add(strap);
+      addBrandMark(slotGroup, item, [0.215, 0.955, 0.202], 0.65, metal);
+    } else if (item.variant === 'visor') {
       add(slotGroup, box(0.26, 0.078, 0.035), dark, [0, 1.755, 0.152], [0.02, 0, 0]);
       add(slotGroup, box(0.265, 0.012, 0.04), red, [0, 1.79, 0.152]);
       add(slotGroup, box(0.012, 0.055, 0.04), metal, [-0.13, 1.75, 0.15]);
@@ -1713,6 +2566,7 @@
 
   function buildCharacter() {
     rebuildCount += 1;
+    if (!reduceMotion && hasBuilt) equipPulse = 1;
     state = API.getState();
     pickables = [];
     while (root.children.length) {
@@ -1784,7 +2638,8 @@
 
   function applyCamera() {
     const targetY = 0.95 + Math.min(0.6, Math.max(0, viewZoom - 1) * 0.62);
-    camera.position.set(0, targetY + 0.08, BASE_DISTANCE / viewZoom);
+    const sway = Math.sin(viewRotation) * 0.03;
+    camera.position.set(sway, targetY + 0.08 + Math.sin(viewRotation * 0.5) * 0.012, BASE_DISTANCE / viewZoom);
     camera.lookAt(0, targetY, 0);
   }
 
@@ -1810,11 +2665,15 @@
     const previousZoom = zoom;
     const previousViewRotation = viewRotation;
     const previousViewZoom = viewZoom;
+    const previousPositionY = root.position.y;
+    const previousScale = root.scale.x;
     rotation = 0;
     zoom = 1;
     viewRotation = 0;
     viewZoom = 1;
     root.rotation.y = 0;
+    root.position.y = 0;
+    root.scale.setScalar(1);
     applyCamera();
     renderer.render(scene, camera);
     const url = renderer.domElement.toDataURL('image/png');
@@ -1822,6 +2681,8 @@
     zoom = previousZoom;
     viewRotation = previousViewRotation;
     viewZoom = previousViewZoom;
+    root.position.y = previousPositionY;
+    root.scale.setScalar(previousScale);
     root.rotation.y = viewRotation;
     applyCamera();
     renderer.render(scene, camera);
@@ -1972,15 +2833,22 @@
       && !(dropModal && dropModal.classList.contains('is-open'));
     if (!visible) return;
     const delta = Math.min(clock.getDelta(), 0.05);
+    const idleTarget = !dragStart && performance.now() - lastInteraction > 2600 ? 1 : 0;
+    idleBlend += (idleTarget - idleBlend) * Math.min(1, delta * 1.7);
     if (!dragStart) {
-      if (performance.now() - lastInteraction > 2600) {
-        rotation += delta * 0.18;
+      if (idleBlend > 0.02) {
+        rotation += delta * 0.19 * idleBlend;
         rotationVelocity *= 0.88;
       } else {
         rotation += rotationVelocity;
         rotationVelocity *= 0.9;
       }
     }
+    idleTime += delta;
+    equipPulse = Math.max(0, equipPulse - delta * 2.8);
+    const breathe = reduceMotion ? 0 : Math.sin(idleTime * 1.15) * idleBlend;
+    root.position.y = breathe * 0.007 + equipPulse * 0.008;
+    root.scale.setScalar(1 + equipPulse * 0.03 + breathe * 0.002);
     viewZoom += (zoom - viewZoom) * Math.min(1, delta * 9);
     viewRotation += (rotation - viewRotation) * Math.min(1, delta * 16);
     root.rotation.y = viewRotation;

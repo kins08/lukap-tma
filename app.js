@@ -376,6 +376,7 @@ function itemIcon(item) {
     return 'i-shoe';
   }
   if (item.variant === 'visor') return 'i-visor';
+  if (item.variant === 'belt') return 'i-belt';
   return 'i-acc';
 }
 
@@ -417,13 +418,20 @@ function variantFor(collectionId, slotId, rarityIndex) {
 }
 
 const COLLECTION_STYLES = { noir: 'МИНИМАЛ', old: 'ОЛД-МАНИ', street: 'СТРИТ', muse: 'СТУДИЯ', sport: 'СПОРТ' };
+const HAIR_LENGTH_BY_VARIANT = {
+  crop: 'short', fade: 'short', pixie: 'short', slick: 'short', mohawk: 'short', buzz: 'short',
+  bob: 'medium', lob: 'medium', wolf: 'medium', mullet: 'medium', shag: 'medium', curls: 'medium',
+  flow: 'long', curtain: 'medium', long: 'long', waves: 'long'
+};
+const HAIR_LENGTH_LABELS = { short: 'КОРОТКИЕ', medium: 'СРЕДНИЕ', long: 'ДЛИННЫЕ' };
+const BELT_MATERIAL_LABELS = { leather: 'КОЖА', suede: 'ЗАМША', webbing: 'КАНВАС', chain: 'ЦЕПЬ', patent: 'ПАТЕНТ' };
 const TOP_FIT_LABELS = { tailored: 'ПО ФИГУРЕ', oversize: 'ОВЕРСАЙЗ', slim: 'СЛИМ', regular: 'РЕГУЛЯР', cropped: 'КРОП', boxy: 'БОКСИ' };
 const RISE_LABELS = { high: 'ВЫСОКАЯ ПОСАДКА', mid: 'СРЕДНЯЯ ПОСАДКА', low: 'НИЗКАЯ ПОСАДКА' };
-const CUT_LABELS = { straight: 'ПРЯМЫЕ', cargo: 'КАРГО', wide: 'ШИРОКИЕ', flare: 'КЛЁШ', baggy: 'БЭГГИ', parachute: 'ПАРАШЮТ', track: 'ДЖОГГЕРЫ', skirt: 'ЮБКА', jorts: 'ШОРТЫ' };
+const CUT_LABELS = { straight: 'ПРЯМЫЕ', cargo: 'КАРГО', wide: 'ШИРОКИЕ', flare: 'КЛЁШ', bootcut: 'БУТКАТ', baggy: 'БЭГГИ', parachute: 'ПАРАШЮТ', track: 'ДЖОГГЕРЫ', leggings: 'ЛЕГГИНСЫ', skirt: 'ЮБКА', jorts: 'ШОРТЫ', capri: 'КАПРИ' };
 const SHOE_LABELS = { loafer: 'ЛОФЕРЫ', boot: 'БОТИНКИ', sneaker: 'КРОССОВКИ', platform: 'ПЛАТФОРМЫ', mule: 'МЮЛИ', ballet: 'БАЛЕТКИ', runner: 'РАННЕРЫ', derby: 'ДЕРБИ' };
 const SOLE_LABELS = { low: 'НИЗКАЯ ПОДОШВА', mid: 'СРЕДНЯЯ ПОДОШВА', high: 'ВЫСОКАЯ ПОДОШВА', max: 'МАКСИ-ПОДОШВА' };
 const UPPER_LABELS = { mesh: 'СЕТКА', suede: 'ЗАМША', leather: 'КОЖА', nubuck: 'НУБУК', canvas: 'КАНВАС', knit: 'ТРИКОТАЖ', satin: 'САТИН' };
-const ACC_LABELS = { glasses: 'ОЧКИ', gold: 'ЦЕПЬ И ЧАСЫ', visor: 'ВАЙЗОР', rings: 'КОЛЬЦА', chain: 'ЦЕПЬ', pearls: 'ЖЕМЧУГ', earrings: 'СЕРЬГИ', watch: 'ЧАСЫ' };
+const ACC_LABELS = { glasses: 'ОЧКИ', gold: 'ЦЕПЬ И ЧАСЫ', visor: 'ВАЙЗОР', rings: 'КОЛЬЦА', chain: 'ЦЕПЬ', pearls: 'ЖЕМЧУГ', earrings: 'СЕРЬГИ', watch: 'ЧАСЫ', beanie: 'БИНИ', scarf: 'ШАРФ', bag: 'СУМКА', brooch: 'БРОШЬ', belt: 'РЕМЕНЬ' };
 
 function defaultFitFor(item) {
   if (item.slot === 'top') {
@@ -447,17 +455,20 @@ function defaultCutFor(item) {
 }
 
 function itemFitLabel(item) {
+  if (item.slot === 'hair') return HAIR_LENGTH_LABELS[item.hairLength] || '';
   if (item.slot === 'bottom') {
     return [RISE_LABELS[item.fit], CUT_LABELS[item.cut]].filter(Boolean).join(' · ');
   }
   if (item.slot === 'top') return TOP_FIT_LABELS[item.fit] || '';
   if (item.slot === 'shoes') {
+    if (item.uggs) return `УГГИ · ${SOLE_LABELS[item.sole] || ''} · ${UPPER_LABELS[item.upper] || ''}`.replace(/ · $/, '');
     return [SHOE_LABELS[item.variant] || '', SOLE_LABELS[item.sole] || '', UPPER_LABELS[item.upper] || ''].filter(Boolean).join(' · ');
   }
   if (item.slot === 'accessory') {
     if (item.variant === 'glasses' && item.shape === 'cat') return 'ОЧКИ-КИСКИ';
     if (item.variant === 'glasses' && item.shape === 'rect') return 'ОЧКИ-РЕТРО';
     if (item.variant === 'watch' && item.watchFamily) return `${WATCH_FAMILY_LABELS[item.watchFamily] || ''} · ${ACC_LABELS.watch}`;
+    if (item.variant === 'belt') return `${BELT_MATERIAL_LABELS[item.beltMaterial] || BELT_MATERIAL_LABELS.leather} · ${ACC_LABELS.belt}`;
     return ACC_LABELS[item.variant] || '';
   }
   return '';
@@ -507,7 +518,10 @@ function finalizeItem(item) {
     if (houses.length && hash % 10 < 9) item.brand = houses[hash % houses.length];
   }
   if (item.brand && !item.mark) item.mark = CAPSULE_BRANDS[item.brand]?.mark || null;
+  item.brandLine = item.brand ? CAPSULE_BRANDS[item.brand]?.line || '' : '';
   item.variant = safeText(item.variant, 24);
+  item.hairLength = item.slot === 'hair' ? (HAIR_LENGTH_BY_VARIANT[item.variant] || 'medium') : null;
+  item.beltMaterial = ['leather', 'suede', 'webbing', 'chain', 'patent'].includes(item.beltMaterial) ? item.beltMaterial : null;
   item.model = item.model ? safeText(item.model, 60) : null;
   item.sole = item.sole ? safeText(item.sole, 12) : null;
   item.upper = item.upper ? safeText(item.upper, 12) : null;
@@ -571,23 +585,23 @@ EXTRA_HAIR.forEach((entry) => {
 });
 
 const CAPSULE_BRANDS = {
-  VELOX: { mark: 'wing', line: 'RUN DIVISION' },
-  KINETIQ: { mark: 'slash', line: 'COURT CLUB' },
-  TERREN: { mark: 'peak', line: 'OUTDOOR UNIT' },
-  MERIDIAN: { mark: 'orbit', line: 'MAISON 1908' },
-  AUREL: { mark: 'sun', line: 'ATELIER' },
-  VANTA: { mark: 'monogram', line: 'STUDIO 01' },
-  KOVA: { mark: 'bolt', line: 'SYSTEMS' },
-  SABLE: { mark: 'diamond', line: 'MAISON' },
-  CAELUM: { mark: 'arc', line: 'ATELIER' },
-  RIVE: { mark: 'wave', line: 'GALERIE' }
+  'VÉLOCE': { mark: 'wing', line: 'RUN DIVISION · PARIS' },
+  STADION: { mark: 'slash', line: 'COURT CLUB · MILANO' },
+  TERRAIN: { mark: 'peak', line: 'OUTDOOR UNIT · OSLO' },
+  HORLOGE: { mark: 'orbit', line: 'HORLOGERIE · GENÈVE' },
+  AUREL: { mark: 'sun', line: 'MAISON · PARIS 1908' },
+  NOCTURNE: { mark: 'monogram', line: 'ARCHIVE · PARIS' },
+  'SÈVE': { mark: 'bolt', line: 'ATELIER · PARIS' },
+  SABLE: { mark: 'diamond', line: 'MAISON · GENÈVE' },
+  CAELUM: { mark: 'arc', line: 'ATELIER · MILANO' },
+  'RIVE GAUCHE': { mark: 'wave', line: 'GALERIE · PARIS' }
 };
 const HOUSE_ASSIGN = {
-  noir: ['VANTA', 'KOVA'],
-  old: ['SABLE', 'AUREL', 'MERIDIAN'],
-  street: ['RIVE', 'VELOX', 'KINETIQ', 'TERREN'],
+  noir: ['NOCTURNE', 'SÈVE'],
+  old: ['SABLE', 'AUREL', 'HORLOGE'],
+  street: ['RIVE GAUCHE', 'VÉLOCE', 'STADION', 'TERRAIN'],
   muse: ['CAELUM', 'SABLE', 'AUREL'],
-  sport: ['VELOX', 'KINETIQ', 'TERREN']
+  sport: ['VÉLOCE', 'STADION', 'TERRAIN']
 };
 window.LUKAP_BRANDS = CAPSULE_BRANDS;
 
@@ -720,53 +734,53 @@ const EXTRA_ITEMS = [
   { collection: 'muse', slot: 'accessory', rarity: 'trend', name: 'Камея', variant: 'pearls', paletteIndex: 2, style: 'ТИХАЯ РОСКОШЬ' },
   { collection: 'muse', slot: 'hair', rarity: 'norm', name: 'Боб', variant: 'bob', paletteIndex: 1, style: 'БАЛЕТКОР' },
 
-  // CAPSULE 3 · SPORT DEPT. / VELOX
-  { collection: 'sport', slot: 'top', rarity: 'base', name: 'VELOX Aero', variant: 'tee', paletteIndex: 0, fit: 'regular', brand: 'VELOX', model: 'Aero' },
-  { collection: 'sport', slot: 'top', rarity: 'norm', name: 'VELOX Tempo', variant: 'longsleeve', paletteIndex: 2, fit: 'slim', brand: 'VELOX', model: 'Tempo' },
-  { collection: 'sport', slot: 'top', rarity: 'trend', name: 'VELOX Windrunner', variant: 'bomber', paletteIndex: 1, fit: 'oversize', brand: 'VELOX', model: 'Windrunner' },
-  { collection: 'sport', slot: 'top', rarity: 'couture', name: 'VELOX Storm Shell', variant: 'bomber', paletteIndex: 3, fit: 'oversize', brand: 'VELOX', model: 'Storm Shell' },
-  { collection: 'sport', slot: 'bottom', rarity: 'base', name: 'VELOX Split', variant: 'track', paletteIndex: 0, fit: 'mid', brand: 'VELOX', model: 'Split' },
-  { collection: 'sport', slot: 'bottom', rarity: 'norm', name: 'VELOX Stride', variant: 'track', paletteIndex: 2, fit: 'mid', brand: 'VELOX', model: 'Stride' },
-  { collection: 'sport', slot: 'bottom', rarity: 'trend', name: 'VELOX Pace', variant: 'flare', paletteIndex: 1, fit: 'high', brand: 'VELOX', model: 'Pace' },
-  { collection: 'sport', slot: 'shoes', rarity: 'base', name: 'VELOX Dart', variant: 'runner', paletteIndex: 0, brand: 'VELOX', model: 'Dart', sole: 'low', soleType: 'waffle', upper: 'mesh' },
-  { collection: 'sport', slot: 'shoes', rarity: 'norm', name: 'VELOX Vector', variant: 'runner', paletteIndex: 2, brand: 'VELOX', model: 'Vector', sole: 'mid', soleType: 'foam', upper: 'knit' },
-  { collection: 'sport', slot: 'shoes', rarity: 'couture', name: 'VELOX Apex', variant: 'runner', paletteIndex: 4, brand: 'VELOX', model: 'Apex', sole: 'max', soleType: 'carbon', upper: 'mesh' },
-  { collection: 'sport', slot: 'accessory', rarity: 'norm', name: 'VELOX Chrono', variant: 'watch', paletteIndex: 2, brand: 'VELOX', watchFamily: 'chrono' },
-  { collection: 'sport', slot: 'accessory', rarity: 'base', name: 'VELOX Shield', variant: 'visor', paletteIndex: 2, brand: 'VELOX' },
+  // CAPSULE 3 · SPORT DEPT. / VÉLOCE
+  { collection: 'sport', slot: 'top', rarity: 'base', name: 'VÉLOCE Aero', variant: 'tee', paletteIndex: 0, fit: 'regular', brand: 'VÉLOCE', model: 'Aero' },
+  { collection: 'sport', slot: 'top', rarity: 'norm', name: 'VÉLOCE Tempo', variant: 'longsleeve', paletteIndex: 2, fit: 'slim', brand: 'VÉLOCE', model: 'Tempo' },
+  { collection: 'sport', slot: 'top', rarity: 'trend', name: 'VÉLOCE Windrunner', variant: 'bomber', paletteIndex: 1, fit: 'oversize', brand: 'VÉLOCE', model: 'Windrunner' },
+  { collection: 'sport', slot: 'top', rarity: 'couture', name: 'VÉLOCE Storm Shell', variant: 'bomber', paletteIndex: 3, fit: 'oversize', brand: 'VÉLOCE', model: 'Storm Shell' },
+  { collection: 'sport', slot: 'bottom', rarity: 'base', name: 'VÉLOCE Split', variant: 'track', paletteIndex: 0, fit: 'mid', brand: 'VÉLOCE', model: 'Split' },
+  { collection: 'sport', slot: 'bottom', rarity: 'norm', name: 'VÉLOCE Stride', variant: 'track', paletteIndex: 2, fit: 'mid', brand: 'VÉLOCE', model: 'Stride' },
+  { collection: 'sport', slot: 'bottom', rarity: 'trend', name: 'VÉLOCE Pace', variant: 'flare', paletteIndex: 1, fit: 'high', brand: 'VÉLOCE', model: 'Pace' },
+  { collection: 'sport', slot: 'shoes', rarity: 'base', name: 'VÉLOCE Dart', variant: 'runner', paletteIndex: 0, brand: 'VÉLOCE', model: 'Dart', sole: 'low', soleType: 'waffle', upper: 'mesh' },
+  { collection: 'sport', slot: 'shoes', rarity: 'norm', name: 'VÉLOCE Vector', variant: 'runner', paletteIndex: 2, brand: 'VÉLOCE', model: 'Vector', sole: 'mid', soleType: 'foam', upper: 'knit' },
+  { collection: 'sport', slot: 'shoes', rarity: 'couture', name: 'VÉLOCE Apex', variant: 'runner', paletteIndex: 4, brand: 'VÉLOCE', model: 'Apex', sole: 'max', soleType: 'carbon', upper: 'mesh' },
+  { collection: 'sport', slot: 'accessory', rarity: 'norm', name: 'VÉLOCE Chrono', variant: 'watch', paletteIndex: 2, brand: 'VÉLOCE', watchFamily: 'chrono' },
+  { collection: 'sport', slot: 'accessory', rarity: 'base', name: 'VÉLOCE Shield', variant: 'visor', paletteIndex: 2, brand: 'VÉLOCE' },
 
-  // CAPSULE 3 · SPORT DEPT. / KINETIQ
-  { collection: 'sport', slot: 'top', rarity: 'base', name: 'KINETIQ Court', variant: 'tee', paletteIndex: 4, fit: 'regular', brand: 'KINETIQ', model: 'Court' },
-  { collection: 'sport', slot: 'top', rarity: 'norm', name: 'KINETIQ Rally', variant: 'longsleeve', paletteIndex: 3, fit: 'slim', brand: 'KINETIQ', model: 'Rally' },
-  { collection: 'sport', slot: 'top', rarity: 'trend', name: 'KINETIQ Baseline', variant: 'bomber', paletteIndex: 2, fit: 'oversize', brand: 'KINETIQ', model: 'Baseline' },
-  { collection: 'sport', slot: 'top', rarity: 'couture', name: 'KINETIQ Ace', variant: 'vest', paletteIndex: 0, fit: 'tailored', brand: 'KINETIQ', model: 'Ace' },
-  { collection: 'sport', slot: 'bottom', rarity: 'base', name: 'KINETIQ Serve', variant: 'track', paletteIndex: 4, fit: 'mid', brand: 'KINETIQ', model: 'Serve' },
-  { collection: 'sport', slot: 'bottom', rarity: 'norm', name: 'KINETIQ Rally', variant: 'baggy', paletteIndex: 2, fit: 'low', brand: 'KINETIQ', model: 'Rally' },
-  { collection: 'sport', slot: 'shoes', rarity: 'base', name: 'KINETIQ Court 88', variant: 'sneaker', paletteIndex: 0, brand: 'KINETIQ', model: 'Court 88', sole: 'low', soleType: 'cup', upper: 'leather' },
-  { collection: 'sport', slot: 'shoes', rarity: 'norm', name: 'KINETIQ Net', variant: 'sneaker', paletteIndex: 1, brand: 'KINETIQ', model: 'Net', sole: 'mid', soleType: 'cup', upper: 'suede' },
-  { collection: 'sport', slot: 'shoes', rarity: 'trend', name: 'KINETIQ Clay', variant: 'runner', paletteIndex: 3, brand: 'KINETIQ', model: 'Clay', sole: 'high', soleType: 'lug', upper: 'suede' },
-  { collection: 'sport', slot: 'accessory', rarity: 'trend', name: 'KINETIQ Timeout', variant: 'watch', paletteIndex: 4, brand: 'KINETIQ', watchFamily: 'chrono' },
-  { collection: 'sport', slot: 'accessory', rarity: 'norm', name: 'KINETIQ Linesman', variant: 'glasses', paletteIndex: 1, brand: 'KINETIQ', shape: 'rect' },
+  // CAPSULE 3 · SPORT DEPT. / STADION
+  { collection: 'sport', slot: 'top', rarity: 'base', name: 'STADION Court', variant: 'tee', paletteIndex: 4, fit: 'regular', brand: 'STADION', model: 'Court' },
+  { collection: 'sport', slot: 'top', rarity: 'norm', name: 'STADION Rally', variant: 'longsleeve', paletteIndex: 3, fit: 'slim', brand: 'STADION', model: 'Rally' },
+  { collection: 'sport', slot: 'top', rarity: 'trend', name: 'STADION Baseline', variant: 'bomber', paletteIndex: 2, fit: 'oversize', brand: 'STADION', model: 'Baseline' },
+  { collection: 'sport', slot: 'top', rarity: 'couture', name: 'STADION Ace', variant: 'vest', paletteIndex: 0, fit: 'tailored', brand: 'STADION', model: 'Ace' },
+  { collection: 'sport', slot: 'bottom', rarity: 'base', name: 'STADION Serve', variant: 'track', paletteIndex: 4, fit: 'mid', brand: 'STADION', model: 'Serve' },
+  { collection: 'sport', slot: 'bottom', rarity: 'norm', name: 'STADION Rally', variant: 'baggy', paletteIndex: 2, fit: 'low', brand: 'STADION', model: 'Rally' },
+  { collection: 'sport', slot: 'shoes', rarity: 'base', name: 'STADION Court 88', variant: 'sneaker', paletteIndex: 0, brand: 'STADION', model: 'Court 88', sole: 'low', soleType: 'cup', upper: 'leather' },
+  { collection: 'sport', slot: 'shoes', rarity: 'norm', name: 'STADION Net', variant: 'sneaker', paletteIndex: 1, brand: 'STADION', model: 'Net', sole: 'mid', soleType: 'cup', upper: 'suede' },
+  { collection: 'sport', slot: 'shoes', rarity: 'trend', name: 'STADION Clay', variant: 'runner', paletteIndex: 3, brand: 'STADION', model: 'Clay', sole: 'high', soleType: 'lug', upper: 'suede' },
+  { collection: 'sport', slot: 'accessory', rarity: 'trend', name: 'STADION Timeout', variant: 'watch', paletteIndex: 4, brand: 'STADION', watchFamily: 'chrono' },
+  { collection: 'sport', slot: 'accessory', rarity: 'norm', name: 'STADION Linesman', variant: 'glasses', paletteIndex: 1, brand: 'STADION', shape: 'rect' },
 
-  // CAPSULE 3 · SPORT DEPT. / TERREN
-  { collection: 'sport', slot: 'top', rarity: 'base', name: 'TERREN Ridge', variant: 'longsleeve', paletteIndex: 3, fit: 'regular', brand: 'TERREN', model: 'Ridge' },
-  { collection: 'sport', slot: 'top', rarity: 'norm', name: 'TERREN Summit', variant: 'bomber', paletteIndex: 1, fit: 'oversize', brand: 'TERREN', model: 'Summit' },
-  { collection: 'sport', slot: 'top', rarity: 'trend', name: 'TERREN Storm', variant: 'bomber', paletteIndex: 2, fit: 'oversize', brand: 'TERREN', model: 'Storm' },
-  { collection: 'sport', slot: 'top', rarity: 'legend', name: 'TERREN Alpine', variant: 'vest', paletteIndex: 3, fit: 'tailored', brand: 'TERREN', model: 'Alpine' },
-  { collection: 'sport', slot: 'bottom', rarity: 'base', name: 'TERREN Trail', variant: 'parachute', paletteIndex: 3, fit: 'mid', brand: 'TERREN', model: 'Trail' },
-  { collection: 'sport', slot: 'bottom', rarity: 'norm', name: 'TERREN Scout', variant: 'jorts', paletteIndex: 1, fit: 'mid', brand: 'TERREN', model: 'Scout' },
-  { collection: 'sport', slot: 'bottom', rarity: 'couture', name: 'TERREN Ridge Cargo', variant: 'wide', paletteIndex: 4, fit: 'mid', cargo: true, brand: 'TERREN', model: 'Ridge Cargo' },
-  { collection: 'sport', slot: 'shoes', rarity: 'base', name: 'TERREN Rock', variant: 'runner', paletteIndex: 1, brand: 'TERREN', model: 'Rock', sole: 'high', soleType: 'lug', upper: 'nubuck' },
-  { collection: 'sport', slot: 'shoes', rarity: 'norm', name: 'TERREN Summit', variant: 'boot', paletteIndex: 3, brand: 'TERREN', model: 'Summit', sole: 'mid', soleType: 'cup', upper: 'leather' },
-  { collection: 'sport', slot: 'shoes', rarity: 'trend', name: 'TERREN Grip', variant: 'runner', paletteIndex: 4, brand: 'TERREN', model: 'Grip', sole: 'max', soleType: 'tread', upper: 'suede' },
-  { collection: 'sport', slot: 'shoes', rarity: 'legend', name: 'TERREN Alpine', variant: 'boot', paletteIndex: 2, brand: 'TERREN', model: 'Alpine', sole: 'high', soleType: 'lug', upper: 'nubuck' },
-  { collection: 'sport', slot: 'accessory', rarity: 'base', name: 'TERREN Field', variant: 'watch', paletteIndex: 3, brand: 'TERREN', watchFamily: 'field' },
-  { collection: 'sport', slot: 'accessory', rarity: 'couture', name: 'TERREN Peak', variant: 'glasses', paletteIndex: 4, brand: 'TERREN', shape: 'round' },
+  // CAPSULE 3 · SPORT DEPT. / TERRAIN
+  { collection: 'sport', slot: 'top', rarity: 'base', name: 'TERRAIN Ridge', variant: 'longsleeve', paletteIndex: 3, fit: 'regular', brand: 'TERRAIN', model: 'Ridge' },
+  { collection: 'sport', slot: 'top', rarity: 'norm', name: 'TERRAIN Summit', variant: 'bomber', paletteIndex: 1, fit: 'oversize', brand: 'TERRAIN', model: 'Summit' },
+  { collection: 'sport', slot: 'top', rarity: 'trend', name: 'TERRAIN Storm', variant: 'bomber', paletteIndex: 2, fit: 'oversize', brand: 'TERRAIN', model: 'Storm' },
+  { collection: 'sport', slot: 'top', rarity: 'legend', name: 'TERRAIN Alpine', variant: 'vest', paletteIndex: 3, fit: 'tailored', brand: 'TERRAIN', model: 'Alpine' },
+  { collection: 'sport', slot: 'bottom', rarity: 'base', name: 'TERRAIN Trail', variant: 'parachute', paletteIndex: 3, fit: 'mid', brand: 'TERRAIN', model: 'Trail' },
+  { collection: 'sport', slot: 'bottom', rarity: 'norm', name: 'TERRAIN Scout', variant: 'jorts', paletteIndex: 1, fit: 'mid', brand: 'TERRAIN', model: 'Scout' },
+  { collection: 'sport', slot: 'bottom', rarity: 'couture', name: 'TERRAIN Ridge Cargo', variant: 'wide', paletteIndex: 4, fit: 'mid', cargo: true, brand: 'TERRAIN', model: 'Ridge Cargo' },
+  { collection: 'sport', slot: 'shoes', rarity: 'base', name: 'TERRAIN Rock', variant: 'runner', paletteIndex: 1, brand: 'TERRAIN', model: 'Rock', sole: 'high', soleType: 'lug', upper: 'nubuck' },
+  { collection: 'sport', slot: 'shoes', rarity: 'norm', name: 'TERRAIN Summit', variant: 'boot', paletteIndex: 3, brand: 'TERRAIN', model: 'Summit', sole: 'mid', soleType: 'cup', upper: 'leather' },
+  { collection: 'sport', slot: 'shoes', rarity: 'trend', name: 'TERRAIN Grip', variant: 'runner', paletteIndex: 4, brand: 'TERRAIN', model: 'Grip', sole: 'max', soleType: 'tread', upper: 'suede' },
+  { collection: 'sport', slot: 'shoes', rarity: 'legend', name: 'TERRAIN Alpine', variant: 'boot', paletteIndex: 2, brand: 'TERRAIN', model: 'Alpine', sole: 'high', soleType: 'lug', upper: 'nubuck' },
+  { collection: 'sport', slot: 'accessory', rarity: 'base', name: 'TERRAIN Field', variant: 'watch', paletteIndex: 3, brand: 'TERRAIN', watchFamily: 'field' },
+  { collection: 'sport', slot: 'accessory', rarity: 'couture', name: 'TERRAIN Peak', variant: 'glasses', paletteIndex: 4, brand: 'TERRAIN', shape: 'round' },
 
   // CAPSULE 3 · ЧАСОВЫЕ ДОМА
-  { collection: 'sport', slot: 'accessory', rarity: 'norm', name: 'MERIDIAN Diver 300', variant: 'watch', paletteIndex: 0, brand: 'MERIDIAN', watchFamily: 'diver' },
-  { collection: 'sport', slot: 'accessory', rarity: 'couture', name: 'MERIDIAN GMT 24', variant: 'watch', paletteIndex: 1, brand: 'MERIDIAN', watchFamily: 'gmt' },
-  { collection: 'sport', slot: 'accessory', rarity: 'legend', name: 'MERIDIAN Perpetual', variant: 'watch', paletteIndex: 2, brand: 'MERIDIAN', watchFamily: 'dress' },
-  { collection: 'sport', slot: 'accessory', rarity: 'icon', name: 'MERIDIAN Grand Chrono', variant: 'watch', paletteIndex: 3, brand: 'MERIDIAN', watchFamily: 'chrono' },
+  { collection: 'sport', slot: 'accessory', rarity: 'norm', name: 'HORLOGE Diver 300', variant: 'watch', paletteIndex: 0, brand: 'HORLOGE', watchFamily: 'diver' },
+  { collection: 'sport', slot: 'accessory', rarity: 'couture', name: 'HORLOGE GMT 24', variant: 'watch', paletteIndex: 1, brand: 'HORLOGE', watchFamily: 'gmt' },
+  { collection: 'sport', slot: 'accessory', rarity: 'legend', name: 'HORLOGE Perpetual', variant: 'watch', paletteIndex: 2, brand: 'HORLOGE', watchFamily: 'dress' },
+  { collection: 'sport', slot: 'accessory', rarity: 'icon', name: 'HORLOGE Grand Chrono', variant: 'watch', paletteIndex: 3, brand: 'HORLOGE', watchFamily: 'chrono' },
   { collection: 'sport', slot: 'accessory', rarity: 'couture', name: 'AUREL Slim 1962', variant: 'watch', paletteIndex: 4, brand: 'AUREL', watchFamily: 'dress' },
   { collection: 'sport', slot: 'accessory', rarity: 'legend', name: 'AUREL Sun', variant: 'glasses', paletteIndex: 3, brand: 'AUREL', shape: 'round' },
 
@@ -779,7 +793,7 @@ const EXTRA_ITEMS = [
 
 const HOUSE_LINES = [
   {
-    brand: 'VANTA',
+    brand: 'NOCTURNE',
     collection: 'noir',
     tops: [
       { name: 'Aero', variant: 'tee', fit: 'regular' },
@@ -803,7 +817,7 @@ const HOUSE_LINES = [
     ]
   },
   {
-    brand: 'KOVA',
+    brand: 'SÈVE',
     collection: 'street',
     tops: [
       { name: 'Vector', variant: 'tee', fit: 'regular' },
@@ -875,7 +889,7 @@ const HOUSE_LINES = [
     ]
   },
   {
-    brand: 'RIVE',
+    brand: 'RIVE GAUCHE',
     collection: 'street',
     tops: [
       { name: 'Current', variant: 'tee', fit: 'regular' },
@@ -968,16 +982,16 @@ const ARCHIVE_ACCESSORY_SPECS = [
 ];
 const ARCHIVE_RARITIES = ['base', 'norm', 'norm', 'trend', 'couture', 'legend', 'base', 'trend', 'couture', 'icon', 'norm', 'trend', 'couture', 'legend', 'base', 'trend', 'couture', 'legend', 'base', 'trend'];
 const ARCHIVE_HOUSES = [
-  { brand: 'VELOX', collection: 'sport' },
-  { brand: 'KINETIQ', collection: 'sport' },
-  { brand: 'TERREN', collection: 'sport' },
-  { brand: 'KOVA', collection: 'street' },
-  { brand: 'RIVE', collection: 'street' },
-  { brand: 'VANTA', collection: 'noir' },
+  { brand: 'VÉLOCE', collection: 'sport' },
+  { brand: 'STADION', collection: 'sport' },
+  { brand: 'TERRAIN', collection: 'sport' },
+  { brand: 'SÈVE', collection: 'street' },
+  { brand: 'RIVE GAUCHE', collection: 'street' },
+  { brand: 'NOCTURNE', collection: 'noir' },
   { brand: 'SABLE', collection: 'old' },
   { brand: 'AUREL', collection: 'old' },
   { brand: 'CAELUM', collection: 'muse' },
-  { brand: 'MERIDIAN', collection: 'sport' }
+  { brand: 'HORLOGE', collection: 'sport' }
 ];
 ARCHIVE_HOUSES.forEach((house, houseIndex) => {
   let serial = 0;
@@ -1469,9 +1483,9 @@ ARCHIVE_HOUSES.forEach((house, houseIndex) => {
   });
 });
 [
-  { collection: 'sport', name: 'MERIDIAN Singularis', brand: 'MERIDIAN', model: 'Singularis', watchFamily: 'dress', paletteIndex: 2 },
+  { collection: 'sport', name: 'HORLOGE Singularis', brand: 'HORLOGE', model: 'Singularis', watchFamily: 'dress', paletteIndex: 2 },
   { collection: 'old', name: 'AUREL Eclipse', brand: 'AUREL', model: 'Eclipse', watchFamily: 'dress', paletteIndex: 4 },
-  { collection: 'sport', name: 'VELOX Chronomax', brand: 'VELOX', model: 'Chronomax', watchFamily: 'chrono', paletteIndex: 5 }
+  { collection: 'sport', name: 'VÉLOCE Chronomax', brand: 'VÉLOCE', model: 'Chronomax', watchFamily: 'chrono', paletteIndex: 5 }
 ].forEach((entry) => {
   EXTRA_ITEMS.push({
     collection: entry.collection,
@@ -1677,6 +1691,259 @@ ARCHIVE_HOUSES.forEach((house, houseIndex) => {
   });
 });
 
+/* ---------- DROP 06 · RUS 2026 · 10 houses × 25 = 250 ---------- */
+const DROP6_MODELS = {
+  top: ['Пуховик', 'Водолазка', 'Зип-худи', 'Кардиган', 'Фланель', 'Лонгслив', 'Жилет'],
+  bottom: ['Джинсы-клёш', 'Буткат', 'Карго', 'Леггинсы', 'Капри', 'Парашют'],
+  shoes: ['Угги', 'Лоферы', 'Кроссовки', 'Ботинки', 'Балетки', 'Раннеры'],
+  accessory: ['Бини', 'Шарф', 'Сумка', 'Часы', 'Кольца', 'Очки']
+};
+const DROP6_TOP_SETS = {
+  noir: [
+    { variant: 'bomber', fit: 'oversize', puffer: true },
+    { variant: 'longsleeve', fit: 'slim', turtleneck: true },
+    { variant: 'hoodie', fit: 'oversize', zip: true },
+    { variant: 'shirt', fit: 'regular', cardigan: true },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'longsleeve', fit: 'regular' },
+    { variant: 'vest', fit: 'tailored' }
+  ],
+  old: [
+    { variant: 'bomber', fit: 'oversize', puffer: true },
+    { variant: 'longsleeve', fit: 'slim', turtleneck: true },
+    { variant: 'hoodie', fit: 'oversize', zip: true },
+    { variant: 'shirt', fit: 'regular', cardigan: true },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'longsleeve', fit: 'regular' },
+    { variant: 'vest', fit: 'tailored' }
+  ],
+  street: [
+    { variant: 'bomber', fit: 'oversize', puffer: true },
+    { variant: 'longsleeve', fit: 'slim', turtleneck: true },
+    { variant: 'hoodie', fit: 'oversize', zip: true },
+    { variant: 'shirt', fit: 'regular', cardigan: true },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'longsleeve', fit: 'regular' },
+    { variant: 'vest', fit: 'tailored' }
+  ],
+  muse: [
+    { variant: 'bomber', fit: 'oversize', puffer: true },
+    { variant: 'longsleeve', fit: 'slim', turtleneck: true },
+    { variant: 'hoodie', fit: 'oversize', zip: true },
+    { variant: 'shirt', fit: 'regular', cardigan: true },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'longsleeve', fit: 'regular' },
+    { variant: 'vest', fit: 'tailored' }
+  ],
+  sport: [
+    { variant: 'bomber', fit: 'oversize', puffer: true },
+    { variant: 'longsleeve', fit: 'slim', turtleneck: true },
+    { variant: 'hoodie', fit: 'oversize', zip: true },
+    { variant: 'shirt', fit: 'regular', cardigan: true },
+    { variant: 'shirt', fit: 'oversize' },
+    { variant: 'longsleeve', fit: 'regular' },
+    { variant: 'vest', fit: 'tailored' }
+  ]
+};
+const DROP6_BOTTOM_SETS = {
+  noir: [
+    { variant: 'flare', fit: 'low', cut: 'flare' },
+    { variant: 'flare', fit: 'mid', cut: 'bootcut', bootcut: true },
+    { variant: 'baggy', fit: 'mid', cut: 'cargo', cargo: true },
+    { variant: 'track', fit: 'mid', cut: 'leggings', leggings: true },
+    { variant: 'jorts', fit: 'low', cut: 'capri', capri: true },
+    { variant: 'parachute', fit: 'mid', cut: 'parachute' }
+  ],
+  old: [
+    { variant: 'flare', fit: 'low', cut: 'flare' },
+    { variant: 'flare', fit: 'mid', cut: 'bootcut', bootcut: true },
+    { variant: 'baggy', fit: 'mid', cut: 'cargo', cargo: true },
+    { variant: 'track', fit: 'mid', cut: 'leggings', leggings: true },
+    { variant: 'jorts', fit: 'low', cut: 'capri', capri: true },
+    { variant: 'parachute', fit: 'mid', cut: 'parachute' }
+  ],
+  street: [
+    { variant: 'flare', fit: 'low', cut: 'flare' },
+    { variant: 'flare', fit: 'mid', cut: 'bootcut', bootcut: true },
+    { variant: 'baggy', fit: 'mid', cut: 'cargo', cargo: true },
+    { variant: 'track', fit: 'mid', cut: 'leggings', leggings: true },
+    { variant: 'jorts', fit: 'low', cut: 'capri', capri: true },
+    { variant: 'parachute', fit: 'mid', cut: 'parachute' }
+  ],
+  muse: [
+    { variant: 'flare', fit: 'low', cut: 'flare' },
+    { variant: 'flare', fit: 'mid', cut: 'bootcut', bootcut: true },
+    { variant: 'baggy', fit: 'mid', cut: 'cargo', cargo: true },
+    { variant: 'track', fit: 'mid', cut: 'leggings', leggings: true },
+    { variant: 'jorts', fit: 'low', cut: 'capri', capri: true },
+    { variant: 'parachute', fit: 'mid', cut: 'parachute' }
+  ],
+  sport: [
+    { variant: 'flare', fit: 'low', cut: 'flare' },
+    { variant: 'flare', fit: 'mid', cut: 'bootcut', bootcut: true },
+    { variant: 'baggy', fit: 'mid', cut: 'cargo', cargo: true },
+    { variant: 'track', fit: 'mid', cut: 'leggings', leggings: true },
+    { variant: 'jorts', fit: 'low', cut: 'capri', capri: true },
+    { variant: 'parachute', fit: 'mid', cut: 'parachute' }
+  ]
+};
+const DROP6_SHOE_SETS = {
+  noir: [
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'suede', uggs: true },
+    { variant: 'loafer', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'suede' },
+    { variant: 'boot', sole: 'mid', soleType: 'lug', upper: 'leather' },
+    { variant: 'ballet', sole: 'low', soleType: 'cup', upper: 'satin' },
+    { variant: 'runner', sole: 'mid', soleType: 'foam', upper: 'mesh' }
+  ],
+  old: [
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'suede', uggs: true },
+    { variant: 'loafer', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'boot', sole: 'mid', soleType: 'cup', upper: 'suede' },
+    { variant: 'ballet', sole: 'low', soleType: 'cup', upper: 'satin' },
+    { variant: 'runner', sole: 'mid', soleType: 'foam', upper: 'mesh' }
+  ],
+  street: [
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'suede', uggs: true },
+    { variant: 'loafer', sole: 'low', soleType: 'cup', upper: 'suede' },
+    { variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'canvas' },
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'nubuck' },
+    { variant: 'ballet', sole: 'low', soleType: 'cup', upper: 'satin' },
+    { variant: 'runner', sole: 'high', soleType: 'tread', upper: 'mesh' }
+  ],
+  muse: [
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'suede', uggs: true },
+    { variant: 'loafer', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'suede' },
+    { variant: 'boot', sole: 'mid', soleType: 'cup', upper: 'leather' },
+    { variant: 'ballet', sole: 'low', soleType: 'cup', upper: 'satin' },
+    { variant: 'runner', sole: 'mid', soleType: 'foam', upper: 'knit' }
+  ],
+  sport: [
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'suede', uggs: true },
+    { variant: 'loafer', sole: 'low', soleType: 'cup', upper: 'leather' },
+    { variant: 'sneaker', sole: 'low', soleType: 'cup', upper: 'mesh' },
+    { variant: 'boot', sole: 'high', soleType: 'lug', upper: 'nubuck' },
+    { variant: 'ballet', sole: 'low', soleType: 'cup', upper: 'satin' },
+    { variant: 'runner', sole: 'max', soleType: 'carbon', upper: 'mesh' }
+  ]
+};
+const DROP6_ACCESSORY_BANK = [
+  { variant: 'beanie' },
+  { variant: 'scarf' },
+  { variant: 'bag' },
+  { variant: 'watch', watchFamily: 'chrono' },
+  { variant: 'rings' },
+  { variant: 'glasses', shape: 'round' }
+];
+const DROP6_RARITIES = ['base', 'norm', 'norm', 'trend', 'trend', 'couture', 'couture', 'legend', 'base', 'norm', 'trend', 'trend', 'couture', 'legend', 'base', 'norm', 'trend', 'couture', 'legend', 'icon', 'base', 'norm', 'trend', 'couture', 'legend'];
+const DROP6_STYLES = {
+  top: ['ЗИМА 2026', 'ДЕМИСЕЗОН 2026', 'СТРИТ 2026', 'ДЕМИСЕЗОН 2026', 'ДЕНИМ 2026', 'БАЗА 2026', 'ДЕМИСЕЗОН 2026'],
+  bottom: ['ДЕНИМ 2026', 'ДЕНИМ 2026', 'УТИЛИТИ 2026', 'СПОРТ 2026', 'ДЕНИМ 2026', 'УЛИЦА 2026'],
+  shoes: ['ЗИМА 2026', 'ДЕМИСЕЗОН 2026', 'СПОРТ 2026', 'ЗИМА 2026', 'ДЕМИСЕЗОН 2026', 'СПОРТ 2026'],
+  accessory: ['ЗИМА 2026', 'ЗИМА 2026', 'УТИЛИТИ 2026', 'АКСЕССУАР', 'АКСЕССУАР', 'АКСЕССУАР']
+};
+ARCHIVE_HOUSES.forEach((house, houseIndex) => {
+  const collection = COLLECTIONS[house.collection];
+  const letter = String.fromCharCode(65 + houseIndex);
+  let serial = 0;
+  const addDrop6Item = (slot, spec, localIndex) => {
+    const model = `${DROP6_MODELS[slot][localIndex]} ${letter}${serial + 1}R26`;
+    EXTRA_ITEMS.push({
+      collection: house.collection,
+      slot,
+      rarity: DROP6_RARITIES[serial],
+      name: `${house.brand} ${model}`,
+      variant: spec.variant,
+      fit: spec.fit || null,
+      cut: spec.cut || null,
+      shape: spec.shape || null,
+      sole: spec.sole || null,
+      soleType: spec.soleType || null,
+      upper: spec.upper || null,
+      watchFamily: spec.watchFamily || null,
+      puffer: Boolean(spec.puffer),
+      turtleneck: Boolean(spec.turtleneck),
+      cardigan: Boolean(spec.cardigan),
+      bootcut: Boolean(spec.bootcut),
+      leggings: Boolean(spec.leggings),
+      capri: Boolean(spec.capri),
+      cargo: Boolean(spec.cargo),
+      uggs: Boolean(spec.uggs),
+      brand: house.brand,
+      model,
+      paletteIndex: (houseIndex * 17 + serial) % collection.palettes.length,
+      style: DROP6_STYLES[slot][localIndex]
+    });
+    serial += 1;
+  };
+  const tops = DROP6_TOP_SETS[house.collection] || DROP6_TOP_SETS.noir;
+  const bottoms = DROP6_BOTTOM_SETS[house.collection] || DROP6_BOTTOM_SETS.noir;
+  const shoes = DROP6_SHOE_SETS[house.collection] || DROP6_SHOE_SETS.noir;
+  tops.forEach((spec, index) => addDrop6Item('top', spec, index));
+  bottoms.forEach((spec, index) => addDrop6Item('bottom', spec, index));
+  shoes.forEach((spec, index) => addDrop6Item('shoes', spec, index));
+  [0, 1, 2, 3, 4, 5].forEach((offset) => {
+    const spec = DROP6_ACCESSORY_BANK[offset];
+    addDrop6Item('accessory', spec, offset);
+  });
+});
+
+
+const CAPSULE_SKIRTS = [
+  { collection: 'street', rarity: 'trend', name: 'Джинсовая мини', variant: 'skirt', paletteIndex: 1, fit: 'high', length: 'mini', style: 'СТРИТ' },
+  { collection: 'muse', rarity: 'trend', name: 'Деним-миди', variant: 'skirt', paletteIndex: 1, fit: 'high', length: 'midi', style: 'СТУДИЯ' }
+];
+const CAPSULE_HAIR = [
+  { collection: 'noir', rarity: 'norm', name: 'Длина', variant: 'long', paletteIndex: 1, style: 'МИНИМАЛ' },
+  { collection: 'old', rarity: 'norm', name: 'Прямое каре', variant: 'lob', paletteIndex: 1, style: 'ОЛД-МАНИ' },
+  { collection: 'street', rarity: 'norm', name: 'Базз', variant: 'buzz', paletteIndex: 1, style: 'СТРИТ' },
+  { collection: 'muse', rarity: 'trend', name: 'Волны', variant: 'waves', paletteIndex: 2, style: 'СТУДИЯ' },
+  { collection: 'sport', rarity: 'trend', name: 'Мягкое каре', variant: 'lob', paletteIndex: 2, style: 'СПОРТ' }
+];
+const CAPSULE_BELTS = [
+  { collection: 'noir', rarity: 'base', name: 'Ремень Ноль', paletteIndex: 0, beltMaterial: 'leather', brand: 'NOCTURNE' },
+  { collection: 'noir', rarity: 'norm', name: 'Ремень Контур', paletteIndex: 1, beltMaterial: 'leather', brand: 'SÈVE' },
+  { collection: 'noir', rarity: 'norm', name: 'Ремень Графит', paletteIndex: 2, beltMaterial: 'suede', brand: 'NOCTURNE' },
+  { collection: 'noir', rarity: 'trend', name: 'Ремень Сталь', paletteIndex: 3, beltMaterial: 'chain', brand: 'SÈVE' },
+  { collection: 'noir', rarity: 'couture', name: 'Ремень Архив', paletteIndex: 4, beltMaterial: 'patent', brand: 'NOCTURNE' },
+  { collection: 'noir', rarity: 'legend', name: 'Ремень Полночь', paletteIndex: 5, beltMaterial: 'leather', brand: 'SÈVE' },
+  { collection: 'old', rarity: 'base', name: 'Ремень Камея', paletteIndex: 0, beltMaterial: 'leather', brand: 'AUREL' },
+  { collection: 'old', rarity: 'norm', name: 'Ремень Клуб', paletteIndex: 1, beltMaterial: 'suede', brand: 'SABLE' },
+  { collection: 'old', rarity: 'norm', name: 'Ремень Наследие', paletteIndex: 2, beltMaterial: 'leather', brand: 'HORLOGE' },
+  { collection: 'old', rarity: 'trend', name: 'Ремень Аукцион', paletteIndex: 3, beltMaterial: 'webbing', brand: 'SABLE' },
+  { collection: 'old', rarity: 'couture', name: 'Ремень Печать', paletteIndex: 4, beltMaterial: 'patent', brand: 'AUREL' },
+  { collection: 'old', rarity: 'legend', name: 'Ремень Герб', paletteIndex: 4, beltMaterial: 'chain', brand: 'HORLOGE' },
+  { collection: 'street', rarity: 'base', name: 'Ремень Бетон', paletteIndex: 0, beltMaterial: 'webbing', brand: 'TERRAIN' },
+  { collection: 'street', rarity: 'norm', name: 'Ремень Двор', paletteIndex: 1, beltMaterial: 'leather', brand: 'RIVE GAUCHE' },
+  { collection: 'street', rarity: 'norm', name: 'Ремень Сигнал', paletteIndex: 2, beltMaterial: 'webbing', brand: 'STADION' },
+  { collection: 'street', rarity: 'trend', name: 'Ремень Провод', paletteIndex: 3, beltMaterial: 'chain', brand: 'VÉLOCE' },
+  { collection: 'street', rarity: 'couture', name: 'Ремень Трафик', paletteIndex: 3, beltMaterial: 'leather', brand: 'RIVE GAUCHE' },
+  { collection: 'street', rarity: 'couture', name: 'Ремень Табло', paletteIndex: 0, beltMaterial: 'patent', brand: 'STADION' },
+  { collection: 'muse', rarity: 'base', name: 'Ремень Пудра', paletteIndex: 0, beltMaterial: 'suede', brand: 'CAELUM' },
+  { collection: 'muse', rarity: 'norm', name: 'Ремень Бордо', paletteIndex: 1, beltMaterial: 'leather', brand: 'AUREL' },
+  { collection: 'muse', rarity: 'norm', name: 'Ремень Жемчуг', paletteIndex: 2, beltMaterial: 'patent', brand: 'SABLE' },
+  { collection: 'muse', rarity: 'trend', name: 'Ремень Тон', paletteIndex: 3, beltMaterial: 'leather', brand: 'CAELUM' },
+  { collection: 'muse', rarity: 'couture', name: 'Ремень Опера', paletteIndex: 4, beltMaterial: 'chain', brand: 'SABLE' },
+  { collection: 'muse', rarity: 'legend', name: 'Ремень Атлас', paletteIndex: 4, beltMaterial: 'patent', brand: 'AUREL' },
+  { collection: 'sport', rarity: 'base', name: 'Ремень Трибуна', paletteIndex: 0, beltMaterial: 'webbing', brand: 'STADION' },
+  { collection: 'sport', rarity: 'norm', name: 'Ремень Темп', paletteIndex: 1, beltMaterial: 'webbing', brand: 'VÉLOCE' },
+  { collection: 'sport', rarity: 'norm', name: 'Ремень Старт', paletteIndex: 2, beltMaterial: 'leather', brand: 'TERRAIN' },
+  { collection: 'sport', rarity: 'trend', name: 'Ремень Дорожка', paletteIndex: 3, beltMaterial: 'webbing', brand: 'STADION' },
+  { collection: 'sport', rarity: 'couture', name: 'Ремень Финиш', paletteIndex: 4, beltMaterial: 'chain', brand: 'VÉLOCE' },
+  { collection: 'sport', rarity: 'icon', name: 'Ремень Рекорд', paletteIndex: 5, beltMaterial: 'leather', brand: 'TERRAIN' }
+];
+CAPSULE_SKIRTS.forEach((entry) => {
+  EXTRA_ITEMS.push({ ...entry, slot: 'bottom' });
+});
+CAPSULE_HAIR.forEach((entry) => {
+  EXTRA_ITEMS.push({ ...entry, slot: 'hair' });
+});
+CAPSULE_BELTS.forEach((entry) => {
+  EXTRA_ITEMS.push({ ...entry, slot: 'accessory', variant: 'belt' });
+});
+
 const extraVariantCounts = {};
 EXTRA_ITEMS.forEach((entry) => {
   const key = `${entry.collection}-${entry.slot}-${entry.variant}`;
@@ -1695,6 +1962,14 @@ EXTRA_ITEMS.forEach((entry) => {
     length: entry.length || null,
     cargo: Boolean(entry.cargo),
     zip: Boolean(entry.zip),
+    puffer: Boolean(entry.puffer),
+    turtleneck: Boolean(entry.turtleneck),
+    cardigan: Boolean(entry.cardigan),
+    bootcut: Boolean(entry.bootcut),
+    leggings: Boolean(entry.leggings),
+    capri: Boolean(entry.capri),
+    cargo: Boolean(entry.cargo),
+    uggs: Boolean(entry.uggs),
     shape: entry.shape || null,
     style: entry.style || '',
     brand: entry.brand || null,
@@ -1704,6 +1979,7 @@ EXTRA_ITEMS.forEach((entry) => {
     upper: entry.upper || null,
     soleType: entry.soleType || null,
     watchFamily: entry.watchFamily || null,
+    beltMaterial: entry.beltMaterial || null,
     palette: collection.palettes[entry.paletteIndex] || collection.palettes[0],
     points: rarity.points,
     sell: rarity.sell,
@@ -1741,7 +2017,7 @@ ITEMS.forEach((item) => {
   let label = base;
   if (displayNameCounts[base] > 1) {
     const suffix = item.slot === 'hair'
-      ? `${COLLECTIONS[item.collection].name} · ${SLOT_BY_ID[item.slot].label.toUpperCase()}`
+      ? `${HAIR_LENGTH_LABELS[item.hairLength] || 'СТРИЖКА'} · ${COLLECTIONS[item.collection].name}`
       : SLOT_BY_ID[item.slot].label.toUpperCase();
     label = `${base} · ${suffix}`;
     let counter = 2;
@@ -1828,6 +2104,7 @@ function createDefaultState() {
     dailyDate: todayKey(),
     wardrobeSlot: 'all',
     wardrobeCollection: 'all',
+    wardrobeHairLength: 'all',
     leaderPeriod: 'week'
   };
   state.bestScore = computeOutfit(state.equipped).score;
@@ -1871,7 +2148,7 @@ function loadState() {
 
   state.inventory = {};
   if (saved.inventory && typeof saved.inventory === 'object' && !Array.isArray(saved.inventory)) {
-    Object.entries(saved.inventory).slice(0, 1500).forEach(([id, quantity]) => {
+    Object.entries(saved.inventory).slice(0, 2000).forEach(([id, quantity]) => {
       if (!getItem(id)) return;
       const count = clampInt(quantity, 0, 999, 0);
       if (count > 0) state.inventory[id] = count;
@@ -1906,6 +2183,7 @@ function loadState() {
   state.watchStrap = WATCH_STRAPS.some((strap) => strap.id === saved.watchStrap) ? saved.watchStrap : 'leather';
   state.wardrobeSlot = ['all', ...SLOT_KEYS].includes(saved.wardrobeSlot) ? saved.wardrobeSlot : 'all';
   state.wardrobeCollection = ['all', ...Object.keys(COLLECTIONS)].includes(saved.wardrobeCollection) ? saved.wardrobeCollection : 'all';
+  state.wardrobeHairLength = ['all', 'short', 'medium', 'long'].includes(saved.wardrobeHairLength) ? saved.wardrobeHairLength : 'all';
   state.leaderPeriod = ownValue(LEADERBOARDS, saved.leaderPeriod) ? saved.leaderPeriod : 'week';
 
   state.history = [];
@@ -2008,7 +2286,8 @@ function applyAvatar() {
   const fallbackBottom = { flare: 'wide', baggy: 'wide', parachute: 'cargo', track: 'tailored', skirt: 'wide', jorts: 'tailored' };
   const fallbackShoes = { platform: 'loafer', mule: 'loafer', ballet: 'loafer', runner: 'sneaker', derby: 'loafer' };
   const fallbackAcc = { rings: 'none', chain: 'gold', pearls: 'gold', earrings: 'none', watch: 'gold' };
-  avatarSvg.dataset.hair = hair ? (['crop', 'flow', 'fade', 'curtain', 'bob', 'pixie', 'mullet', 'wolf'].includes(hair.variant) ? 'slick' : hair.variant) : 'none';
+  const fallbackHair = { long: 'flow', waves: 'flow', lob: 'bob', buzz: 'crop', shag: 'wolf' };
+  avatarSvg.dataset.hair = hair ? (fallbackHair[hair.variant] || (['crop', 'flow', 'fade', 'curtain', 'bob', 'pixie', 'mullet', 'wolf'].includes(hair.variant) ? 'slick' : hair.variant)) : 'none';
   avatarSvg.dataset.top = top ? (fallbackTop[top.variant] || top.variant) : 'none';
   avatarSvg.dataset.bottom = bottom ? (fallbackBottom[bottom.variant] || bottom.variant) : 'none';
   avatarSvg.dataset.shoes = shoes ? (fallbackShoes[shoes.variant] || shoes.variant) : 'none';
@@ -2042,7 +2321,8 @@ function applyAvatar() {
     avatarSvg.style.setProperty('--shoe-accent', shoes.palette.metal);
   }
   if (accessory) {
-    avatarSvg.style.setProperty('--acc-main', accessory.palette.metal);
+    avatarSvg.style.setProperty('--acc-main', accessory.variant === 'belt' ? accessory.palette.main : accessory.palette.metal);
+    avatarSvg.style.setProperty('--acc-metal', accessory.palette.metal);
     avatarSvg.style.setProperty('--acc-accent', accessory.palette.accent);
     avatarSvg.style.setProperty('--acc-detail', accessory.palette.detail);
   }
@@ -2505,7 +2785,7 @@ function itemCardHTML(item) {
         <span class="item-art">${itemArt(item)}</span>
       </span>
       <span class="item-name">${escapeHTML(itemLabel(item))}</span>
-      <span class="item-meta"><span>${collection.name}</span><em>${formatCoins(item.sell)}</em></span>
+      <span class="item-meta"><span>${collection.name}${item.slot === 'hair' ? ` · ${HAIR_LENGTH_LABELS[item.hairLength] || ''}` : ''}</span><em>${formatCoins(item.sell)}</em></span>
     </button>`;
 }
 
@@ -2527,6 +2807,14 @@ function renderWardrobe() {
     <button class="filter-chip ${state.wardrobeSlot === slot.id ? 'is-active' : ''}" data-filter-slot="${slot.id}">${slot.label}</button>
   `).join('');
 
+  const hairLengthFilters = $('hairLengthFilters');
+  hairLengthFilters.hidden = state.wardrobeSlot !== 'hair';
+  hairLengthFilters.innerHTML = state.wardrobeSlot === 'hair'
+    ? [{ id: 'all', label: 'Все длины' }, { id: 'short', label: 'Короткие' }, { id: 'medium', label: 'Средние' }, { id: 'long', label: 'Длинные' }].map((length) => `
+      <button class="filter-chip ${state.wardrobeHairLength === length.id ? 'is-active' : ''}" data-filter-hair-length="${length.id}">${length.label}</button>
+    `).join('')
+    : '';
+
   $('wardrobeCollections').innerHTML = [{ id: 'all', name: 'Все коллекции' }, ...Object.values(COLLECTIONS).map((collection) => ({ id: collection.id, name: collection.name }))].map((collection) => `
     <button class="collection-chip ${state.wardrobeCollection === collection.id ? 'is-active' : ''}" data-filter-collection="${collection.id}">${collection.name}</button>
   `).join('');
@@ -2544,6 +2832,7 @@ function renderWardrobe() {
   const filtered = ITEMS.filter((item) => {
     if (state.wardrobeSlot !== 'all' && item.slot !== state.wardrobeSlot) return false;
     if (state.wardrobeCollection !== 'all' && item.collection !== state.wardrobeCollection) return false;
+    if (state.wardrobeSlot === 'hair' && state.wardrobeHairLength !== 'all' && item.hairLength !== state.wardrobeHairLength) return false;
     return true;
   }).sort((a, b) => {
     const aEquipped = state.equipped[a.slot] === a.id ? 1 : 0;
@@ -2578,7 +2867,7 @@ function openItemSheet(item) {
   $('itemSheetArt').innerHTML = itemArt(item);
   $('itemSheetRarity').textContent = `${rarity.label.toUpperCase()} · ${item.style}`;
   $('itemSheetName').textContent = itemLabel(item);
-  $('itemSheetMeta').textContent = `${item.metaLine || `${collection.name} · ${slot.label.toUpperCase()}`}${item.slot === 'hair' ? ` · ${hairTextureLabel().toUpperCase()}` : item.variant === 'watch' ? ` · ${watchDialLabel().toUpperCase()} · ${watchStrapLabel().toUpperCase()}` : ''}`;
+  $('itemSheetMeta').textContent = `${item.metaLine || `${collection.name} · ${slot.label.toUpperCase()}`}${item.brandLine ? ` · ${item.brandLine}` : ''}${item.slot === 'hair' ? ` · ${hairTextureLabel().toUpperCase()}` : item.variant === 'watch' ? ` · ${watchDialLabel().toUpperCase()} · ${watchStrapLabel().toUpperCase()}` : ''}`;
   $('itemSheetPoints').textContent = `+${item.points}`;
   $('itemSheetPrice').textContent = formatCoins(item.sell);
   $('itemSheetOwned').textContent = count > 0 ? `×${count}` : 'не выбит';
@@ -3207,6 +3496,7 @@ function bindEvents() {
     if (event.target.closest('[data-reset-filters]')) {
       state.wardrobeSlot = 'all';
       state.wardrobeCollection = 'all';
+      state.wardrobeHairLength = 'all';
       wardrobeLimit = 120;
       saveState();
       renderWardrobe();
@@ -3235,6 +3525,15 @@ function bindEvents() {
     saveState();
     renderWardrobe();
   });
+  $('hairLengthFilters').addEventListener('click', (event) => {
+    const chip = event.target.closest('[data-filter-hair-length]');
+    if (!chip) return;
+    state.wardrobeHairLength = chip.dataset.filterHairLength;
+    wardrobeLimit = 120;
+    saveState();
+    renderWardrobe();
+  });
+
   $('wardrobeCollections').addEventListener('click', (event) => {
     const chip = event.target.closest('[data-filter-collection]');
     if (!chip) return;
