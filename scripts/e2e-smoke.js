@@ -151,6 +151,7 @@ async function main() {
     await send('Page.enable');
     await send('Network.enable');
     await send('Network.setCacheDisabled', { cacheDisabled: true });
+    await send('Network.setBlockedURLs', { urls: ['*telegram.org*'] });
 
     for (const viewport of [{ width: 320, height: 740 }, { width: 390, height: 780 }]) {
       const ready = await navigate(viewport.width, viewport.height);
@@ -168,6 +169,20 @@ async function main() {
       check(`${tag} coverage complete`, base.coverage.length === 0, base.coverage.join(','));
       check(`${tag} no horizontal overflow`, base.overflow <= 0, String(base.overflow));
       check(`${tag} WebGL active`, base.has3d);
+
+      const bodyBefore = await evaluate(`window.lukap3d.rebuilds`);
+      const bodyState = await evaluate(`(() => {
+        const button = document.querySelector('#bodyTabs [data-body="strong"]');
+        if (!button) return null;
+        button.click();
+        return { body: LUKAP.getState().body, svg: document.querySelector('.avatar-svg')?.dataset.body };
+      })()`);
+      await wait(500);
+      const bodyAfter = await evaluate(`window.lukap3d.rebuilds`);
+      check(`${tag} body type switches`, bodyState && bodyState.body === 'strong' && bodyState.svg === 'strong', JSON.stringify(bodyState));
+      check(`${tag} body type rebuilds 3D`, bodyAfter > bodyBefore, `${bodyBefore}→${bodyAfter}`);
+      await evaluate(`document.querySelector('#bodyTabs [data-body="average"]')?.click()`);
+      await wait(350);
 
       for (const tab of ['wardrobe', 'leaders', 'profile']) {
         await evaluate(`document.querySelector('[data-tab="${tab}"]')?.click()`);

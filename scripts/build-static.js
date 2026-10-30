@@ -15,8 +15,14 @@ const files = [
   'lib/outfit.js',
   'lib/state.js',
   'data/leaderboard-mock.js',
-  'light.css',
-  'styles.css',
+  'app.css',
+  'fonts/cormorant-garamond-cyrillic.woff2',
+  'fonts/cormorant-garamond-latin.woff2',
+  'fonts/manrope-cyrillic.woff2',
+  'fonts/manrope-latin.woff2',
+  'fonts/unbounded-cyrillic.woff2',
+  'fonts/unbounded-latin.woff2',
+  'fonts/OFL.txt',
   'vendor/three.min.js',
   '_headers',
   'robots.txt'
@@ -29,8 +35,14 @@ const versioned = [
   'lib/outfit.js',
   'lib/state.js',
   'data/leaderboard-mock.js',
-  'light.css',
-  'styles.css',
+  'app.css',
+  'fonts/cormorant-garamond-cyrillic.woff2',
+  'fonts/cormorant-garamond-latin.woff2',
+  'fonts/manrope-cyrillic.woff2',
+  'fonts/manrope-latin.woff2',
+  'fonts/unbounded-cyrillic.woff2',
+  'fonts/unbounded-latin.woff2',
+  'fonts/OFL.txt',
   'vendor/three.min.js'
 ];
 

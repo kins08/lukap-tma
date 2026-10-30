@@ -20,7 +20,7 @@
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.04;
+  renderer.toneMappingExposure = 0.98;
   renderer.setClearColor(0x000000, 0);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -36,26 +36,26 @@
     canvas.height = 512;
     const context = canvas.getContext('2d');
     const sky = context.createLinearGradient(0, 0, 0, 512);
-    sky.addColorStop(0, '#fffdf7');
-    sky.addColorStop(0.32, '#f6ecdd');
-    sky.addColorStop(0.52, '#d9c5aa');
-    sky.addColorStop(0.72, '#8f7357');
-    sky.addColorStop(1, '#3a2a1e');
+    sky.addColorStop(0, '#fffdf9');
+    sky.addColorStop(0.38, '#f3eadc');
+    sky.addColorStop(0.62, '#d8c9b6');
+    sky.addColorStop(0.8, '#a38d75');
+    sky.addColorStop(1, '#6e5c4a');
     context.fillStyle = sky;
     context.fillRect(0, 0, 1024, 512);
 
-    const glow = (x, y, radius, color, alpha) => {
-      const gradient = context.createRadialGradient(x, y, 0, x, y, radius);
-      gradient.addColorStop(0, `rgba(${color},${alpha})`);
-      gradient.addColorStop(0.55, `rgba(${color},${alpha * 0.32})`);
-      gradient.addColorStop(1, `rgba(${color},0)`);
-      context.fillStyle = gradient;
-      context.fillRect(0, 0, 1024, 512);
+    const softbox = (x, y, width, height, color, alpha, blur) => {
+      context.save();
+      context.filter = `blur(${blur}px)`;
+      context.fillStyle = `rgba(${color},${alpha})`;
+      context.fillRect(x, y, width, height);
+      context.restore();
     };
-    glow(250, 150, 300, '255,255,252', 0.98);
-    glow(760, 190, 250, '255,214,184', 0.72);
-    glow(930, 300, 190, '255,92,64', 0.32);
-    glow(560, 420, 340, '255,232,204', 0.2);
+    softbox(120, 54, 360, 220, '255,255,252', 0.96, 34);
+    softbox(690, 120, 230, 150, '255,238,220', 0.62, 28);
+    softbox(430, 300, 390, 130, '255,246,232', 0.24, 42);
+    context.fillStyle = 'rgba(255,252,246,.28)';
+    context.fillRect(0, 0, 1024, 88);
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.mapping = THREE.EquirectangularReflectionMapping;
@@ -237,76 +237,142 @@
   hairBump.repeat.set(3, 2);
   hairBump.anisotropy = Math.min(4, maxAnisotropy);
 
-  const BASE_DISTANCE = 4.05;
-  const camera = new THREE.PerspectiveCamera(31, 1, 0.05, 30);
-  camera.position.set(0, 1.04, BASE_DISTANCE);
-  camera.lookAt(0, 0.96, 0);
+  const BASE_DISTANCE = 4.6;
+  const camera = new THREE.PerspectiveCamera(29, 1, 0.05, 30);
+  camera.position.set(0, 1.06, BASE_DISTANCE);
+  camera.lookAt(0, 0.98, 0);
 
-  scene.add(new THREE.HemisphereLight(0xfff7ec, 0x5c4c3b, 0.46));
-  const keyLight = new THREE.DirectionalLight(0xfff3e2, 1.3);
-  keyLight.position.set(-2.2, 3.8, 3.3);
+  scene.add(new THREE.HemisphereLight(0xfff7ec, 0x8a7a66, 0.32));
+  const keyLight = new THREE.DirectionalLight(0xfff1df, 1.35);
+  keyLight.position.set(-2.4, 3.5, 2.8);
   keyLight.castShadow = true;
-  keyLight.shadow.mapSize.set(2048, 2048);
+  const lowPower = (navigator.hardwareConcurrency || 4) <= 4;
+  const shadowSize = lowPower ? 1024 : 2048;
+  keyLight.shadow.mapSize.set(shadowSize, shadowSize);
   keyLight.shadow.camera.near = 0.5;
-  keyLight.shadow.camera.far = 9;
-  keyLight.shadow.camera.left = -2;
-  keyLight.shadow.camera.right = 2;
-  keyLight.shadow.camera.top = 3;
-  keyLight.shadow.camera.bottom = -0.5;
-  keyLight.shadow.bias = -0.00018;
-  keyLight.shadow.normalBias = 0.018;
+  keyLight.shadow.camera.far = 10;
+  keyLight.shadow.camera.left = -2.3;
+  keyLight.shadow.camera.right = 2.3;
+  keyLight.shadow.camera.top = 3.2;
+  keyLight.shadow.camera.bottom = -0.2;
+  keyLight.shadow.bias = -0.0004;
+  keyLight.shadow.normalBias = 0.02;
   keyLight.shadow.radius = 5;
   scene.add(keyLight);
-  const fillLight = new THREE.DirectionalLight(0xffe0c8, 0.38);
-  fillLight.position.set(2.6, 1.4, 2.1);
+  const fillLight = new THREE.DirectionalLight(0xeaf0ff, 0.5);
+  fillLight.position.set(2.6, 1.6, 2.2);
   scene.add(fillLight);
-  const rimLight = new THREE.PointLight(0xff4131, 0.95, 5.5);
-  rimLight.position.set(1.9, 2.0, -1.5);
+  const rimLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  rimLight.position.set(2.2, 2.8, -2.6);
   scene.add(rimLight);
-  const backLight = new THREE.DirectionalLight(0xffd6bd, 0.3);
-  backLight.position.set(-1.4, 2.4, -2.8);
-  scene.add(backLight);
-  const topLight = new THREE.PointLight(0xfff8ed, 0.36, 4);
-  const edgeLight = new THREE.DirectionalLight(0xffead8, 0.26);
-  edgeLight.position.set(-2.4, 2.4, -2.2);
-  scene.add(edgeLight);
-  topLight.position.set(0, 3.2, 0.8);
-  scene.add(topLight);
 
-  const shadowCanvas = document.createElement('canvas');
-  shadowCanvas.width = 256;
-  shadowCanvas.height = 128;
-  const shadowContext = shadowCanvas.getContext('2d');
-  const shadowGradient = shadowContext.createRadialGradient(128, 64, 5, 128, 64, 112);
-  shadowGradient.addColorStop(0, 'rgba(65,44,25,.42)');
-  shadowGradient.addColorStop(0.52, 'rgba(65,44,25,.21)');
-  shadowGradient.addColorStop(1, 'rgba(65,44,25,0)');
-  shadowContext.fillStyle = shadowGradient;
-  shadowContext.fillRect(0, 0, 256, 128);
-  const shadowTexture = new THREE.CanvasTexture(shadowCanvas);
-  const shadowPlane = new THREE.Mesh(
-    new THREE.PlaneGeometry(1.05, 0.52),
-    new THREE.MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false })
-  );
-  shadowPlane.rotation.x = -Math.PI / 2;
-  shadowPlane.position.set(0, 0.002, 0.02);
-  scene.add(shadowPlane);
-  const shadowReceiver = new THREE.Mesh(
-    new THREE.PlaneGeometry(1.45, 0.9),
-    new THREE.ShadowMaterial({ color: 0x533a24, opacity: 0.22 })
-  );
-  shadowReceiver.rotation.x = -Math.PI / 2;
-  shadowReceiver.position.set(0, 0.004, 0.02);
-  shadowReceiver.receiveShadow = true;
-  scene.add(shadowReceiver);
+  const cycCanvas = document.createElement('canvas');
+  cycCanvas.width = 512;
+  cycCanvas.height = 512;
+  const cycContext = cycCanvas.getContext('2d');
+  const cycGradient = cycContext.createLinearGradient(0, 0, 0, 512);
+  cycGradient.addColorStop(0, '#f2e8da');
+  cycGradient.addColorStop(0.42, '#e9dccb');
+  cycGradient.addColorStop(0.56, '#e2d2be');
+  cycGradient.addColorStop(1, '#d8c7b0');
+  cycContext.fillStyle = cycGradient;
+  cycContext.fillRect(0, 0, 512, 512);
+  const cycGlow = cycContext.createRadialGradient(256, 250, 10, 256, 250, 260);
+  cycGlow.addColorStop(0, 'rgba(255,252,245,.48)');
+  cycGlow.addColorStop(0.55, 'rgba(255,248,236,.16)');
+  cycGlow.addColorStop(1, 'rgba(255,248,236,0)');
+  cycContext.fillStyle = cycGlow;
+  cycContext.fillRect(0, 0, 512, 512);
+  const cycTexture = new THREE.CanvasTexture(cycCanvas);
+  cycTexture.encoding = THREE.sRGBEncoding;
+  cycTexture.anisotropy = Math.min(4, maxAnisotropy);
 
-  const pedestal = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.4, 0.435, 0.02, 64),
-    new THREE.MeshStandardMaterial({ color: 0xe4d6c2, roughness: 0.9, metalness: 0.02 })
+  const cycWidth = 8;
+  const cycXSegments = 32;
+  const cycVSegments = 40;
+  const cycPositions = [];
+  const cycUvs = [];
+  const cycIndices = [];
+  const cycProfile = [];
+  for (let index = 0; index <= cycVSegments; index += 1) {
+    const v = index / cycVSegments;
+    let z;
+    let y;
+    if (v < 0.32) {
+      const t = v / 0.32;
+      z = 4.8 - t * 4.6;
+      y = 0;
+    } else if (v < 0.56) {
+      const t = (v - 0.32) / 0.24;
+      const angle = t * Math.PI / 2;
+      z = 0.2 - Math.sin(angle) * 1.0;
+      y = 1 - Math.cos(angle);
+    } else {
+      const t = (v - 0.56) / 0.44;
+      z = -0.8;
+      y = 1 + t * 3.4;
+    }
+    cycProfile.push({ y, z });
+  }
+  for (let vIndex = 0; vIndex <= cycVSegments; vIndex += 1) {
+    for (let xIndex = 0; xIndex <= cycXSegments; xIndex += 1) {
+      const x = (xIndex / cycXSegments - 0.5) * cycWidth;
+      const profile = cycProfile[vIndex];
+      cycPositions.push(x, profile.y, profile.z);
+      cycUvs.push(xIndex / cycXSegments, 1 - vIndex / cycVSegments);
+    }
+  }
+  for (let vIndex = 0; vIndex < cycVSegments; vIndex += 1) {
+    for (let xIndex = 0; xIndex < cycXSegments; xIndex += 1) {
+      const a = vIndex * (cycXSegments + 1) + xIndex;
+      const b = a + 1;
+      const c = a + cycXSegments + 1;
+      const d = c + 1;
+      cycIndices.push(a, c, b, b, c, d);
+    }
+  }
+  const cycGeometry = new THREE.BufferGeometry();
+  cycGeometry.setAttribute('position', new THREE.Float32BufferAttribute(cycPositions, 3));
+  cycGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(cycUvs, 2));
+  cycGeometry.setIndex(cycIndices);
+  cycGeometry.computeVertexNormals();
+  const cyclorama = new THREE.Mesh(cycGeometry, new THREE.MeshStandardMaterial({
+    color: 0xece1d2,
+    map: cycTexture,
+    roughness: 0.95,
+    metalness: 0,
+    side: THREE.DoubleSide
+  }));
+  cyclorama.receiveShadow = true;
+  cyclorama.castShadow = false;
+  scene.add(cyclorama);
+
+  const contactCanvas = document.createElement('canvas');
+  contactCanvas.width = 512;
+  contactCanvas.height = 256;
+  const contactContext = contactCanvas.getContext('2d');
+  [168, 344].forEach((cx) => {
+    const contactGradient = contactContext.createRadialGradient(cx, 128, 4, cx, 128, 92);
+    contactGradient.addColorStop(0, 'rgba(42,29,18,.44)');
+    contactGradient.addColorStop(0.48, 'rgba(42,29,18,.2)');
+    contactGradient.addColorStop(1, 'rgba(42,29,18,0)');
+    contactContext.save();
+    contactContext.translate(cx, 128);
+    contactContext.scale(1, 0.5);
+    contactContext.translate(-cx, -128);
+    contactContext.fillStyle = contactGradient;
+    contactContext.fillRect(0, 0, 512, 256);
+    contactContext.restore();
+  });
+  const contactTexture = new THREE.CanvasTexture(contactCanvas);
+  const contactShadow = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.98, 0.5),
+    new THREE.MeshBasicMaterial({ map: contactTexture, transparent: true, depthWrite: false })
   );
-  pedestal.position.set(0, -0.012, 0.02);
-  pedestal.receiveShadow = true;
-  scene.add(pedestal);
+  contactShadow.rotation.x = -Math.PI / 2;
+  contactShadow.position.set(0, 0.004, 0.035);
+  contactShadow.renderOrder = 1;
+  scene.add(contactShadow);
 
   const root = new THREE.Group();
   scene.add(root);
@@ -337,6 +403,8 @@
   let idleBlend = 0;
   let idleTime = 0;
   let equipPulse = 0;
+  let frozen = false;
+  let cameraTargetY = 0.98;
   const reduceMotion = Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
   const SKIN_TONES = ['#c68b63', '#8e5a3e', '#e0af88'];
@@ -619,66 +687,361 @@
   }
 
   const ARM_ANGLE = 0.5585;
-  const SHOULDER_X = 0.205;
-  const SHOULDER_Y = 1.44;
 
   function armPivot(parent, side) {
     const pivot = new THREE.Group();
-    pivot.position.set(side * SHOULDER_X, SHOULDER_Y, 0);
-    pivot.rotation.z = side * ARM_ANGLE;
+    pivot.position.set(side * BODY.shoulder.x * bodyShape().shoulder, BODY.shoulder.y, 0);
+    pivot.rotation.z = side * (ARM_ANGLE + (side > 0 ? 0.018 : -0.012));
     parent.add(pivot);
     return pivot;
   }
 
   function makeSleeve(parent, side, mat, cuffMat, options) {
     const config = options || {};
-    const radius = config.radius || 0.095;
+    const thickness = config.thickness === undefined ? 0.007 : config.thickness;
+    const ease = config.ease === undefined ? 0.006 : config.ease;
     const length = config.length || 0.5;
     const pivot = armPivot(parent, side);
-    const shoulder = add(
-      pivot,
-      sphere(radius * 1.13, 16),
-      mat,
-      [0, -0.01, 0],
-      null,
-      [1.05, 0.9, 1]
-    );
-    const arm = add(
-      pivot,
-      cylinder(radius, radius * 0.82, length, 16),
-      mat,
-      [0, -length / 2 - 0.02, 0]
-    );
-    const cuff = add(
-      pivot,
-      cylinder(radius * 0.84, radius * 0.72, 0.08, 16),
-      cuffMat,
-      [0, -length - 0.03, 0]
-    );
-    if (config.stripes) {
-      [-0.4, -0.49].forEach((yOffset) => {
-        add(pivot, torus(radius * 0.92, 0.012, 18), config.stripeMat, [0, yOffset, 0], [Math.PI / 2, 0, 0]);
+    const arm = armSections();
+    const top = 0.012;
+    const end = -length + 0.02;
+    // Рукав строится по профилю руки: ткань повторяет дельтовидную, локтевую и лучевую форму.
+    const steps = 18;
+    const sections = [];
+    for (let step = 0; step <= steps; step += 1) {
+      const t = step / steps;
+      const y = end + (top - end) * t;
+      const baseRx = sampleSections(arm, y, 'rx', 0.05);
+      const baseRz = sampleSections(arm, y, 'rz', 0.05);
+      const flare = (config.flare || 0) * t;
+      sections.push({
+        y,
+        rx: baseRx + thickness + ease + flare,
+        rz: baseRz + thickness + ease + flare,
+        cx: -side * 0.014 * Math.max(0, 1 - t * 4),
+        cz: 0,
+        power: 2.25
       });
     }
-    return { shoulder, arm, cuff, pivot };
+    const sleeve = new THREE.Mesh(loft(sections, { rings: 30, segments: 24, power: 2.25 }), mat);
+    sleeve.castShadow = true;
+    sleeve.receiveShadow = true;
+    sleeve.userData.slot = 'top';
+    pivot.add(sleeve);
+    const cuffRadius = sampleSections(arm, end, 'rx', 0.04) + thickness + ease;
+    const cuffHeight = Math.min(0.078, length * 0.32);
+    const cuffSections = [
+      { y: end - cuffHeight, rx: cuffRadius * 0.97, rz: cuffRadius * 0.93, cx: 0, cz: 0, power: 2.2 },
+      { y: end - 0.008, rx: cuffRadius * 1.08, rz: cuffRadius * 1.04, cx: 0, cz: 0, power: 2.2 },
+      { y: end + 0.045, rx: cuffRadius * 1.16, rz: cuffRadius * 1.12, cx: 0, cz: 0, power: 2.2 }
+    ];
+    const cuff = new THREE.Mesh(loft(cuffSections, { rings: 10, segments: 24, power: 2.2 }), cuffMat);
+    cuff.castShadow = true;
+    cuff.receiveShadow = true;
+    cuff.userData.slot = 'top';
+    pivot.add(cuff);
+    add(pivot, torus(cuffRadius * 1.14, 0.005, 24), cuffMat, [0, end + 0.045, 0], [Math.PI / 2, 0, 0], [1, 1, 0.97]);
+    if (config.stripes) {
+      [end + length * 0.12, end + length * 0.03].forEach((yOffset) => {
+        add(pivot, torus(cuffRadius * 0.98, 0.012, 18), config.stripeMat, [0, yOffset, 0], [Math.PI / 2, 0, 0]);
+      });
+    }
+    // Головка рукава закрывает стык с корпусом и формирует круглое плечо.
+    const capRadius = sections[sections.length - 1].rx;
+    const cap = add(pivot, sphere(capRadius * 1.04, 18), mat, [0, 0.002, 0], null, [1, 0.84, 1]);
+    cap.castShadow = true;
+    cap.userData.slot = 'top';
+    return { arm: sleeve, cuff, pivot, cap, cuffZ: cuffRadius * 0.74 };
+  }
+
+  // Анатомия тела — единый источник правды для манекена, одежды, волос и аксессуаров.
+  // Высоты скелета не меняются: от них зависят крой одежды, посадка обуви и объём причёсок.
+  const BODY = {
+    head: { cy: 1.735, rx: 0.11, rz: 0.106, chin: 1.628, earY: 1.706, earX: 0.104 },
+    neck: { base: 1.5, top: 1.646, rx: 0.046 },
+    shoulder: { x: 0.212, y: 1.432 },
+    wrist: 0.6,
+    legTop: 0.94,
+    legBottom: 0.08,
+    footX: 0.082
+  };
+
+  // Телосложение: разные пропорции по зонам, а не равномерный масштаб по X.
+  const BODY_SHAPES = {
+    slim: { shoulder: 0.95, chest: 0.94, waist: 0.9, hip: 0.93, depth: 0.95, arm: 0.9, leg: 0.9, neck: 0.94 },
+    average: { shoulder: 1, chest: 1, waist: 1, hip: 1, depth: 1, arm: 1, leg: 1, neck: 1 },
+    strong: { shoulder: 1.1, chest: 1.08, waist: 1.08, hip: 1.07, depth: 1.06, arm: 1.12, leg: 1.1, neck: 1.08 }
+  };
+
+  function bodyShape() {
+    return BODY_SHAPES[state.body] || BODY_SHAPES.average;
+  }
+
+  const TORSO_BASE = [
+    { y: 0.86, rx: 0.15, rz: 0.103, cx: 0, cz: 0, zone: 'hip', power: 2.35 },
+    { y: 0.92, rx: 0.162, rz: 0.11, cx: 0, cz: 0, zone: 'hip', power: 2.35 },
+    { y: 0.985, rx: 0.156, rz: 0.106, cx: 0, cz: 0, zone: 'hip', power: 2.3 },
+    { y: 1.04, rx: 0.144, rz: 0.098, cx: 0, cz: 0, zone: 'waist', power: 2.25 },
+    { y: 1.1, rx: 0.135, rz: 0.093, cx: 0, cz: 0, zone: 'waist', power: 2.25 },
+    { y: 1.165, rx: 0.14, rz: 0.096, cx: 0, cz: 0, zone: 'waist', power: 2.25 },
+    { y: 1.235, rx: 0.152, rz: 0.102, cx: 0, cz: 0, zone: 'chest', power: 2.3 },
+    { y: 1.305, rx: 0.163, rz: 0.107, cx: 0, cz: 0, zone: 'chest', power: 2.35 },
+    { y: 1.365, rx: 0.173, rz: 0.107, cx: 0, cz: 0, zone: 'chest', power: 2.45 },
+    { y: 1.418, rx: 0.191, rz: 0.101, cx: 0, cz: 0, zone: 'shoulder', power: 2.6 },
+    { y: 1.452, rx: 0.188, rz: 0.097, cx: 0, cz: 0, zone: 'shoulder', power: 2.5 },
+    { y: 1.48, rx: 0.158, rz: 0.088, cx: 0, cz: 0, zone: 'shoulder', power: 2.35 },
+    { y: 1.508, rx: 0.108, rz: 0.077, cx: 0, cz: 0, zone: 'neck', power: 2.2 },
+    { y: 1.538, rx: 0.07, rz: 0.063, cx: 0, cz: 0, zone: 'neck', power: 2.15 },
+    { y: 1.565, rx: 0.056, rz: 0.054, cx: 0, cz: 0, zone: 'neck', power: 2.1 }
+  ];
+
+  const ARM_BASE = [
+    { y: -0.6, rx: 0.03, rz: 0.031, cx: 0, cz: 0, power: 2.1 },
+    { y: -0.55, rx: 0.033, rz: 0.034, cx: 0, cz: 0, power: 2.1 },
+    { y: -0.47, rx: 0.041, rz: 0.042, cx: 0, cz: 0, power: 2.15 },
+    { y: -0.38, rx: 0.047, rz: 0.047, cx: 0, cz: 0, power: 2.2 },
+    { y: -0.32, rx: 0.043, rz: 0.044, cx: 0, cz: 0, power: 2.2 },
+    { y: -0.26, rx: 0.048, rz: 0.048, cx: 0, cz: 0, power: 2.2 },
+    { y: -0.16, rx: 0.055, rz: 0.054, cx: 0, cz: 0, power: 2.2 },
+    { y: -0.07, rx: 0.058, rz: 0.056, cx: 0, cz: 0, power: 2.25 },
+    { y: -0.01, rx: 0.066, rz: 0.064, cx: 0, cz: 0, power: 2.3 },
+    { y: 0.005, rx: 0.068, rz: 0.066, cx: 0, cz: 0, power: 2.3 }
+  ];
+
+  let torsoCache = { type: '', sections: TORSO_BASE };
+  let armCache = { type: '', sections: ARM_BASE };
+
+  function torsoSections() {
+    const type = state.body;
+    if (torsoCache.type === type) return torsoCache.sections;
+    const shape = bodyShape();
+    const sections = TORSO_BASE.map((section) => {
+      const width = section.zone === 'hip' ? shape.hip
+        : section.zone === 'waist' ? shape.waist
+          : section.zone === 'chest' ? shape.chest
+            : section.zone === 'shoulder' ? shape.shoulder
+              : shape.neck;
+      const depth = section.zone === 'neck' ? shape.neck : shape.depth;
+      return { ...section, rx: section.rx * width, rz: section.rz * depth };
+    });
+    torsoCache = { type, sections };
+    return sections;
+  }
+
+  function armSections() {
+    const type = state.body;
+    if (armCache.type === type) return armCache.sections;
+    const shape = bodyShape();
+    const sections = ARM_BASE.map((section) => ({ ...section, rx: section.rx * shape.arm, rz: section.rz * shape.arm }));
+    armCache = { type, sections };
+    return sections;
+  }
+
+  function legProfile() {
+    const scale = bodyShape().leg;
+    return [[0, 0.076], [0.16, 0.073], [0.36, 0.065], [0.48, 0.058], [0.56, 0.062], [0.72, 0.052], [0.86, 0.042], [1, 0.036]]
+      .map(([t, radius]) => [t, radius * scale]);
+  }
+
+  function legCenter() {
+    const scale = bodyShape().leg;
+    return [[0, 0.086], [0.5, 0.081], [1, 0.077]].map(([t, value]) => [t, value * (0.5 + 0.5 * scale)]);
+  }
+
+  function legDepth() {
+    return [[0, 1.03], [0.4, 1.08], [0.62, 1], [1, 0.94]];
+  }
+
+  function catmullScalar(a, b, c, d, t) {
+    const t2 = t * t;
+    const t3 = t2 * t;
+    return 0.5 * ((2 * b) + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
+  }
+
+  function sampleSections(sections, y, key, fallback) {
+    if (!sections.length) return fallback;
+    if (y <= sections[0].y) return sections[0][key];
+    if (y >= sections[sections.length - 1].y) return sections[sections.length - 1][key];
+    let index = 1;
+    while (index < sections.length && sections[index].y < y) index += 1;
+    const p1 = sections[index - 1];
+    const p2 = sections[index];
+    const p0 = sections[index - 2] || p1;
+    const p3 = sections[index + 1] || p2;
+    const t = (y - p1.y) / Math.max(0.0001, p2.y - p1.y);
+    return catmullScalar(p0[key], p1[key], p2[key], p3[key], t);
+  }
+
+  function bodySectionAt(y) {
+    const sections = torsoSections();
+    return {
+      rx: sampleSections(sections, y, 'rx', 0.16),
+      rz: sampleSections(sections, y, 'rz', 0.106),
+      cx: sampleSections(sections, y, 'cx', 0),
+      cz: sampleSections(sections, y, 'cz', 0),
+      power: sampleSections(sections, y, 'power', 2.35)
+    };
+  }
+
+  function loft(sections, options) {
+    const config = options || {};
+    const rings = Math.max(8, config.rings || 48);
+    const segments = Math.max(12, config.segments || 40);
+    const yStart = sections[0].y;
+    const yEnd = sections[sections.length - 1].y;
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+    for (let ring = 0; ring <= rings; ring += 1) {
+      const v = ring / rings;
+      const y = yStart + (yEnd - yStart) * v;
+      const rx = sampleSections(sections, y, 'rx', 0.1);
+      const rz = sampleSections(sections, y, 'rz', 0.1);
+      const cx = sampleSections(sections, y, 'cx', 0);
+      const cz = sampleSections(sections, y, 'cz', 0);
+      const power = Math.max(2, sampleSections(sections, y, 'power', config.power || 2.3));
+      for (let segment = 0; segment < segments; segment += 1) {
+        const angle = (segment / segments) * Math.PI * 2;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const ex = Math.sign(cos) * Math.pow(Math.abs(cos), 2 / power);
+        const ez = Math.sign(sin) * Math.pow(Math.abs(sin), 2 / power);
+        positions.push(cx + ex * rx, y, cz + ez * rz);
+        uvs.push(segment / segments, 1 - v);
+      }
+    }
+    for (let ring = 0; ring < rings; ring += 1) {
+      for (let segment = 0; segment < segments; segment += 1) {
+        const next = (segment + 1) % segments;
+        const a = ring * segments + segment;
+        const b = ring * segments + next;
+        const c = (ring + 1) * segments + segment;
+        const d = (ring + 1) * segments + next;
+        indices.push(a, c, b, b, c, d);
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    geometry.computeBoundingSphere();
+    return geometry;
+  }
+
+  // Кисть: ладонь, четыре пальца, большой палец. Пальцы сгруппированы вдоль бедра,
+  // ладонь развёрнута к телу — поза витринного манекена, а не лапки.
+  const HAND_FINGERS = [
+    { x: -0.0168, len: 0.039, r: 0.0072 },
+    { x: -0.0056, len: 0.045, r: 0.0075 },
+    { x: 0.0058, len: 0.041, r: 0.007 },
+    { x: 0.0168, len: 0.031, r: 0.0062 }
+  ];
+
+  function addHand(parent, side, skin, skinDark) {
+    const hand = new THREE.Group();
+    hand.position.set(0, -BODY.wrist + 0.002, 0.012);
+    hand.rotation.y = -side * 1.42;
+    parent.add(hand);
+
+    const palmSections = [
+      { y: 0.014, rx: 0.019, rz: 0.012, cx: 0, cz: 0, power: 2.5 },
+      { y: -0.008, rx: 0.023, rz: 0.014, cx: 0, cz: 0.001, power: 2.7 },
+      { y: -0.032, rx: 0.026, rz: 0.013, cx: 0, cz: 0.003, power: 3 },
+      { y: -0.052, rx: 0.024, rz: 0.01, cx: 0, cz: 0.004, power: 3 }
+    ];
+    const palm = new THREE.Mesh(loft(palmSections, { rings: 12, segments: 16, power: 2.8 }), skin);
+    palm.castShadow = false;
+    palm.receiveShadow = true;
+    palm.userData.slot = 'accessory';
+    hand.add(palm);
+    pickables.push(palm);
+
+    const fingers = new THREE.Group();
+    fingers.position.set(0, -0.046, 0.004);
+    fingers.rotation.x = -0.3;
+    hand.add(fingers);
+    HAND_FINGERS.forEach((spec) => {
+      const finger = add(fingers, cylinder(spec.r, spec.r * 0.82, spec.len, 8), skin, [spec.x, -spec.len / 2, 0]);
+      finger.castShadow = false;
+      finger.userData.slot = 'accessory';
+      pickables.push(finger);
+      const tip = add(fingers, sphere(spec.r * 0.88, 8), skin, [spec.x, -spec.len - spec.r * 0.25, 0]);
+      tip.castShadow = false;
+      tip.userData.slot = 'accessory';
+      pickables.push(tip);
+    });
+
+    const thumb = new THREE.Group();
+    thumb.position.set(side * 0.021, -0.012, 0.002);
+    thumb.rotation.z = side * 0.72;
+    thumb.rotation.x = -0.38;
+    hand.add(thumb);
+    const thumbMesh = add(thumb, cylinder(0.0078, 0.0062, 0.034, 8), skin, [0, -0.017, 0]);
+    thumbMesh.castShadow = false;
+    thumbMesh.userData.slot = 'accessory';
+    pickables.push(thumbMesh);
+    const thumbTip = add(thumb, sphere(0.0058, 8), skinDark, [0, -0.035, 0]);
+    thumbTip.castShadow = false;
+    thumbTip.userData.slot = 'accessory';
+    pickables.push(thumbTip);
+    return hand;
+  }
+
+  // Голова: гладкий манекен без лица — по требованию дизайна «осознанно абстрактный манекен».
+  const HEAD_SECTIONS = [
+    { y: 1.626, rx: 0.026, rz: 0.03, cx: 0, cz: 0.01, power: 2.2 },
+    { y: 1.638, rx: 0.038, rz: 0.043, cx: 0, cz: 0.009, power: 2.2 },
+    { y: 1.652, rx: 0.052, rz: 0.058, cx: 0, cz: 0.008, power: 2.25 },
+    { y: 1.666, rx: 0.064, rz: 0.07, cx: 0, cz: 0.007, power: 2.25 },
+    { y: 1.68, rx: 0.075, rz: 0.08, cx: 0, cz: 0.005, power: 2.3 },
+    { y: 1.694, rx: 0.085, rz: 0.089, cx: 0, cz: 0.004, power: 2.3 },
+    { y: 1.708, rx: 0.094, rz: 0.096, cx: 0, cz: 0.002, power: 2.35 },
+    { y: 1.722, rx: 0.102, rz: 0.102, cx: 0, cz: 0.001, power: 2.35 },
+    { y: 1.736, rx: 0.107, rz: 0.106, cx: 0, cz: 0, power: 2.4 },
+    { y: 1.752, rx: 0.11, rz: 0.106, cx: 0, cz: -0.001, power: 2.4 },
+    { y: 1.77, rx: 0.11, rz: 0.104, cx: 0, cz: -0.002, power: 2.4 },
+    { y: 1.79, rx: 0.107, rz: 0.1, cx: 0, cz: -0.003, power: 2.4 },
+    { y: 1.81, rx: 0.1, rz: 0.093, cx: 0, cz: -0.004, power: 2.35 },
+    { y: 1.83, rx: 0.089, rz: 0.083, cx: 0, cz: -0.005, power: 2.35 },
+    { y: 1.848, rx: 0.074, rz: 0.069, cx: 0, cz: -0.006, power: 2.3 },
+    { y: 1.862, rx: 0.056, rz: 0.052, cx: 0, cz: -0.007, power: 2.25 },
+    { y: 1.873, rx: 0.036, rz: 0.034, cx: 0, cz: -0.007, power: 2.2 },
+    { y: 1.879, rx: 0.014, rz: 0.013, cx: 0, cz: -0.007, power: 2.2 }
+  ];
+
+  function addHead(headGroup, skin, skinDark) {
+    const head = new THREE.Mesh(loft(HEAD_SECTIONS, { rings: 40, segments: 30, power: 2.35 }), skin);
+    head.castShadow = true;
+    head.receiveShadow = true;
+    head.userData.slot = 'hair';
+    headGroup.add(head);
+    pickables.push(head);
+    [-1, 1].forEach((side) => {
+      const ear = add(headGroup, sphere(0.028, 12), skin, [side * BODY.head.earX, BODY.head.earY, 0], null, [0.5, 1.05, 0.72]);
+      ear.userData.slot = 'hair';
+      pickables.push(ear);
+      const earInner = add(headGroup, sphere(0.015, 8), skinDark, [side * (BODY.head.earX + 0.003), BODY.head.earY, 0.016], null, [0.4, 0.72, 0.3]);
+      earInner.userData.slot = 'hair';
+      pickables.push(earInner);
+    });
+    return head;
   }
 
   function addBody() {
     const skin = skinMaterial(SKIN_TONES[state.skin] || SKIN_TONES[0], 0.66);
     const skinDark = skinMaterial(new THREE.Color(SKIN_TONES[state.skin] || SKIN_TONES[0]).multiplyScalar(0.86), 0.72);
-    const bodyWidth = state.body === 'slim' ? 0.93 : state.body === 'strong' ? 1.07 : 1;
     const body = new THREE.Group();
-    body.scale.x = bodyWidth;
     root.add(body);
     const headGroup = new THREE.Group();
     root.add(headGroup);
 
     [-1, 1].forEach((side) => {
       const leg = profileLegMesh(
-        side, 0.94, 0.08,
-        [[0, 0.072], [0.45, 0.054], [0.62, 0.06], [1, 0.04]],
-        [[0, 0.085], [1, 0.085]],
-        1,
+        side, BODY.legTop, BODY.legBottom,
+        legProfile(),
+        legCenter(),
+        legDepth(),
         skin
       );
       leg.userData.slot = 'bottom';
@@ -690,108 +1053,52 @@
       }
       body.add(leg);
       pickables.push(leg);
-      const ankle = add(body, sphere(0.043, 12), skinDark, [side * 0.085, 0.09, 0]);
+      const ankle = add(body, sphere(0.037, 12), skinDark, [side * 0.079, 0.085, 0.004]);
       ankle.userData.slot = 'shoes';
       pickables.push(ankle);
 
       const arm = armPivot(body, side);
-      const shoulder = add(arm, sphere(0.062, 16), skin, [0, -0.006, 0], null, [1.06, 0.86, 1]);
-      shoulder.castShadow = false;
-      shoulder.userData.slot = 'top';
-      pickables.push(shoulder);
-      const upperArm = add(arm, cylinder(0.052, 0.045, 0.32, 14), skin, [0, -0.16, 0]);
-      upperArm.castShadow = false;
-      upperArm.userData.slot = 'top';
-      pickables.push(upperArm);
-      const elbow = add(arm, sphere(0.05, 12), skin, [0, -0.32, 0], null, [1, 0.85, 1]);
-      elbow.castShadow = false;
-      elbow.userData.slot = 'top';
-      pickables.push(elbow);
-      const forearm = add(arm, cylinder(0.045, 0.037, 0.29, 14), skin, [0, -0.465, 0]);
-      forearm.castShadow = false;
-      forearm.userData.slot = 'top';
-      pickables.push(forearm);
-      const wrist = add(arm, sphere(0.035, 12), skin, [0, -0.612, 0], null, [1, 0.82, 0.95]);
-      wrist.castShadow = false;
-      wrist.userData.slot = 'top';
-      pickables.push(wrist);
-      const handGroup = new THREE.Group();
-      handGroup.position.set(0, -0.65, 0.015);
-      handGroup.scale.x = 1 / bodyWidth;
-      arm.add(handGroup);
-      const hand = add(handGroup, sphere(0.058, 14), skin, [0, 0, 0], null, [0.9, 1.1, 0.5]);
-      hand.castShadow = false;
-      hand.userData.slot = 'accessory';
-      pickables.push(hand);
-      const thumb = add(handGroup, sphere(0.023, 10), skin, [-side * 0.025, 0.02, 0.035], [0.2, 0, side * 0.45], [0.7, 1.15, 0.55]);
-      thumb.castShadow = false;
-      thumb.userData.slot = 'accessory';
-      pickables.push(thumb);
-      [0, 1, 2, 3].forEach((index) => {
-        const x = (index - 1.5) * 0.016;
-        const finger = add(handGroup, cylinder(0.0072, 0.0052, 0.044, 8), skin, [x, -0.045, 0.004], [0.08, 0, 0]);
-        finger.castShadow = false;
-        finger.userData.slot = 'accessory';
-        pickables.push(finger);
-        const tip = add(handGroup, sphere(0.0062, 8), skin, [x, -0.068, 0.007], null, [0.9, 1.1, 0.8]);
-        tip.castShadow = false;
-        tip.userData.slot = 'accessory';
-        pickables.push(tip);
-      });
+      const armLoft = new THREE.Mesh(loft(armSections(), { rings: 32, segments: 22, power: 2.2 }), skin);
+      armLoft.castShadow = false;
+      armLoft.receiveShadow = true;
+      armLoft.userData.slot = 'top';
+      arm.add(armLoft);
+      pickables.push(armLoft);
+      addHand(arm, side, skin, skinDark);
     });
 
-    const torsoProfile = [
-      new THREE.Vector2(0, 0.86),
-      new THREE.Vector2(0.12, 0.87),
-      new THREE.Vector2(0.158, 0.9),
-      new THREE.Vector2(0.15, 1.0),
-      new THREE.Vector2(0.13, 1.08),
-      new THREE.Vector2(0.145, 1.17),
-      new THREE.Vector2(0.175, 1.32),
-      new THREE.Vector2(0.2, 1.46),
-      new THREE.Vector2(0.14, 1.51),
-      new THREE.Vector2(0.054, 1.56),
-      new THREE.Vector2(0, 1.57)
-    ];
-    const torso = new THREE.Mesh(new THREE.LatheGeometry(torsoProfile, 28), skin);
-    torso.scale.z = 0.7;
+    const torso = new THREE.Mesh(loft(torsoSections(), { rings: 60, segments: 44 }), skin);
     torso.castShadow = true;
     torso.receiveShadow = true;
     torso.userData.slot = 'top';
     body.add(torso);
     pickables.push(torso);
 
-    const neck = add(headGroup, cylinder(0.044, 0.05, 0.14, 14), skin, [0, 1.56, 0]);
-    const neckSoft = add(headGroup, sphere(0.06, 16), skin, [0, 1.605, 0], null, [0.92, 0.72, 0.92]);
-    neckSoft.userData.slot = 'hair';
-    pickables.push(neckSoft);
+    const neckScale = bodyShape().neck;
+    const neckSections = [
+      { y: 1.512, rx: 0.062, rz: 0.058, cx: 0, cz: 0.002, power: 2.2 },
+      { y: 1.552, rx: 0.05, rz: 0.049, cx: 0, cz: 0.004, power: 2.15 },
+      { y: 1.6, rx: 0.046, rz: 0.045, cx: 0, cz: 0.006, power: 2.1 },
+      { y: 1.646, rx: 0.045, rz: 0.044, cx: 0, cz: 0.006, power: 2.1 }
+    ].map((section) => ({ ...section, rx: section.rx * neckScale, rz: section.rz * neckScale }));
+    const neck = new THREE.Mesh(loft(neckSections, { rings: 18, segments: 24, power: 2.15 }), skin);
+    neck.castShadow = true;
+    neck.receiveShadow = true;
     neck.userData.slot = 'hair';
+    headGroup.add(neck);
     pickables.push(neck);
-    const head = add(headGroup, sphere(0.148, 24), skin, [0, 1.73, 0], null, [1, 1.15, 0.94]);
-    head.userData.slot = 'hair';
-    pickables.push(head);
-    const jaw = add(headGroup, sphere(0.11, 20), skin, [0, 1.682, 0.014], null, [0.86, 0.66, 0.9]);
-    jaw.userData.slot = 'hair';
-    pickables.push(jaw);
-    const chin = add(headGroup, sphere(0.038, 14), skin, [0, 1.632, 0.068], null, [1.4, 0.52, 0.9]);
-    chin.userData.slot = 'hair';
-    pickables.push(chin);
-    const nose = add(headGroup, sphere(0.018, 12), skin, [0, 1.735, 0.134], null, [0.7, 1.3, 0.9]);
-    nose.userData.slot = 'hair';
-    pickables.push(nose);
-    add(headGroup, cylinder(0.008, 0.011, 0.046, 10), skin, [0, 1.765, 0.122], [0.18, 0, 0]).userData.slot = 'hair';
+
+    const trapScale = bodyShape().shoulder;
     [-1, 1].forEach((side) => {
-      const ear = add(headGroup, sphere(0.03, 12), skin, [side * 0.14, 1.72, 0], null, [0.55, 1, 0.7]);
-      ear.userData.slot = 'hair';
-      pickables.push(ear);
-      add(headGroup, sphere(0.016, 8), skinDark, [side * 0.142, 1.72, 0.018], null, [0.4, 0.7, 0.3]).userData.slot = 'hair';
-      const trap = add(headGroup, sphere(0.062, 14), skin, [side * 0.064, 1.512, -0.006], null, [1.2, 0.45, 0.85]);
+      const trap = add(headGroup, sphere(0.058, 14), skin, [side * 0.062 * trapScale, 1.498, -0.006], null, [1.25 * trapScale, 0.42, 0.9]);
       trap.userData.slot = 'top';
       pickables.push(trap);
     });
 
+    addHead(headGroup, skin, skinDark);
+
     if (state.equipped.hair === null) {
-      add(headGroup, sphere(0.151, 20), skin, [0, 1.75, -0.004], null, [1.02, 1.08, 0.97]).userData.slot = 'hair';
+      add(headGroup, sphere(0.113, 20), skin, [0, 1.752, -0.004], null, [1.02, 1.08, 0.99]).userData.slot = 'hair';
     }
     return body;
   }
@@ -799,35 +1106,194 @@
   function addBaseTop(slotGroup) {
     const cream = cloth('#eee4d5', { roughness: 0.86 });
     const shade = cloth('#d7c9b6', { roughness: 0.9 });
-    add(slotGroup, cylinder(0.195, 0.145, 0.5, 20), cream, [0, 1.22, 0], null, [1, 1, 0.7]);
-    add(slotGroup, sphere(0.162, 16), cream, [0, 1.39, 0.012], null, [1.08, 0.7, 0.73]);
-    [-1, 1].forEach((side) => {
-      add(slotGroup, cylinder(0.072, 0.064, 0.17, 14), cream, [side * 0.21, 1.35, 0]);
+    const hem = bodySectionAt(0.98);
+    const sections = [0.98, 1.06, 1.16, 1.26, 1.34, 1.41, 1.46].map((y) => {
+      const section = bodySectionAt(y);
+      return { y, rx: section.rx + 0.012, rz: section.rz + 0.012, cx: section.cx, cz: section.cz, power: section.power };
     });
-    add(slotGroup, cylinder(0.146, 0.16, 0.035, 18), shade, [0, 1.0, 0], null, [1, 1, 0.72]);
+    const shell = new THREE.Mesh(loft(sections, { rings: 24, segments: 32 }), cream);
+    shell.castShadow = true;
+    shell.receiveShadow = true;
+    shell.userData.slot = 'top';
+    slotGroup.add(shell);
+    [-1, 1].forEach((side) => {
+      add(slotGroup, cylinder(0.068, 0.06, 0.15, 14), cream, [side * (BODY.shoulder.x - 0.006), 1.36, 0], null, [1, 1, 0.95]);
+    });
+    add(slotGroup, torus(hem.rx + 0.012, 0.008, 26), shade, [0, 0.985, 0], [Math.PI / 2, 0, 0], [1, 1, hem.rz / hem.rx]);
     tagGroup(slotGroup, 'top');
   }
 
   function addBaseBottom(slotGroup) {
     const cream = cloth('#eee4d5', { roughness: 0.86 });
     const shade = cloth('#d7c9b6', { roughness: 0.9 });
-    add(slotGroup, cylinder(0.17, 0.16, 0.2, 20), cream, [0, 0.88, 0], null, [1, 1, 0.8]);
+    const hip = bodySectionAt(0.94);
+    const radius = hip.rx + 0.01;
+    add(slotGroup, cylinder(radius, radius * 0.98, 0.22, 22), cream, [0, 0.87, 0], null, [1, 1, hip.rz / hip.rx]);
     [-1, 1].forEach((side) => {
-      add(slotGroup, cylinder(0.078, 0.075, 0.18, 14), cream, [side * 0.082, 0.72, 0]);
+      add(slotGroup, cylinder(0.072, 0.068, 0.18, 14), cream, [side * 0.083, 0.71, 0], null, [1, 1, 0.95]);
     });
-    add(slotGroup, cylinder(0.171, 0.171, 0.026, 20), shade, [0, 0.965, 0], null, [1, 1, 0.8]);
+    add(slotGroup, cylinder(radius + 0.004, radius + 0.004, 0.028, 22), shade, [0, 0.965, 0], null, [1, 1, hip.rz / hip.rx]);
     tagGroup(slotGroup, 'bottom');
   }
 
   function addBareFeet(slotGroup) {
-    const skin = new THREE.MeshStandardMaterial({
-      color: toColor(SKIN_TONES[state.skin] || SKIN_TONES[0]),
-      roughness: 0.8
-    });
+    const skin = skinMaterial(SKIN_TONES[state.skin] || SKIN_TONES[0], 0.72);
+    // Стопа: пятка, свод, подушечка и пальцы — одной лофт-поверхностью.
+    const sections = [
+      { z: -0.078, w: 0.034, cy: 0.048, h: 0.044, power: 2.6 },
+      { z: -0.042, w: 0.037, cy: 0.042, h: 0.038, power: 2.5 },
+      { z: 0.0, w: 0.034, cy: 0.03, h: 0.028, power: 2.4 },
+      { z: 0.04, w: 0.037, cy: 0.028, h: 0.026, power: 2.4 },
+      { z: 0.08, w: 0.04, cy: 0.026, h: 0.024, power: 2.3 },
+      { z: 0.115, w: 0.039, cy: 0.024, h: 0.021, power: 2.3 },
+      { z: 0.145, w: 0.032, cy: 0.021, h: 0.016, power: 2.2 },
+      { z: 0.163, w: 0.016, cy: 0.019, h: 0.009, power: 2.1 }
+    ];
     [-1, 1].forEach((side) => {
-      add(slotGroup, sphere(0.075, 16), skin, [side * 0.082, 0.055, 0.065], null, [0.72, 0.48, 1.55]);
+      const foot = new THREE.Mesh(loftZ(sections, { rings: 18, segments: 20 }), skin);
+      foot.position.set(side * BODY.footX, 0, 0);
+      foot.castShadow = true;
+      foot.receiveShadow = true;
+      slotGroup.add(foot);
     });
     tagGroup(slotGroup, 'shoes');
+  }
+
+  function edgeCurve(points) {
+    return points.map(([y, v]) => ({ y, v }));
+  }
+
+  const TOP_EDGE_TANK = {
+    front: edgeCurve([[0, 1.33], [14, 1.35], [26, 1.392], [38, 1.44], [48, 1.452], [58, 1.448], [70, 1.43], [80, 1.41], [90, 1.398]]),
+    back: edgeCurve([[0, 1.328], [10, 1.35], [22, 1.402], [36, 1.446], [52, 1.456], [68, 1.452], [82, 1.444], [90, 1.438]])
+  };
+  const TOP_EDGE_VEST = {
+    front: edgeCurve([[0, 1.312], [16, 1.332], [28, 1.394], [40, 1.444], [52, 1.456], [64, 1.44], [78, 1.396], [90, 1.342]]),
+    back: edgeCurve([[0, 1.312], [12, 1.343], [26, 1.398], [42, 1.442], [58, 1.45], [74, 1.44], [90, 1.428]])
+  };
+  const TOP_EDGE_SLEEVED = {
+    front: edgeCurve([[0, 1.552], [20, 1.55], [40, 1.547], [60, 1.54], [80, 1.527], [90, 1.521]]),
+    back: edgeCurve([[0, 1.552], [24, 1.552], [50, 1.55], [72, 1.546], [90, 1.542]])
+  };
+
+  function topEdgeAt(angle, curves) {
+    const quadrant = Math.acos(Math.min(1, Math.abs(Math.cos(angle)))) * 180 / Math.PI;
+    const curve = Math.sin(angle) >= 0 ? curves.front : curves.back;
+    return sampleSections(curve, quadrant, 'v', 1.45);
+  }
+
+  function topShellGeometry(bottomY, shellAt, curves, rings, segments) {
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+    const rim = [];
+    for (let ring = 0; ring <= rings; ring += 1) {
+      const v = ring / rings;
+      for (let segment = 0; segment < segments; segment += 1) {
+        const angle = (segment / segments) * Math.PI * 2;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const top = topEdgeAt(angle, curves);
+        const y = bottomY + (top - bottomY) * v;
+        const section = shellAt(y);
+        const ex = Math.sign(cos) * Math.pow(Math.abs(cos), 2 / section.power);
+        const ez = Math.sign(sin) * Math.pow(Math.abs(sin), 2 / section.power);
+        const x = (section.cx || 0) + ex * section.rx;
+        const z = (section.cz || 0) + ez * section.rz;
+        positions.push(x, y, z);
+        uvs.push(segment / segments, 1 - v);
+        if (ring === rings) rim.push(new THREE.Vector3(x, y, z));
+      }
+    }
+    for (let ring = 0; ring < rings; ring += 1) {
+      for (let segment = 0; segment < segments; segment += 1) {
+        const next = (segment + 1) % segments;
+        const a = ring * segments + segment;
+        const b = ring * segments + next;
+        const c = (ring + 1) * segments + segment;
+        const d = (ring + 1) * segments + next;
+        indices.push(a, c, b, b, c, d);
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    geometry.computeBoundingSphere();
+    return { geometry, rim };
+  }
+
+  function rimPointAt(degrees, shellAt, curves) {
+    const angle = (degrees * Math.PI) / 180;
+    const y = topEdgeAt(angle, curves);
+    const section = shellAt(y);
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const ex = Math.sign(cos) * Math.pow(Math.abs(cos), 2 / section.power);
+    const ez = Math.sign(sin) * Math.pow(Math.abs(sin), 2 / section.power);
+    return [ex * section.rx, y, ez * section.rz];
+  }
+
+  function edgeTube(points, tubeRadius, mat) {
+    const curve = new THREE.CatmullRomCurve3(points.map((point) => point.clone()), true);
+    const geometry = new THREE.TubeGeometry(curve, Math.max(64, points.length * 2), tubeRadius, 5, true);
+    const mesh = new THREE.Mesh(geometry, mat);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    return mesh;
+  }
+
+  function ribbonSweep(points, width, thickness, mat, widthAxis) {
+    const curve = new THREE.CatmullRomCurve3(points.map((point) => new THREE.Vector3(point[0], point[1], point[2])));
+    const steps = 24;
+    const positions = [];
+    const indices = [];
+    const center = new THREE.Vector3();
+    const tangent = new THREE.Vector3();
+    const widthDir = new THREE.Vector3(widthAxis[0], widthAxis[1], widthAxis[2]).normalize();
+    const normal = new THREE.Vector3();
+    const halfWidth = width / 2;
+    const halfThickness = thickness / 2;
+    for (let step = 0; step <= steps; step += 1) {
+      const t = step / steps;
+      curve.getPointAt(t, center);
+      curve.getTangentAt(t, tangent);
+      normal.crossVectors(widthDir, tangent).normalize();
+      const corners = [
+        [-1, -1],
+        [1, -1],
+        [1, 1],
+        [-1, 1]
+      ];
+      corners.forEach(([w, n]) => {
+        positions.push(
+          center.x + widthDir.x * w * halfWidth + normal.x * n * halfThickness,
+          center.y + widthDir.y * w * halfWidth + normal.y * n * halfThickness,
+          center.z + widthDir.z * w * halfWidth + normal.z * n * halfThickness
+        );
+      });
+    }
+    for (let step = 0; step < steps; step += 1) {
+      const base = step * 4;
+      const next = base + 4;
+      for (let side = 0; side < 4; side += 1) {
+        const a = base + side;
+        const b = base + ((side + 1) % 4);
+        const c = next + side;
+        const d = next + ((side + 1) % 4);
+        indices.push(a, c, b, b, c, d);
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    geometry.computeBoundingSphere();
+    const mesh = new THREE.Mesh(geometry, mat);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    return mesh;
   }
 
   function addModernTop(slotGroup, item, mats) {
@@ -843,117 +1309,167 @@
     const bodyBottom = variant === 'bomber'
       ? (cropped ? 1.12 : 0.98)
       : cropped ? 1.17 : 0.96;
-    const radius = variant === 'bomber'
-      ? (oversize ? 0.242 : 0.224)
-      : variant === 'vest'
-        ? 0.195
-        : oversize ? 0.245 : slim ? 0.192 : 0.202;
-    add(slotGroup, cylinder(radius, radius * 0.94, bodyTop - bodyBottom, 28), main, [0, (bodyTop + bodyBottom) / 2, 0], null, [1, 1, 0.73]);
-    add(slotGroup, sphere(radius * 1.03, 20), main, [0, bodyTop - 0.015, -0.004], null, [1.08, 0.34, 0.83]);
-    add(slotGroup, torus(0.055, 0.012, 22), trim, [0, bodyTop + 0.025, 0.012], [Math.PI / 2, 0, 0], [1.3, 1, 0.9]);
-    const waistFold = tube([[0.055, bodyBottom + 0.09, 0.14], [0.02, bodyBottom + 0.055, 0.155], [-0.015, bodyBottom + 0.03, 0.15]], 0.0025, crease);
+    const sleeveless = variant === 'tank' || variant === 'vest';
+    const baseEase = fit === 'slim' ? 0.004 : fit === 'tailored' ? 0.008 : fit === 'oversize' ? (sleeveless ? 0.026 : 0.042) : fit === 'boxy' ? 0.03 : 0.016;
+    const thickness = variant === 'bomber' ? 0.007 : variant === 'shirt' ? 0.009 : sleeveless ? 0.005 : fit === 'oversize' ? 0.008 : 0.006;
+    const shellAt = (y) => {
+      const section = bodySectionAt(y);
+      const neckT = sleeveless ? 0 : Math.min(1, Math.max(0, (y - 1.46) / 0.065));
+      const localEase = baseEase + (0.008 - baseEase) * neckT;
+      return { rx: section.rx + localEase + thickness, rz: section.rz + localEase + thickness, cx: section.cx, cz: section.cz, power: section.power };
+    };
+    const frontAt = (y) => shellAt(y).rz + 0.004;
+    const curves = variant === 'tank' ? TOP_EDGE_TANK : variant === 'vest' ? TOP_EDGE_VEST : TOP_EDGE_SLEEVED;
+    const shell = topShellGeometry(bodyBottom, shellAt, curves, 26, 48);
+    const shellMesh = new THREE.Mesh(shell.geometry, main);
+    shellMesh.castShadow = true;
+    shellMesh.receiveShadow = true;
+    shellMesh.userData.slot = 'top';
+    slotGroup.add(shellMesh);
+    const binding = edgeTube(shell.rim, sleeveless ? 0.0065 : 0.005, trim);
+    binding.userData.slot = 'top';
+    slotGroup.add(binding);
+    const radius = shellAt((bodyTop + bodyBottom) / 2).rx;
+
+    if (sleeveless) {
+      const strapMaterial = main.clone();
+      strapMaterial.side = THREE.DoubleSide;
+      const strapWidth = variant === 'vest' ? 0.06 : 0.048;
+      const strapPeak = variant === 'vest' ? 1.538 : 1.527;
+      [-1, 1].forEach((side) => {
+        const front = rimPointAt(side > 0 ? 54 : 126, shellAt, curves);
+        const back = rimPointAt(side > 0 ? 306 : 234, shellAt, curves);
+        const path = [
+          [front[0] * 0.94, front[1] - 0.01, front[2] * 0.94],
+          [front[0] * 0.92, 1.462, front[2] * 0.86],
+          [side * 0.132, 1.492, front[2] * 0.5],
+          [side * 0.122, strapPeak - 0.012, front[2] * 0.2],
+          [side * 0.12, strapPeak, 0.012],
+          [side * 0.12, strapPeak, -0.03],
+          [side * 0.122, strapPeak - 0.014, back[2] * 0.2],
+          [side * 0.132, 1.49, back[2] * 0.5],
+          [back[0] * 0.92, 1.46, back[2] * 0.86],
+          [back[0] * 0.94, back[1] - 0.01, back[2] * 0.94]
+        ];
+        const strapTilt = variant === 'vest' ? 0.52 : 0.45;
+        const widthAxis = [side * Math.cos(strapTilt), -Math.sin(strapTilt), 0];
+        const band = ribbonSweep(path, strapWidth, 0.012, strapMaterial, widthAxis);
+        band.userData.slot = 'top';
+        slotGroup.add(band);
+      });
+    }
+
+    const waistFold = tube([[0.055, bodyBottom + 0.09, frontAt(bodyBottom + 0.09)], [0.02, bodyBottom + 0.055, frontAt(bodyBottom + 0.055) + 0.006], [-0.015, bodyBottom + 0.03, frontAt(bodyBottom + 0.03)]], 0.0025, crease);
     waistFold.userData.slot = 'top';
     slotGroup.add(waistFold);
-    [-1, 1].forEach((side) => {
-      add(slotGroup, box(0.004, 0.14, 0.006), crease, [side * radius * 0.8, bodyBottom + 0.1, 0.1], [0, 0, side * 0.14]);
-      const topCrease = tube([[side * radius * 0.72, bodyTop - 0.11, 0.135], [side * radius * 0.8, bodyTop - 0.19, 0.145], [side * radius * 0.74, bodyTop - 0.27, 0.13]], 0.0022, crease);
-      topCrease.userData.slot = 'top';
-      slotGroup.add(topCrease);
-      add(slotGroup, box(0.006, (bodyTop - bodyBottom) * 0.86, 0.008), variant === 'shirt' ? cream : hi, [side * radius * 0.96, (bodyTop + bodyBottom) / 2, 0.02], [0, 0, side * 0.04]);
-    });
 
     if (variant === 'tee' || variant === 'tank') {
       if (variant === 'tee') {
         [-1, 1].forEach((side) => {
-          const sleeve = armPivot(slotGroup, side);
-          add(sleeve, sphere(radius * 0.45, 16), main, [0, -0.06, 0], null, [1.05, 0.82, 1.02]);
-          add(sleeve, cylinder(radius * 0.45, radius * 0.34, 0.185, 16), main, [0, -0.14, 0]);
-          add(sleeve, sphere(radius * 0.36, 14), main, [0, -0.235, 0], null, [1, 0.72, 1]);
-          add(sleeve, torus(radius * 0.33, 0.006, 18), trim, [0, -0.245, 0], [Math.PI / 2, 0, 0], [1, 1, 0.85]);
+          makeSleeve(slotGroup, side, main, trim, { ease: oversize ? 0.015 : slim ? 0.002 : 0.007, length: 0.17 });
         });
-      } else {
-        [-1, 1].forEach((side) => {
-          add(slotGroup, torus(0.078, 0.009, 18), trim, [side * radius * 0.8, bodyTop - 0.035, 0], [Math.PI / 2, 0, side * 0.45], [0.8, 1, 1]);
-          add(slotGroup, box(0.018, 0.13, 0.028), main, [side * 0.075, bodyTop + 0.04, 0.015], [0, 0, side * 0.08]);
-        });
-        add(slotGroup, torus(0.06, 0.01, 20), trim, [0, bodyTop + 0.012, 0], [Math.PI / 2, 0, 0], [1.2, 1, 0.78]);
-        add(slotGroup, box(0.04, 0.012, 0.012), hi, [0, bodyTop + 0.008, 0.13]);
       }
-      add(slotGroup, torus(radius * 0.96, 0.009, 24), trim, [0, bodyBottom, 0], [Math.PI / 2, 0, 0], [1, 1, 0.73]);
-      add(slotGroup, box(0.05, 0.016, 0.012), cream, [-0.02, bodyBottom + 0.012, 0.15]);
+      add(slotGroup, torus(shellAt(bodyBottom).rx * 0.99, 0.0075, 28), trim, [0, bodyBottom, 0], [Math.PI / 2, 0, 0], [1, 1, shellAt(bodyBottom).rz / shellAt(bodyBottom).rx]);
+      add(slotGroup, box(0.05, 0.014, 0.01), cream, [-0.02, bodyBottom + 0.01, frontAt(bodyBottom + 0.01)]);
     } else if (variant === 'longsleeve' || variant === 'shirt') {
       [-1, 1].forEach((side) => {
-        const sleeve = makeSleeve(slotGroup, side, main, trim, { radius: oversize ? 0.105 : slim ? 0.07 : 0.085, length: 0.5 });
+        const sleeve = makeSleeve(slotGroup, side, main, trim, { ease: oversize ? 0.014 : slim ? 0.002 : 0.005, length: 0.58 });
         if (variant === 'shirt') {
-          [0, 1].forEach((index) => add(sleeve.pivot, sphere(0.008, 8), metal, [0, -0.48 - index * 0.022, 0.085]));
+          [0, 1].forEach((index) => add(sleeve.pivot, sphere(0.008, 8), metal, [0.01, -0.55 - index * 0.024, sleeve.cuffZ]));
         }
       });
-      if (variant === 'longsleeve') {
-        add(slotGroup, torus(radius * 0.96, 0.009, 24), trim, [0, bodyBottom, 0], [Math.PI / 2, 0, 0], [1, 1, 0.73]);
-        add(slotGroup, box(0.05, 0.016, 0.012), cream, [-0.02, bodyBottom + 0.012, 0.15]);
-        if (item.turtleneck) {
-          add(slotGroup, cylinder(0.082, 0.095, 0.13, 18), main, [0, 1.55, 0], null, [1, 1, 0.9]);
-          add(slotGroup, torus(0.09, 0.007, 18), trim, [0, 1.615, 0], [Math.PI / 2, 0, 0]);
-        }
+      add(slotGroup, torus(shellAt(bodyBottom).rx * 0.99, 0.0075, 28), trim, [0, bodyBottom, 0], [Math.PI / 2, 0, 0], [1, 1, shellAt(bodyBottom).rz / shellAt(bodyBottom).rx]);
+      add(slotGroup, box(0.05, 0.014, 0.01), cream, [-0.02, bodyBottom + 0.01, frontAt(bodyBottom + 0.01)]);
+      if (variant === 'longsleeve' && item.turtleneck) {
+        const neckSections = [
+          { y: 1.5, rx: 0.094, rz: 0.086, cx: 0, cz: 0, power: 2.2 },
+          { y: 1.535, rx: 0.082, rz: 0.074, cx: 0, cz: 0, power: 2.15 },
+          { y: 1.57, rx: 0.068, rz: 0.062, cx: 0, cz: 0, power: 2.1 },
+          { y: 1.6, rx: 0.06, rz: 0.056, cx: 0, cz: 0, power: 2.05 }
+        ];
+        const neckMesh = new THREE.Mesh(loft(neckSections, { rings: 16, segments: 26 }), main);
+        neckMesh.castShadow = true;
+        neckMesh.receiveShadow = true;
+        neckMesh.userData.slot = 'top';
+        slotGroup.add(neckMesh);
+        add(slotGroup, torus(0.061, 0.0045, 22), trim, [0, 1.602, 0], [Math.PI / 2, 0, 0], [1, 1, 0.93]);
       }
     } else if (variant === 'bomber') {
       [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.118, 16), main, [side * 0.215, 1.43, 0], null, [1.15, 0.85, 1.1]);
-        const sleeve = makeSleeve(slotGroup, side, main, trim, { radius: 0.115, length: 0.49 });
-        add(sleeve.pivot, torus(0.09, 0.011, 20), trim, [0, -0.51, 0], [Math.PI / 2, 0, 0]);
+        const sleeve = makeSleeve(slotGroup, side, main, trim, { ease: 0.016, length: 0.57 });
+        add(sleeve.pivot, torus(0.072, 0.011, 22), trim, [0, -0.6, 0], [Math.PI / 2, 0, 0]);
       });
-      add(slotGroup, torus(radius * 0.94, 0.016, 26), trim, [0, bodyBottom, 0], [Math.PI / 2, 0, 0], [1, 1, 0.8]);
-      add(slotGroup, torus(0.075, 0.012, 20), trim, [0, bodyTop + 0.045, 0], [Math.PI / 2, 0, 0], [1.1, 1, 0.85]);
-      add(slotGroup, box(0.016, 0.36, 0.012), metal, [0, 1.26, 0.185]);
-      add(slotGroup, sphere(0.012, 8), metal, [0, bodyTop + 0.005, 0.19]);
-      add(slotGroup, box(0.085, 0.048, 0.012), accent, [-0.125, 1.34, 0.18]);
-      add(slotGroup, box(0.045, 0.032, 0.012), cream, [0.13, 1.34, 0.18]);
-      add(slotGroup, box(0.07, 0.018, 0.01), hi, [0.13, 1.3, 0.18]);
+      add(slotGroup, torus(shellAt(bodyBottom).rx * 0.96, 0.015, 28), trim, [0, bodyBottom, 0], [Math.PI / 2, 0, 0], [1, 1, shellAt(bodyBottom).rz / shellAt(bodyBottom).rx]);
+      const collarSections = [
+        { y: 1.54, rx: 0.084, rz: 0.076, cx: 0, cz: 0, power: 2.15 },
+        { y: 1.575, rx: 0.075, rz: 0.068, cx: 0, cz: 0, power: 2.1 },
+        { y: 1.605, rx: 0.068, rz: 0.062, cx: 0, cz: 0, power: 2.05 }
+      ];
+      const collar = new THREE.Mesh(loft(collarSections, { rings: 10, segments: 26 }), trim);
+      collar.castShadow = true;
+      collar.receiveShadow = true;
+      collar.userData.slot = 'top';
+      slotGroup.add(collar);
+      add(slotGroup, torus(0.069, 0.007, 24), trim, [0, 1.607, 0], [Math.PI / 2, 0, 0], [1, 1, 0.92]);
+      add(slotGroup, box(0.016, 0.38, 0.012), metal, [0, 1.24, frontAt(1.24)]);
+      add(slotGroup, sphere(0.012, 8), metal, [0, 1.438, frontAt(1.438) + 0.006]);
+      add(slotGroup, box(0.085, 0.048, 0.012), accent, [-0.125, 1.33, frontAt(1.33)]);
+      add(slotGroup, box(0.045, 0.032, 0.012), cream, [0.13, 1.33, frontAt(1.33)]);
+      add(slotGroup, box(0.07, 0.018, 0.01), hi, [0.13, 1.29, frontAt(1.29)]);
       if (item.puffer) {
-        [1.08, 1.2, 1.32, 1.44].forEach((y) => add(slotGroup, torus(radius * 0.97, 0.006, 24), trim, [0, y, 0], [Math.PI / 2, 0, 0], [1, 1, 0.8]));
+        [1.06, 1.18, 1.3, 1.42].forEach((y) => add(slotGroup, torus(shellAt(y).rx * 0.97, 0.006, 26), trim, [0, y, 0], [Math.PI / 2, 0, 0], [1, 1, shellAt(y).rz / shellAt(y).rx]));
       }
     } else if (variant === 'vest') {
-      [-1, 1].forEach((side) => {
-        add(slotGroup, torus(0.072, 0.007, 18), dark, [side * 0.19, 1.37, 0], [Math.PI / 2, 0, 0], [1, 1, 0.9]);
-      });
-      add(slotGroup, box(0.105, 0.3, 0.016), accent, [-0.06, 1.31, 0.155], [0, 0, 0.22]);
-      add(slotGroup, box(0.105, 0.3, 0.016), accent, [0.06, 1.31, 0.155], [0, 0, -0.22]);
-      [1.32, 1.23, 1.14, 1.05].forEach((y) => add(slotGroup, sphere(0.01, 8), metal, [0, y, 0.18]));
-      add(slotGroup, box(0.09, 0.012, 0.014), dark, [-0.11, 1.0, 0.15]);
-      add(slotGroup, box(0.09, 0.012, 0.014), dark, [0.11, 1.0, 0.15]);
+      add(slotGroup, box(0.028, 0.38, 0.012), trim, [0, 1.18, frontAt(1.18)]);
+      [1.3, 1.21, 1.12, 1.03].forEach((y) => add(slotGroup, sphere(0.01, 8), metal, [0, y, frontAt(y) + 0.008]));
+      add(slotGroup, box(0.08, 0.014, 0.012), dark, [-0.1, 0.995, frontAt(0.995)]);
+      add(slotGroup, box(0.08, 0.014, 0.012), dark, [0.1, 0.995, frontAt(0.995)]);
+      add(slotGroup, torus(shellAt(bodyBottom).rx * 0.99, 0.0075, 28), trim, [0, bodyBottom, 0], [Math.PI / 2, 0, 0], [1, 1, shellAt(bodyBottom).rz / shellAt(bodyBottom).rx]);
+      add(slotGroup, box(0.05, 0.014, 0.01), cream, [0.02, bodyBottom + 0.01, frontAt(bodyBottom + 0.01)]);
     }
 
     if (variant === 'shirt') {
-      add(slotGroup, box(0.06, 0.028, 0.045), cream, [-0.035, 1.47, 0.115], [0, 0, -0.32]);
-      add(slotGroup, box(0.06, 0.028, 0.045), cream, [0.035, 1.47, 0.115], [0, 0, 0.32]);
-      add(slotGroup, box(0.028, 0.04, 0.03), cream, [0, 1.5, 0.11]);
-      add(slotGroup, box(0.038, 0.35, 0.012), trim, [0, 1.27, 0.17]);
-      [1.4, 1.31, 1.22, 1.13, 1.04].forEach((y) => add(slotGroup, sphere(0.009, 8), metal, [0, y, 0.18]));
-      add(slotGroup, box(0.085, 0.07, 0.012), dark, [-0.115, 1.32, 0.15]);
+      const collarBand = [
+        { y: 1.53, rx: 0.086, rz: 0.078, cx: 0, cz: 0, power: 2.1 },
+        { y: 1.565, rx: 0.076, rz: 0.069, cx: 0, cz: 0, power: 2.1 },
+        { y: 1.592, rx: 0.069, rz: 0.063, cx: 0, cz: 0, power: 2.05 }
+      ];
+      const collarStand = new THREE.Mesh(loft(collarBand, { rings: 10, segments: 26 }), cream);
+      collarStand.castShadow = true;
+      collarStand.receiveShadow = true;
+      collarStand.userData.slot = 'top';
+      slotGroup.add(collarStand);
+      [-1, 1].forEach((side) => {
+        add(slotGroup, box(0.082, 0.052, 0.006), cream, [side * 0.048, 1.5, frontAt(1.5) + 0.002], [-0.42, 0, side * 0.56]);
+        add(slotGroup, box(0.074, 0.008, 0.004), trim, [side * 0.05, 1.475, frontAt(1.475) + 0.004], [-0.42, 0, side * 0.56]);
+      });
+      add(slotGroup, box(0.036, 0.4, 0.012), trim, [0, 1.25, frontAt(1.25)]);
+      [1.44, 1.35, 1.26, 1.17, 1.08].forEach((y) => add(slotGroup, sphere(0.009, 8), metal, [0, y, frontAt(y) + 0.006]));
+      add(slotGroup, box(0.085, 0.062, 0.012), dark, [-0.115, 1.31, frontAt(1.31)]);
       if (item.cardigan) {
-        add(slotGroup, box(0.012, 0.4, 0.012), dark, [0, 1.27, 0.174]);
-        [1.42, 1.32, 1.22, 1.12].forEach((y) => add(slotGroup, sphere(0.009, 8), metal, [0, y, 0.184]));
+        add(slotGroup, box(0.012, 0.38, 0.012), dark, [0, 1.26, frontAt(1.26) + 0.006]);
+        [1.4, 1.3, 1.2, 1.1].forEach((y) => add(slotGroup, sphere(0.009, 8), metal, [0, y, frontAt(y) + 0.012]));
       }
-      add(slotGroup, box(0.075, 0.012, 0.014), hi, [-0.115, 1.33, 0.158]);
-      add(slotGroup, box(0.07, 0.012, 0.012), hi, [0.13, 1.12, 0.15]);
+      add(slotGroup, box(0.07, 0.011, 0.012), hi, [-0.115, 1.315, frontAt(1.315) + 0.006]);
+      add(slotGroup, box(0.065, 0.011, 0.01), hi, [0.13, 1.11, frontAt(1.11) + 0.006]);
     }
 
     if (variant === 'tee' || variant === 'longsleeve') {
       if (item.collection === 'street') {
-        add(slotGroup, box(0.1, 0.075, 0.012), accent, [0, 1.32, 0.16]);
-        add(slotGroup, box(0.06, 0.012, 0.014), dark, [0, 1.32, 0.17]);
-        add(slotGroup, box(0.012, 0.06, 0.014), dark, [0, 1.32, 0.17]);
+        add(slotGroup, box(0.1, 0.075, 0.012), accent, [0, 1.32, frontAt(1.32)]);
+        add(slotGroup, box(0.06, 0.012, 0.014), dark, [0, 1.32, frontAt(1.32) + 0.008]);
+        add(slotGroup, box(0.012, 0.06, 0.014), dark, [0, 1.32, frontAt(1.32) + 0.008]);
       } else if (item.collection === 'muse') {
-        add(slotGroup, sphere(0.026, 12), accent, [0, 1.32, 0.16], null, [1, 0.85, 0.35]);
-        add(slotGroup, sphere(0.026, 12), accent, [-0.018, 1.305, 0.16], null, [1, 0.85, 0.35]);
-        add(slotGroup, cone(0.02, 0.035, 10), accent, [0, 1.285, 0.16], [0, 0, Math.PI]);
+        add(slotGroup, sphere(0.026, 12), accent, [0, 1.32, frontAt(1.32)], null, [1, 0.85, 0.35]);
+        add(slotGroup, sphere(0.026, 12), accent, [-0.018, 1.305, frontAt(1.305)], null, [1, 0.85, 0.35]);
+        add(slotGroup, cone(0.02, 0.035, 10), accent, [0, 1.285, frontAt(1.285)], [0, 0, Math.PI]);
       } else {
-        add(slotGroup, box(0.085, 0.055, 0.01), accent, [0, 1.32, 0.16]);
-        add(slotGroup, box(0.055, 0.012, 0.012), hi, [0, 1.32, 0.168]);
+        add(slotGroup, box(0.085, 0.055, 0.01), accent, [0, 1.32, frontAt(1.32)]);
+        add(slotGroup, box(0.055, 0.012, 0.012), hi, [0, 1.32, frontAt(1.32) + 0.006]);
       }
     }
     if (item.brand) {
-      addBrandMark(slotGroup, item, [variant === 'shirt' ? 0.105 : 0, 1.315, 0.171], 1.2, accent);
+      addBrandMark(slotGroup, item, [variant === 'shirt' ? 0.105 : 0, 1.315, frontAt(1.315) + 0.004], 1.2, accent);
     }
   }
 
@@ -1544,81 +2060,239 @@
     }
   }
 
-  function addModernShoes(slotGroup, item, mats) {
+  function sampleZ(sections, z, key, fallback) {
+    if (!sections.length) return fallback;
+    if (z <= sections[0].z) return sections[0][key];
+    if (z >= sections[sections.length - 1].z) return sections[sections.length - 1][key];
+    let index = 1;
+    while (index < sections.length && sections[index].z < z) index += 1;
+    const p1 = sections[index - 1];
+    const p2 = sections[index];
+    const p0 = sections[index - 2] || p1;
+    const p3 = sections[index + 1] || p2;
+    const t = (z - p1.z) / Math.max(0.0001, p2.z - p1.z);
+    return catmullScalar(p0[key], p1[key], p2[key], p3[key], t);
+  }
+
+  function loftZ(sections, options) {
+    const config = options || {};
+    const rings = Math.max(8, config.rings || 24);
+    const segments = Math.max(12, config.segments || 26);
+    const zStart = sections[0].z;
+    const zEnd = sections[sections.length - 1].z;
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+    for (let ring = 0; ring <= rings; ring += 1) {
+      const v = ring / rings;
+      const z = zStart + (zEnd - zStart) * v;
+      const w = sampleZ(sections, z, 'w', 0.05);
+      const cy = sampleZ(sections, z, 'cy', 0.06);
+      const h = sampleZ(sections, z, 'h', 0.04);
+      const power = Math.max(2, sampleZ(sections, z, 'power', 2.4));
+      for (let segment = 0; segment < segments; segment += 1) {
+        const angle = (segment / segments) * Math.PI * 2;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const ex = Math.sign(cos) * Math.pow(Math.abs(cos), 2 / power);
+        const ey = Math.sign(sin) * Math.pow(Math.abs(sin), 2 / power);
+        positions.push(ex * w, cy + ey * h, z);
+        uvs.push(segment / segments, 1 - v);
+      }
+    }
+    for (let ring = 0; ring < rings; ring += 1) {
+      for (let segment = 0; segment < segments; segment += 1) {
+        const next = (segment + 1) % segments;
+        const a = ring * segments + segment;
+        const b = ring * segments + next;
+        const c = (ring + 1) * segments + segment;
+        const d = (ring + 1) * segments + next;
+        indices.push(a, b, c, b, d, c);
+      }
+    }
+    const centerStart = positions.length / 3;
+    positions.push(0, sampleZ(sections, zStart, 'cy', 0.06), zStart);
+    uvs.push(0.5, 0);
+    for (let segment = 0; segment < segments; segment += 1) {
+      const next = (segment + 1) % segments;
+      indices.push(centerStart, next, segment);
+    }
+    const centerEnd = positions.length / 3;
+    const lastRing = rings * segments;
+    positions.push(0, sampleZ(sections, zEnd, 'cy', 0.06), zEnd);
+    uvs.push(0.5, 1);
+    for (let segment = 0; segment < segments; segment += 1) {
+      const next = (segment + 1) % segments;
+      indices.push(centerEnd, lastRing + segment, lastRing + next);
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    geometry.computeBoundingSphere();
+    return geometry;
+  }
+
+  const SHOE_SOLE = [
+    { z: -0.104, w: 0.056, cy: 0.022, h: 0.022, power: 2.5 },
+    { z: -0.07, w: 0.07, cy: 0.022, h: 0.022, power: 2.5 },
+    { z: 0.0, w: 0.082, cy: 0.022, h: 0.022, power: 2.55 },
+    { z: 0.08, w: 0.082, cy: 0.023, h: 0.022, power: 2.55 },
+    { z: 0.16, w: 0.076, cy: 0.027, h: 0.021, power: 2.5 },
+    { z: 0.215, w: 0.062, cy: 0.033, h: 0.019, power: 2.45 },
+    { z: 0.252, w: 0.033, cy: 0.04, h: 0.014, power: 2.35 }
+  ];
+
+  const SHOE_UPPER_LOW = [
+    { z: -0.1, w: 0.052, cy: 0.088, h: 0.041, power: 2.3 },
+    { z: -0.085, w: 0.063, cy: 0.096, h: 0.05, power: 2.4 },
+    { z: -0.05, w: 0.071, cy: 0.102, h: 0.057, power: 2.5 },
+    { z: -0.005, w: 0.074, cy: 0.105, h: 0.06, power: 2.55 },
+    { z: 0.045, w: 0.075, cy: 0.101, h: 0.055, power: 2.5 },
+    { z: 0.1, w: 0.073, cy: 0.092, h: 0.047, power: 2.45 },
+    { z: 0.155, w: 0.069, cy: 0.082, h: 0.038, power: 2.4 },
+    { z: 0.2, w: 0.06, cy: 0.073, h: 0.03, power: 2.35 },
+    { z: 0.23, w: 0.045, cy: 0.068, h: 0.024, power: 2.3 },
+    { z: 0.248, w: 0.024, cy: 0.064, h: 0.018, power: 2.2 }
+  ];
+
+  const SHOE_UPPER_FLAT = [
+    { z: -0.096, w: 0.05, cy: 0.062, h: 0.026, power: 2.3 },
+    { z: -0.07, w: 0.062, cy: 0.066, h: 0.032, power: 2.4 },
+    { z: -0.02, w: 0.072, cy: 0.068, h: 0.035, power: 2.5 },
+    { z: 0.04, w: 0.075, cy: 0.066, h: 0.033, power: 2.5 },
+    { z: 0.11, w: 0.073, cy: 0.06, h: 0.028, power: 2.45 },
+    { z: 0.17, w: 0.066, cy: 0.054, h: 0.023, power: 2.4 },
+    { z: 0.22, w: 0.05, cy: 0.049, h: 0.017, power: 2.3 },
+    { z: 0.25, w: 0.026, cy: 0.046, h: 0.012, power: 2.2 }
+  ];
+
+  const SHOE_CONFIG = {
+    sneaker: { sole: 1.0, lift: 0, drop: 0, lace: true, collar: true, heelTab: true },
+    runner: { sole: 1.12, lift: 0.004, drop: 0, lace: true, collar: true, heelTab: true, runner: true },
+    boot: { sole: 1.3, lift: 0.012, drop: 0, lace: false, collar: false, heelTab: true, shaft: true },
+    derby: { sole: 0.52, lift: 0, drop: 0.012, lace: true, collar: false, heelTab: false, heelBlock: true, toeCap: true },
+    platform: { sole: 1.7, lift: 0.042, drop: 0, lace: true, collar: true, heelTab: true, flatSide: true },
+    mule: { sole: 0.7, lift: 0, drop: 0.014, lace: false, collar: false, heelTab: false, heelBlock: true, flat: true },
+    ballet: { sole: 0.36, lift: 0, drop: 0.02, lace: false, collar: false, heelTab: false, flat: true, bow: true }
+  };
+
+  function addShoePair(slotGroup, item, mats, materials) {
     const { main, dark, metal, light } = mats;
-    const accent = material(item.palette.accent, { roughness: 0.46 });
-    const variant = item.variant;
-    const soleTier = item.sole || 'mid';
-    const soleLayers = { low: 1, mid: 2, high: 3, max: 4 }[soleTier] || 2;
-    const soleType = item.soleType || 'foam';
+    const accent = materials.accent;
+    const variant = item.variant || 'sneaker';
+    const config = SHOE_CONFIG[variant] || SHOE_CONFIG.sneaker;
+    const upperShape = config.flat ? SHOE_UPPER_FLAT : SHOE_UPPER_LOW;
+    const upperSections = upperShape.map((section) => ({ ...section, cy: section.cy + config.lift - config.drop }));
+    const midSections = SHOE_SOLE.map((section) => ({
+      ...section,
+      w: section.w + (config.sole > 1.4 ? 0.006 : 0.002),
+      cy: config.flatSide ? 0.052 : 0.012 + section.h * config.sole,
+      h: config.flatSide ? 0.04 : section.h * config.sole,
+      power: config.flatSide ? 4 : section.power
+    }));
+    const outSections = SHOE_SOLE.map((section) => ({
+      ...section,
+      w: section.w + 0.006,
+      cy: 0.008,
+      h: 0.009,
+      power: config.flatSide ? 4 : section.power
+    }));
+    const stripeSections = SHOE_SOLE.map((section) => ({
+      ...section,
+      w: section.w + (config.flatSide ? 0.007 : 0.005),
+      cy: config.flatSide ? 0.086 : Math.max(0.013, 0.012 + section.h * config.sole * 1.7 - 0.006),
+      h: 0.0045,
+      power: config.flatSide ? 4 : section.power
+    }));
+    const upperTop = 0.165 + config.lift - config.drop;
+    const laceYs = [0.016, 0.044, 0.072, 0.1];
     [-1, 1].forEach((side) => {
       const x = side * 0.087;
-      if (variant === 'platform') {
-        add(slotGroup, box(0.16, 0.025, 0.31), dark, [x, 0.02, 0.08]);
-        add(slotGroup, box(0.165, 0.035, 0.32), main, [x, 0.055, 0.08]);
-        add(slotGroup, box(0.155, 0.035, 0.3), dark, [x, 0.085, 0.08]);
-        add(slotGroup, sphere(0.078, 16), main, [x, 0.13, 0.13], null, [0.9, 0.62, 1.45]);
-        add(slotGroup, box(0.15, 0.1, 0.14), main, [x, 0.13, 0]);
-        add(slotGroup, box(0.11, 0.018, 0.04), accent, [x, 0.16, 0.12]);
-        add(slotGroup, box(0.02, 0.02, 0.02), metal, [x, 0.18, 0.1]);
-        add(slotGroup, box(0.015, 0.06, 0.01), metal, [x + side * 0.07, 0.16, 0.08]);
-        addBrandMark(slotGroup, item, [x, 0.17, 0.14], 0.85, accent);
-      } else if (variant === 'mule') {
-        add(slotGroup, box(0.15, 0.025, 0.3), dark, [x, 0.02, 0.08]);
-        add(slotGroup, sphere(0.075, 16), main, [x, 0.085, 0.13], null, [0.85, 0.58, 1.5]);
-        add(slotGroup, box(0.14, 0.09, 0.16), main, [x, 0.09, 0]);
-        add(slotGroup, box(0.055, 0.12, 0.055), dark, [x, 0.07, -0.06]);
-        add(slotGroup, box(0.11, 0.02, 0.035), accent, [x, 0.13, 0.1]);
-        add(slotGroup, box(0.02, 0.02, 0.02), metal, [x, 0.145, 0.1]);
-        addBrandMark(slotGroup, item, [x, 0.14, 0.118], 0.72, accent);
-      } else if (variant === 'ballet') {
-        add(slotGroup, box(0.16, 0.026, 0.33), dark, [x, 0.018, 0.08]);
-        add(slotGroup, box(0.14, 0.016, 0.31), main, [x, 0.045, 0.08]);
-        add(slotGroup, sphere(0.072, 16), main, [x, 0.06, 0.1], null, [0.9, 0.5, 1.5]);
-        add(slotGroup, box(0.14, 0.05, 0.17), main, [x, 0.06, 0]);
-        add(slotGroup, box(0.075, 0.045, 0.022), accent, [x, 0.09, 0.2]);
-        add(slotGroup, box(0.012, 0.02, 0.16), dark, [x, 0.08, 0.03]);
-        add(slotGroup, torus(0.058, 0.005, 18), dark, [x, 0.135, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, box(0.02, 0.018, 0.018), metal, [x + side * 0.055, 0.13, 0.025]);
-        addBrandMark(slotGroup, item, [x, 0.102, 0.112], 0.65, accent);
-      } else if (variant === 'runner') {
-        add(slotGroup, box(0.17, 0.05, 0.33), dark, [x, 0.028, 0.08]);
-        add(slotGroup, box(0.165, 0.03, 0.32), light, [x, 0.065, 0.08]);
-        add(slotGroup, box(0.15, 0.1, 0.26), main, [x, 0.12, 0.06]);
-        add(slotGroup, sphere(0.075, 16), main, [x, 0.115, 0.2], null, [1, 0.8, 1.1]);
-        add(slotGroup, box(0.16, 0.05, 0.04), metal, [x, 0.07, 0.24]);
-        add(slotGroup, box(0.155, 0.026, 0.05), accent, [x, 0.14, 0.07]);
-        add(slotGroup, box(0.09, 0.06, 0.015), dark, [x + side * 0.055, 0.12, 0.02]);
-        add(slotGroup, box(0.17, 0.014, 0.33), accent, [x, 0.058, 0.08]);
-        add(slotGroup, box(0.155, 0.012, 0.32), dark, [x, 0.08, 0.08]);
-        [0.12, 0.145, 0.17].forEach((z) => add(slotGroup, box(0.08, 0.008, 0.012), light, [x, 0.2, z]));
-        add(slotGroup, cylinder(0.059, 0.064, 0.1, 16), material('#efe6d7', { roughness: 0.72 }), [x, 0.185, 0]);
-        add(slotGroup, torus(0.063, 0.006, 18), light, [x, 0.235, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, box(0.075, 0.014, 0.11), dark, [x, 0.155, 0.1]);
-        add(slotGroup, box(0.09, 0.012, 0.15), main, [x, 0.17, 0.04]);
-        add(slotGroup, box(0.17, 0.012, 0.02), accent, [x, 0.045, 0.14]);
-        for (let index = 0; index < soleLayers; index += 1) {
-          add(slotGroup, box(0.168 - index * 0.003, 0.008, 0.325), index % 2 ? light : accent, [x, 0.048 + index * 0.009, 0.08]);
-        }
-        if (soleType === 'waffle') {
-          [-0.09, -0.03, 0.03, 0.09].forEach((z) => add(slotGroup, box(0.004, 0.026, 0.01), dark, [x + side * 0.085, 0.04, 0.08 + z]));
-        } else if (soleType === 'lug') {
-          [-0.1, -0.04, 0.02, 0.08, 0.14].forEach((z) => add(slotGroup, box(0.012, 0.032, 0.015), dark, [x - side * 0.082, 0.035, 0.08 + z]));
-        } else if (soleType === 'carbon') {
-          add(slotGroup, box(0.17, 0.004, 0.32), metal, [x, 0.022, 0.08]);
-        } else if (soleType === 'tread') {
-          [-0.11, -0.05, 0.01, 0.07, 0.13].forEach((z) => add(slotGroup, box(0.014, 0.018, 0.012), metal, [x + side * 0.084, 0.036, 0.08 + z], [0, 0, 0.2]));
-        }
-        addBrandMark(slotGroup, item, [x, 0.168, 0.126], 0.95, accent);
-      } else if (variant === 'derby') {
-        add(slotGroup, box(0.15, 0.02, 0.31), dark, [x, 0.02, 0.08]);
-        add(slotGroup, box(0.14, 0.075, 0.26), main, [x, 0.09, 0.06]);
-        add(slotGroup, sphere(0.075, 16), main, [x, 0.085, 0.2], null, [1, 0.75, 1.1]);
-        add(slotGroup, box(0.11, 0.05, 0.09), dark, [x, 0.14, 0.02]);
-        add(slotGroup, box(0.012, 0.012, 0.11), metal, [x, 0.155, 0.05]);
-        add(slotGroup, box(0.015, 0.06, 0.015), dark, [x, 0.08, -0.07]);
-        addBrandMark(slotGroup, item, [x, 0.125, 0.128], 0.72, accent);
+      const soleMesh = new THREE.Mesh(loftZ(outSections, { rings: 12, segments: 26 }), dark);
+      soleMesh.position.x = x;
+      soleMesh.castShadow = true;
+      soleMesh.receiveShadow = true;
+      slotGroup.add(soleMesh);
+      const midMesh = new THREE.Mesh(loftZ(midSections, { rings: 16, segments: 26 }), light);
+      midMesh.position.x = x;
+      midMesh.castShadow = true;
+      midMesh.receiveShadow = true;
+      slotGroup.add(midMesh);
+      if (!config.flat) {
+        const stripeMesh = new THREE.Mesh(loftZ(stripeSections, { rings: 10, segments: 26 }), accent);
+        stripeMesh.position.x = x;
+        stripeMesh.castShadow = true;
+        stripeMesh.receiveShadow = true;
+        slotGroup.add(stripeMesh);
       }
+      const upperMesh = new THREE.Mesh(loftZ(upperSections, { rings: 26, segments: 28 }), main);
+      upperMesh.position.x = x;
+      upperMesh.castShadow = true;
+      upperMesh.receiveShadow = true;
+      slotGroup.add(upperMesh);
+      if (config.collar) {
+        add(slotGroup, torus(0.05, 0.0075, 24), dark, [x, upperTop - 0.004, -0.006], [Math.PI / 2, 0, 0], [1, 1.32, 1]);
+      }
+      if (config.shaft) {
+        const shaftLift = config.lift;
+        const shaft = [
+          { y: 0.12 + shaftLift, rx: 0.063, rz: 0.077, cx: 0, cz: -0.004, power: 2.4 },
+          { y: 0.18 + shaftLift, rx: 0.061, rz: 0.072, cx: 0, cz: -0.003, power: 2.3 },
+          { y: 0.25 + shaftLift, rx: 0.058, rz: 0.067, cx: 0, cz: -0.002, power: 2.3 },
+          { y: 0.305 + shaftLift, rx: 0.058, rz: 0.066, cx: 0, cz: 0, power: 2.3 }
+        ];
+        const shaftMesh = new THREE.Mesh(loft(shaft, { rings: 14, segments: 24 }), main);
+        shaftMesh.position.x = x;
+        shaftMesh.castShadow = true;
+        shaftMesh.receiveShadow = true;
+        slotGroup.add(shaftMesh);
+        add(slotGroup, torus(0.059, 0.009, 24), item.uggs ? light : dark, [x, 0.305 + shaftLift, 0], [Math.PI / 2, 0, 0], [1, 1, 1.12]);
+        if (item.uggs) {
+          add(slotGroup, cylinder(0.064, 0.07, 0.06, 22), main, [x, 0.33 + shaftLift, 0], null, [1, 1, 1.12]);
+        }
+        add(slotGroup, box(0.022, 0.035, 0.012), metal, [x + side * 0.058, 0.24 + shaftLift, 0.045]);
+        add(slotGroup, box(0.024, 0.03, 0.01), dark, [x, 0.288 + shaftLift, -0.068]);
+      }
+      if (config.lace) {
+        const instepTop = (z) => sampleZ(upperSections, z, 'cy', 0.1) + sampleZ(upperSections, z, 'h', 0.05);
+        const tongue = add(slotGroup, box(0.05, 0.008, 0.08), light, [x, instepTop(0.05) + 0.002, 0.05], [-0.26, 0, 0]);
+        tongue.userData.slot = 'shoes';
+        laceYs.forEach((z) => {
+          const y = instepTop(z) + 0.007;
+          add(slotGroup, box(0.056, 0.005, 0.009), light, [x, y, z], [-0.28, 0, 0]);
+          [-1, 1].forEach((laceSide) => {
+            add(slotGroup, sphere(0.0036, 8), metal, [x + laceSide * 0.029, y + 0.001, z]);
+          });
+        });
+      } else if (config.shaft) {
+        add(slotGroup, box(0.006, 0.085, 0.048), dark, [x + side * 0.058, 0.225 + config.lift, 0.02]);
+        add(slotGroup, box(0.004, 0.1, 0.004), metal, [x, 0.23 + config.lift, 0.061]);
+      }
+      if (config.toeCap) {
+        const seam = tube([[x - 0.052, 0.112 + config.lift - config.drop, 0.158], [x, 0.122 + config.lift - config.drop, 0.162], [x + 0.052, 0.112 + config.lift - config.drop, 0.158]], 0.0022, dark);
+        seam.userData.slot = 'shoes';
+        slotGroup.add(seam);
+      }
+      if (config.heelTab) {
+        add(slotGroup, box(0.032, 0.024, 0.012), accent, [x, upperTop - 0.03, -0.098]);
+      }
+      if (config.runner) {
+        add(slotGroup, box(0.085, 0.006, 0.024), accent, [x, 0.073 + config.lift, 0.212], [0.1, 0, 0]);
+        add(slotGroup, box(0.005, 0.028, 0.13), accent, [x + side * 0.074, 0.085 + config.lift, 0.045], [0, 0, -side * 0.06]);
+      }
+      if (config.heelBlock) {
+        add(slotGroup, box(0.086, 0.042, 0.092), dark, [x, 0.021, -0.062]);
+      }
+      if (config.bow) {
+        const bowY = sampleZ(upperSections, 0.07, 'cy', 0.06) + sampleZ(upperSections, 0.07, 'h', 0.03) + 0.004;
+        add(slotGroup, box(0.026, 0.006, 0.014), accent, [x - 0.014, bowY, 0.072], [0, 0, 0.35]);
+        add(slotGroup, box(0.026, 0.006, 0.014), accent, [x + 0.014, bowY, 0.072], [0, 0, -0.35]);
+        add(slotGroup, sphere(0.006, 8), accent, [x, bowY + 0.001, 0.074]);
+      }
+      const mark = addBrandMark(slotGroup, item, [x + side * 0.079, 0.1 + config.lift - config.drop, 0.03], 0.62, accent);
+      if (mark) mark.rotation.y = side * Math.PI / 2;
     });
   }
 
@@ -1671,7 +2345,7 @@
       add(slotGroup, sphere(0.245, 18), main, [0, 1.45, -0.015], null, [1.17, 0.43, 0.9]);
       [-1, 1].forEach((side) => {
         add(slotGroup, sphere(0.128, 16), main, [side * 0.205, 1.445, 0], null, [1.06, 0.68, 1.02]);
-        const sleeve = makeSleeve(slotGroup, side, main, trim, { radius: 0.11, length: 0.48 });
+        const sleeve = makeSleeve(slotGroup, side, main, trim, { ease: 0.019, length: 0.48 });
         add(sleeve.pivot, torus(0.088, 0.005, 20), trim, [0, -0.5, 0], [Math.PI / 2, 0, 0]);
         add(sleeve.pivot, sphere(0.011, 10), metal, [0, -0.48, 0.086]);
       });
@@ -1698,7 +2372,7 @@
       const sleeveBySide = new Map();
       [-1, 1].forEach((side) => {
         add(slotGroup, sphere(0.108, 16), main, [side * 0.19, 1.46, 0], null, [1.25, 0.72, 1.08]);
-        sleeveBySide.set(side, makeSleeve(slotGroup, side, main, trim, { radius: racer ? 0.105 : 0.103, length: 0.49, stripes: racer, stripeMat: accent }));
+        sleeveBySide.set(side, makeSleeve(slotGroup, side, main, trim, { ease: racer ? 0.016 : 0.015, length: 0.49, stripes: racer, stripeMat: accent }));
       });
       if (!racer) {
         add(slotGroup, cylinder(0.19, 0.225, 0.26, 22), main, [0, 0.88, 0], null, [1, 1, 0.78]);
@@ -1834,75 +2508,246 @@
     dark.color.multiplyScalar(0.72);
     const metal = metalMaterial(palette.metal);
     const light = material(item.upper === 'suede' || item.upper === 'nubuck' ? '#c9c2b5' : '#d8d5cb', { roughness: 0.62 });
-    const boot = item.variant === 'boot';
-    const sneaker = item.variant === 'sneaker';
-    const soleTier = item.sole || 'mid';
-    const soleLayers = { low: 1, mid: 2, high: 3, max: 4 }[soleTier] || 2;
-    const soleType = item.soleType || 'cup';
-
-    if (['platform', 'mule', 'ballet', 'runner', 'derby'].includes(item.variant)) {
-      addModernShoes(slotGroup, item, { main, dark, metal, light });
-      tagGroup(slotGroup, 'shoes');
-      root.add(slotGroup);
-      return;
-    }
-
-    [-1, 1].forEach((side) => {
-      const x = side * 0.087;
-      if (boot) {
-        add(slotGroup, cylinder(0.075, 0.086, 0.25, 16), main, [x, 0.23, 0.02]);
-        add(slotGroup, box(0.14, 0.13, 0.29), main, [x, 0.08, 0.07], [0, 0, 0]);
-        add(slotGroup, sphere(0.074, 14), main, [x, 0.075, 0.18], null, [1.05, 0.62, 1.18]);
-        add(slotGroup, box(0.15, 0.045, 0.32), dark, [x, 0.018, 0.075]);
-        add(slotGroup, box(0.13, 0.055, 0.075), metal, [x, 0.055, 0.21]);
-        add(slotGroup, box(0.022, 0.12, 0.012), metal, [x + side * 0.062, 0.18, 0.16]);
-        for (let index = 0; index < soleLayers; index += 1) {
-          add(slotGroup, box(0.152, 0.008, 0.322), index % 2 ? light : material(palette.accent, { roughness: 0.52 }), [x, 0.034 + index * 0.009, 0.075]);
-        }
-        if (item.uggs) {
-          add(slotGroup, torus(0.09, 0.018, 20), light, [x, 0.3, 0.02], [Math.PI / 2, 0, 0], [1, 1, 0.82]);
-          add(slotGroup, cylinder(0.083, 0.09, 0.08, 16), main, [x, 0.33, 0.02], null, [1, 1, 0.82]);
-        }
-        addBrandMark(slotGroup, item, [x, 0.145, 0.145], 1.05, material(palette.accent, { roughness: 0.5 }));
-      } else if (sneaker) {
-        add(slotGroup, box(0.155, 0.06, 0.32), dark, [x, 0.035, 0.07]);
-        add(slotGroup, box(0.155, 0.045, 0.32), light, [x, 0.072, 0.07]);
-        add(slotGroup, box(0.16, 0.014, 0.33), material(palette.accent), [x, 0.058, 0.07]);
-        add(slotGroup, box(0.14, 0.11, 0.25), main, [x, 0.13, 0.07]);
-        add(slotGroup, sphere(0.075, 14), main, [x, 0.115, 0.2], null, [1, 0.8, 1.1]);
-        add(slotGroup, box(0.155, 0.055, 0.04), metal, [x, 0.06, 0.235]);
-        [0.12, 0.145, 0.17].forEach((z) => add(slotGroup, box(0.08, 0.008, 0.012), light, [x, 0.2, z]));
-        add(slotGroup, box(0.012, 0.07, 0.16), material(palette.accent), [x + side * 0.075, 0.14, 0.08]);
-        add(slotGroup, cylinder(0.059, 0.064, 0.095, 16), material('#efe6d7', { roughness: 0.72 }), [x, 0.185, 0]);
-        add(slotGroup, torus(0.063, 0.006, 18), light, [x, 0.23, 0], [Math.PI / 2, 0, 0]);
-        add(slotGroup, box(0.075, 0.014, 0.11), dark, [x, 0.155, 0.1]);
-        add(slotGroup, box(0.09, 0.012, 0.15), main, [x, 0.17, 0.04]);
-        [0.11, 0.14, 0.17].forEach((z) => add(slotGroup, box(0.07, 0.006, 0.01), metal, [x, 0.19, z]));
-        for (let index = 0; index < soleLayers; index += 1) {
-          add(slotGroup, box(0.16, 0.009, 0.33), index % 2 ? light : material(palette.accent, { roughness: 0.5 }), [x, 0.058 + index * 0.009, 0.07]);
-        }
-        if (soleType === 'cup') {
-          add(slotGroup, torus(0.09, 0.006, 20), light, [x, 0.048, 0.07], [Math.PI / 2, 0, 0], [1.7, 1.7, 0.7]);
-        } else if (soleType === 'lug') {
-          [-0.1, -0.04, 0.02, 0.08, 0.14].forEach((z) => add(slotGroup, box(0.012, 0.032, 0.015), dark, [x + side * 0.08, 0.028, 0.08 + z]));
-        } else if (soleType === 'waffle') {
-          [-0.09, -0.03, 0.03, 0.09].forEach((z) => add(slotGroup, box(0.004, 0.026, 0.01), dark, [x + side * 0.08, 0.035, 0.08 + z]));
-        }
-        addBrandMark(slotGroup, item, [x, 0.168, 0.128], 0.9, material(palette.accent, { roughness: 0.42 }));
-      } else {
-        add(slotGroup, box(0.148, 0.028, 0.315), dark, [x, 0.016, 0.075]);
-        add(slotGroup, box(0.14, 0.058, 0.135), main, [x, 0.056, -0.008]);
-        add(slotGroup, sphere(0.082, 18), main, [x, 0.074, 0.105], null, [0.84, 0.58, 1.5]);
-        add(slotGroup, box(0.108, 0.016, 0.125), dark, [x, 0.108, 0.028], [0.15, 0, 0]);
-        add(slotGroup, box(0.124, 0.02, 0.038), material(palette.accent, { roughness: 0.42 }), [x, 0.108, 0.1], [0.05, 0, 0]);
-        add(slotGroup, box(0.02, 0.018, 0.018), metal, [x, 0.118, 0.092]);
-        add(slotGroup, box(0.012, 0.008, 0.27), material(palette.accent, { roughness: 0.55 }), [x, 0.034, 0.075]);
-        add(slotGroup, box(0.02, 0.04, 0.022), metal, [x + side * 0.071, 0.065, 0.03]);
-        addBrandMark(slotGroup, item, [x, 0.112, 0.098], 0.68, material(palette.accent, { roughness: 0.5 }));
-      }
-    });
+    const accent = material(palette.accent, { roughness: 0.46 });
+    addShoePair(slotGroup, item, { main, dark, metal, light }, { accent });
     tagGroup(slotGroup, 'shoes');
     root.add(slotGroup);
+  }
+
+  const HAIR_CENTER_Y = 1.735;
+  const HAIR_RX = 0.125;
+  const HAIR_RY = 0.15;
+  const HAIR_RZ = 0.121;
+
+  function hairlinePolar(azimuth) {
+    const front = Math.max(0, Math.sin(azimuth));
+    const back = Math.max(0, -Math.sin(azimuth));
+    const side = Math.abs(Math.cos(azimuth));
+    return 1.3 + back * 0.56 + side * 0.14 - front * 0.38;
+  }
+
+  function hairPoint(azimuth, polar, inflate) {
+    const r = inflate || 1;
+    return new THREE.Vector3(
+      Math.sin(polar) * Math.cos(azimuth) * HAIR_RX * r,
+      HAIR_CENTER_Y + Math.cos(polar) * HAIR_RY * r,
+      Math.sin(polar) * Math.sin(azimuth) * HAIR_RZ * r
+    );
+  }
+
+  const HAIR_STYLES = {
+    crop: { side: 0.018, back: 0.026, fringe: 0.045, flare: 0.006, grooves: 90, clumps: 12, roughness: 0.66, sideRaise: 0.22 },
+    fade: { side: 0.012, back: 0.02, fringe: 0.035, flare: 0.004, grooves: 60, clumps: 8, roughness: 0.8, fade: true, sideRaise: 0.24 },
+    pixie: { side: 0.03, back: 0.05, fringe: 0.058, flare: 0.01, grooves: 94, clumps: 14, roughness: 0.68, sideRaise: 0.12 },
+    slick: { side: 0.022, back: 0.04, fringe: 0.018, flare: 0.006, grooves: 78, clumps: 8, roughness: 0.42, slick: true },
+    mohawk: { side: 0.008, back: 0.014, fringe: 0.012, flare: 0.004, grooves: 0, clumps: 0, roughness: 0.88, mohawk: true },
+    buzz: { side: 0.007, back: 0.012, fringe: 0.008, flare: 0.003, grooves: 0, clumps: 0, roughness: 0.94, buzz: true },
+    bob: { side: 0.105, back: 0.135, fringe: 0.078, flare: 0.014, grooves: 130, clumps: 20, roughness: 0.6, tipIn: 0.014 },
+    lob: { side: 0.16, back: 0.2, fringe: 0.082, flare: 0.017, grooves: 140, clumps: 22, roughness: 0.6 },
+    wolf: { side: 0.12, back: 0.21, fringe: 0.08, flare: 0.02, grooves: 116, clumps: 18, roughness: 0.64 },
+    mullet: { side: 0.06, back: 0.2, fringe: 0.052, flare: 0.016, grooves: 108, clumps: 16, roughness: 0.64 },
+    shag: { side: 0.13, back: 0.19, fringe: 0.086, flare: 0.02, grooves: 120, clumps: 20, roughness: 0.7, wave: 0.008 },
+    curls: { side: 0.11, back: 0.16, fringe: 0.075, flare: 0.032, grooves: 150, clumps: 24, roughness: 0.78, wave: 0.014 },
+    flow: { side: 0.3, back: 0.4, fringe: 0.06, flare: 0.022, grooves: 170, clumps: 24, roughness: 0.58 },
+    curtain: { side: 0.26, back: 0.3, fringe: 0.115, flare: 0.02, grooves: 160, clumps: 24, roughness: 0.6, curtain: true },
+    long: { side: 0.34, back: 0.43, fringe: 0.06, flare: 0.024, grooves: 180, clumps: 26, roughness: 0.58 },
+    waves: { side: 0.32, back: 0.41, fringe: 0.06, flare: 0.024, grooves: 180, clumps: 26, roughness: 0.66, wave: 0.014 }
+  };
+
+  function hairStyleFor(item, texture) {
+    const base = { ...(HAIR_STYLES[item.variant] || HAIR_STYLES.long) };
+    if (texture === 'curly') {
+      base.wave = (base.wave || 0) + 0.016;
+      base.flare += 0.008;
+      base.grooves = Math.round(base.grooves * 1.15);
+      base.roughness = 0.8;
+    } else if (texture === 'wavy') {
+      base.wave = Math.max(base.wave || 0, 0.012);
+      base.roughness = Math.max(base.roughness, 0.68);
+    }
+    return base;
+  }
+
+  function effectiveHairline(azimuth, style) {
+    let hairline = hairlinePolar(azimuth);
+    if (style.fade) hairline -= Math.abs(Math.cos(azimuth)) * 0.3;
+    if (style.sideRaise) hairline -= Math.pow(Math.abs(Math.cos(azimuth)), 2) * style.sideRaise;
+    return hairline;
+  }
+
+  function hairDrop(azimuth, style) {
+    const front = Math.max(0, Math.sin(azimuth));
+    const back = Math.max(0, -Math.sin(azimuth));
+    const base = style.side + back * (style.back - style.side);
+    const frontMix = Math.min(1, Math.max(0, (front - 0.25) / 0.5));
+    const smoothMix = frontMix * frontMix * (3 - 2 * frontMix);
+    let drop = base * (1 - smoothMix) + style.fringe * smoothMix;
+    if (style.curtain && front > 0.3) drop = style.side * 0.9 + front * 0.02;
+    return drop;
+  }
+
+  function hairSurfacePoint(azimuth, v, style, extra, dropOverride) {
+    const hairline = effectiveHairline(azimuth, style) - 0.01;
+    const surfaceT = Math.min(1, v / 0.62);
+    const hangRaw = Math.max(0, (v - 0.62) / 0.38);
+    const hang = hangRaw * hangRaw * (3 - 2 * hangRaw);
+    const drop = dropOverride ?? hairDrop(azimuth, style);
+    const point = hairPoint(azimuth, hairline * surfaceT, 1.006 + (extra || 0));
+    point.y -= drop * Math.pow(hangRaw, 1.05);
+    const flare = (style.flare || 0.012) * hang;
+    point.x += Math.cos(azimuth) * flare;
+    point.z += Math.sin(azimuth) * flare;
+    const front = Math.max(0, Math.sin(azimuth));
+    point.z += front * 0.042 * hang;
+    if (style.curtain && front > 0.3) point.x += (Math.cos(azimuth) >= 0 ? 1 : -1) * 0.05 * hang;
+    if (style.slick) point.z -= 0.022 * hang;
+    if (style.tipIn) point.y += style.tipIn * hang * hang;
+    return point;
+  }
+
+  function hairShellGeometry(item, style) {
+    const rings = 30;
+    const segments = 76;
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+    let seed = 0;
+    for (let index = 0; index < item.id.length; index += 1) seed = (seed * 31 + item.id.charCodeAt(index)) >>> 0;
+    const phase = (seed % 628) / 100;
+    for (let ring = 0; ring <= rings; ring += 1) {
+      const v = ring / rings;
+      for (let segment = 0; segment < segments; segment += 1) {
+        const azimuth = (segment / segments) * Math.PI * 2;
+        let drop = hairDrop(azimuth, style);
+        const jitter = style.tipIn ? 0.006 : style.buzz || style.mohawk ? 0.002 : 0.026;
+        drop *= 1 + Math.sin(azimuth * 7 + phase) * jitter + Math.sin(azimuth * 17 + phase * 2.1) * jitter * 0.55;
+        const front = Math.max(0, Math.sin(azimuth));
+        if (front > 0.3) {
+          drop += (Math.sin(azimuth * 29 + phase * 3.2) * 0.0045 + Math.sin(azimuth * 47 + phase) * 0.0025) * front;
+          const partAzimuth = Math.PI / 2 + ((item.index || 1) % 2 ? 1 : -1) * 0.38;
+          const partDist = Math.abs(Math.atan2(Math.sin(azimuth - partAzimuth), Math.cos(azimuth - partAzimuth)));
+          if (partDist < 0.17) drop *= 0.22 + (partDist / 0.17) * 0.78;
+        }
+        const point = hairSurfacePoint(azimuth, v, style, 0, drop);
+        positions.push(point.x, point.y, point.z);
+        uvs.push(segment / segments, 1 - v);
+      }
+    }
+    for (let ring = 0; ring < rings; ring += 1) {
+      for (let segment = 0; segment < segments; segment += 1) {
+        const next = (segment + 1) % segments;
+        const a = ring * segments + segment;
+        const b = ring * segments + next;
+        const c = (ring + 1) * segments + segment;
+        const d = (ring + 1) * segments + next;
+        indices.push(a, c, b, b, c, d);
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    geometry.computeBoundingSphere();
+    return geometry;
+  }
+
+  function hairGrooveGeometry(item, palette, texture, style) {
+    let seed = 0;
+    for (let index = 0; index < item.id.length; index += 1) seed = (seed * 31 + item.id.charCodeAt(index)) >>> 0;
+    seed = (seed + (item.index || 1) * 7919) >>> 0;
+    const random = () => {
+      seed = (seed + 0x6D2B79F5) >>> 0;
+      let value = seed;
+      value = Math.imul(value ^ (value >>> 15), value | 1);
+      value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+      return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+    };
+    const rootColor = new THREE.Color(palette.hair);
+    const tipColor = new THREE.Color(palette.hairHi);
+    const positions = [];
+    const colors = [];
+    const indices = [];
+    const radial = new THREE.Vector3();
+    const tangent = new THREE.Vector3();
+    const sideDir = new THREE.Vector3();
+    const addStrip = (azimuth, rootPolar, lengthScale, widthScale, brightness, extra, dark) => {
+      const points = [];
+      const steps = 8;
+      for (let step = 0; step < steps; step += 1) {
+        const t = step / (steps - 1);
+        const v = 0.2 + t * 0.8 * lengthScale;
+        const azimuthDrift = azimuth + Math.sin(t * 3.4 + brightness * 9) * 0.03 * t;
+        const point = hairSurfacePoint(azimuthDrift, Math.min(1, v), style, extra);
+        const wave = style.wave ? Math.sin(t * Math.PI * 3 + rootPolar * 8) * style.wave * t : 0;
+        point.x += -Math.sin(azimuth) * wave;
+        point.z += Math.cos(azimuth) * wave;
+        points.push(point);
+      }
+      if (style.bobTips) {
+        const last = points[points.length - 1];
+        const prev = points[points.length - 2];
+        last.x += (prev.x - last.x) * 0.2;
+        last.z += (prev.z - last.z) * 0.2;
+      }
+      const baseIndex = positions.length / 3;
+      for (let index = 0; index < points.length; index += 1) {
+        const point = points[index];
+        const previous = points[Math.max(0, index - 1)];
+        const next = points[Math.min(points.length - 1, index + 1)];
+        tangent.copy(next).sub(previous);
+        if (tangent.lengthSq() < 1e-8) tangent.set(0, -1, 0);
+        tangent.normalize();
+        radial.set(point.x, (point.y - HAIR_CENTER_Y) * 0.3, point.z);
+        if (radial.lengthSq() < 1e-7) radial.set(0.1, 0.2, 0.95);
+        radial.normalize();
+        sideDir.crossVectors(tangent, radial);
+        if (sideDir.lengthSq() < 1e-7) sideDir.set(1, 0, 0);
+        sideDir.normalize();
+        const t = index / (points.length - 1);
+        const width = (style.grooveWidth * widthScale) * (1 - t * 0.82);
+        positions.push(
+          point.x - sideDir.x * width, point.y - sideDir.y * width, point.z - sideDir.z * width,
+          point.x + sideDir.x * width, point.y + sideDir.y * width, point.z + sideDir.z * width
+        );
+        const tone = dark ? 0.62 : 1;
+        const color = rootColor.clone().lerp(tipColor, t).multiplyScalar(brightness * tone);
+        colors.push(color.r, color.g, color.b, color.r, color.g, color.b);
+      }
+      for (let index = 0; index < points.length - 1; index += 1) {
+        const a = baseIndex + index * 2;
+        const b = a + 1;
+        const c = a + 2;
+        const d = a + 3;
+        indices.push(a, c, b, b, c, d);
+      }
+    };
+    style.grooveWidth = style.grooveWidth || 0.0032;
+    const count = style.grooves;
+    for (let groove = 0; groove < count; groove += 1) {
+      const azimuth = (groove / count) * Math.PI * 2 + (random() - 0.5) * (Math.PI * 2 / count) * 1.4;
+      const rootPolar = 0.2 + random() * 0.65;
+      const lengthScale = 0.86 + random() * 0.2;
+      const bright = 0.8 + random() * 0.3;
+      addStrip(azimuth, rootPolar, lengthScale, 0.7 + random() * 0.6, bright, 0.004 + random() * 0.004, false);
+    }
+    const clumpCount = style.clumps || 0;
+    for (let clump = 0; clump < clumpCount; clump += 1) {
+      const azimuth = (clump / clumpCount) * Math.PI * 2 + (random() - 0.5) * 0.32;
+      const rootPolar = 0.12 + random() * 0.35;
+      const lengthScale = 0.94 + random() * 0.12;
+      const bright = 0.9 + random() * 0.18;
+      addStrip(azimuth, rootPolar, lengthScale, 3.6 + random() * 2, bright, 0.012 + random() * 0.01, false);
+    }
+    const partAzimuth = Math.PI / 2 + ((item.index || 1) % 2 ? 1 : -1) * 0.38;
+    addStrip(partAzimuth, 0.1, 0.7, 0.8, 0.4, 0.006, true);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    geometry.computeBoundingSphere();
+    return geometry;
   }
 
   function addHair(slotGroup) {
@@ -1913,335 +2758,89 @@
     }
     const palette = item.palette;
     const texture = state.hairTexture || 'straight';
-    const hair = material(palette.hair, { roughness: texture === 'straight' ? 0.5 : texture === 'wavy' ? 0.68 : 0.86, bumpMap: hairBump, bumpScale: 0.0016 });
-    const hairHi = material(palette.hairHi, { roughness: texture === 'straight' ? 0.44 : texture === 'wavy' ? 0.6 : 0.74, bumpMap: hairBump, bumpScale: 0.0014 });
-    const curlHi = texture === 'curly'
-      ? material(new THREE.Color(palette.hair).lerp(new THREE.Color('#c39a72'), 0.44), { roughness: 0.64, bumpMap: hairBump, bumpScale: 0.0012 })
-      : hairHi;
-    const curlShadow = texture === 'curly'
-      ? material(new THREE.Color(palette.hair).multiplyScalar(0.66), { roughness: 0.9, bumpMap: hairBump, bumpScale: 0.0012 })
-      : hair;
-    const fade = material(palette.hair, { roughness: 0.82, transparent: true, opacity: 0.42, bumpMap: hairBump, bumpScale: 0.0012 });
-    const styleSeed = Number.isFinite(item.index) ? item.index : (item.id.length + String(item.name || '').length);
-    const sideMode = styleSeed % 4;
-    const hasSides = sideMode > 0;
-    const lengthBias = [0.9, 0.97, 1.04, 1.12][styleSeed % 4];
-    const addHairLock = (points, mat, radius) => {
-      const lock = tube(points, radius, mat);
-      lock.userData.slot = 'hair';
-      slotGroup.add(lock);
-    };
-    if (item.variant === 'crop') {
-      const capMaterial = texture === 'straight' ? hair : curlShadow;
-      add(slotGroup, sphere(0.155, 28), capMaterial, [0, 1.805, -0.02], null, [1.02, 0.56, 1.0]);
-      add(slotGroup, sphere(0.132, 18), capMaterial, [0, 1.772, -0.06], null, [1.0, 0.64, 0.8]);
-      add(slotGroup, sphere(0.1, 16), hair, [0, 1.835, 0.112], [0.12, 0, 0], [1.25, 0.24, 0.42]);
-      const front = [
-        [-0.102, 1.848, 0.088, -0.22, 0.9, 0.52, 0.72],
-        [-0.052, 1.858, 0.106, -0.1, 0.92, 0.56, 0.74],
-        [0.002, 1.862, 0.112, 0.02, 0.94, 0.56, 0.74],
-        [0.056, 1.856, 0.104, 0.14, 0.9, 0.54, 0.72],
-        [0.104, 1.844, 0.086, 0.28, 0.84, 0.5, 0.68]
-      ];
-      front.forEach(([x, y, z, rz, sx, sy, sz], index) => {
-        add(slotGroup, sphere(0.042, 14), index % 2 ? hairHi : hair, [x, y, z], [0.12, 0, rz], [sx, sy, sz]);
-      });
-      [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.047, 14), texture === 'curly' ? curlHi : hair, [side * 0.134, 1.795, 0.025], [0.1, 0, side * 0.3], [0.72, 0.9, 0.68]);
-        if (texture !== 'straight') {
-          add(slotGroup, sphere(0.043, 14), hairHi, [side * 0.078, 1.82, -0.108], [0.1, 0, side * 0.2], [0.8, 0.72, 0.6]);
-        }
-      });
-      if (texture === 'curly') {
-        [
-          [-0.064, 1.895, 0.032, -0.18],
-          [-0.018, 1.906, 0.048, -0.04],
-          [0.032, 1.902, 0.042, 0.12],
-          [0.078, 1.888, 0.024, 0.28],
-          [-0.12, 1.846, 0.06, -0.3],
-          [0.124, 1.842, 0.05, 0.3],
-          [-0.04, 1.84, -0.11, 0.12],
-          [0.045, 1.83, -0.115, -0.12],
-          [0, 1.88, -0.1, 0]
-        ].forEach(([x, y, z, rz], index) => {
-          add(slotGroup, sphere(0.038, 14), index % 2 ? curlHi : hair, [x, y, z], [0.1, 0, rz], [0.82, 0.76, 0.7]);
-        });
-      } else if (texture === 'wavy') {
-        [-0.045, 0.035].forEach((x, index) => {
-          add(slotGroup, sphere(0.04, 14), hairHi, [x, 1.892 - index * 0.004, 0.055], [0.08, 0, index ? 0.18 : -0.18], [0.9, 0.5, 0.66]);
-        });
-      }
-      add(slotGroup, box(0.02, 0.05, 0.026), hair, [-0.14, 1.76, 0.052], [0.2, 0, -0.2]);
-      add(slotGroup, box(0.02, 0.05, 0.026), hair, [0.14, 1.76, 0.052], [0.2, 0, 0.2]);
-      add(slotGroup, sphere(0.05, 12), hairHi, [-0.028, 1.902, 0.018], [-0.1, 0.1, -0.16], [0.82, 0.28, 0.62]);
-    } else if (item.variant === 'flow') {
-      add(slotGroup, sphere(0.163, 30), hair, [0, 1.834, -0.038], null, [1.03, 0.74, 1.01]);
-      add(slotGroup, sphere(0.125, 22), hair, [0, 1.785, -0.075], null, [1.0, 0.9, 0.62]);
-      [
-        [-0.042, 1.846, 0.12, 0.06, 0.8, 0.7, 0.58],
-        [0.018, 1.842, 0.129, 0.2, 0.95, 0.66, 0.58],
-        [0.08, 1.832, 0.124, 0.36, 0.9, 0.6, 0.55],
-        [0.134, 1.814, 0.104, 0.52, 0.75, 0.52, 0.48]
-      ].forEach(([x, y, z, rz, sx, sy, sz], index) => {
-        add(slotGroup, sphere(0.04, 14), index === 1 || index === 2 ? hairHi : hair, [x, y, z], [0.16, 0, rz], [sx, sy, sz]);
-      });
-      const flowPart = tube([[-0.072, 1.938, 0.02], [-0.068, 1.885, 0.098], [-0.058, 1.842, 0.13]], 0.004, material(new THREE.Color(palette.hair).multiplyScalar(0.62)));
-      flowPart.userData.slot = 'hair';
-      slotGroup.add(flowPart);
-      [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.07, 16), hair, [side * 0.138, 1.75, -0.015], [0, 0, side * 0.12], [0.5, 1.35, 0.7]);
-        add(slotGroup, sphere(0.045, 14), hairHi, [side * 0.145, 1.67, -0.03], [0, 0, side * 0.1], [0.45, 1.1, 0.55]);
-      });
-      add(slotGroup, sphere(0.08, 16), hairHi, [-0.03, 1.925, 0.03], [-0.1, 0, -0.16], [1.0, 0.18, 0.6]);
-      add(slotGroup, sphere(0.13, 20), hair, [0, 1.56, -0.155], null, [1.06, 1.7, 0.52]);
-      [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.072, 16), hair, [side * 0.12, 1.58, -0.11], [0, 0, side * 0.04], [0.5, 1.7, 0.55]);
-      });
-    } else if (item.variant === 'fade') {
-      add(slotGroup, sphere(0.155, 30), hair, [0, 1.838, -0.03], null, [1.0, 0.62, 0.99]);
-      [
-        [-0.102, 1.83, 0.106, -0.22, 0.7, 0.72, 0.56],
-        [-0.045, 1.837, 0.119, -0.08, 0.75, 0.68, 0.58],
-        [0.016, 1.84, 0.122, 0.04, 0.75, 0.66, 0.58],
-        [0.075, 1.834, 0.114, 0.2, 0.7, 0.65, 0.55],
-        [0.125, 1.82, 0.098, 0.34, 0.62, 0.6, 0.5]
-      ].forEach(([x, y, z, rz, sx, sy, sz], index) => {
-        add(slotGroup, sphere(0.038, 14), index % 2 ? hairHi : hair, [x, y, z], [0.14, 0, rz], [sx, sy, sz]);
-      });
-      add(slotGroup, sphere(0.052, 14), fade, [-0.143, 1.793, 0.01], null, [0.32, 1.28, 0.55]);
-      add(slotGroup, sphere(0.052, 14), fade, [0.143, 1.793, 0.01], null, [0.32, 1.28, 0.55]);
-      add(slotGroup, box(0.02, 0.062, 0.026), hair, [-0.142, 1.755, 0.062], [0.2, 0, -0.18]);
-      add(slotGroup, box(0.02, 0.062, 0.026), hair, [0.142, 1.755, 0.062], [0.2, 0, 0.18]);
-      add(slotGroup, sphere(0.075, 14), hairHi, [-0.03, 1.908, 0.035], [-0.12, 0.1, -0.15], [0.9, 0.16, 0.55]);
-    } else if (item.variant === 'curtain') {
-      add(slotGroup, sphere(0.162, 30), hair, [0, 1.832, -0.03], null, [1.02, 0.82, 1.01]);
-      add(slotGroup, sphere(0.132, 22), hair, [0, 1.775, -0.07], null, [1.0, 0.86, 0.62]);
-      [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.09, 18), hair, [side * 0.11, 1.755, 0.08], [0.04, 0, side * 0.1], [0.5, 1.4, 0.55]);
-        add(slotGroup, sphere(0.06, 14), hairHi, [side * 0.135, 1.69, -0.02], [0.06, 0, side * 0.12], [0.45, 1.3, 0.55]);
-        add(slotGroup, sphere(0.05, 14), hair, [side * 0.14, 1.64, -0.02], [0.06, 0, side * 0.1], [0.4, 0.9, 0.45]);
-      });
-      [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.045, 14), hairHi, [side * 0.035, 1.845, 0.112], [0.12, 0, side * 0.35], [0.8, 0.6, 0.55]);
-      });
-      const partLine = tube([[0, 1.94, 0.025], [0, 1.87, 0.11], [0, 1.832, 0.138]], 0.005, material(new THREE.Color(palette.hair).multiplyScalar(0.6)));
-      partLine.userData.slot = 'hair';
-      slotGroup.add(partLine);
-      add(slotGroup, sphere(0.07, 14), hairHi, [-0.045, 1.9, 0.04], [-0.12, 0.1, -0.12], [0.9, 0.18, 0.55]);
-    } else if (item.variant === 'bob') {
-      add(slotGroup, sphere(0.158, 30), hair, [0, 1.828, -0.028], null, [1.01, 0.68, 1.0]);
-      add(slotGroup, sphere(0.13, 22), hair, [0, 1.77, -0.06], null, [0.98, 0.75, 0.7]);
-      [
-        [-0.108, 1.826, 0.108, -0.2, 0.8, 0.9, 0.62],
-        [-0.05, 1.834, 0.123, -0.06, 0.85, 0.86, 0.62],
-        [0.01, 1.836, 0.126, 0.04, 0.85, 0.84, 0.6],
-        [0.07, 1.832, 0.118, 0.16, 0.8, 0.82, 0.58],
-        [0.12, 1.818, 0.104, 0.3, 0.7, 0.75, 0.52]
-      ].forEach(([x, y, z, rz, sx, sy, sz], index) => {
-        add(slotGroup, sphere(0.04, 14), index % 2 ? hairHi : hair, [x, y, z], [0.12, 0, rz], [sx, sy, sz]);
-      });
-      [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.09, 18), hair, [side * 0.115, 1.74, 0.058], [0, 0, side * 0.08], [0.55, 1.45, 0.58]);
-        add(slotGroup, sphere(0.06, 14), hair, [side * 0.14, 1.66, 0.012], [0, 0, side * 0.08], [0.5, 1.15, 0.5]);
-        add(slotGroup, sphere(0.045, 12), hairHi, [side * 0.125, 1.7, 0.06], [0, 0, side * 0.1], [0.5, 1.1, 0.42]);
-      });
-      add(slotGroup, sphere(0.07, 14), hairHi, [-0.035, 1.9, 0.04], [-0.1, 0, -0.14], [0.9, 0.18, 0.55]);
-    } else if (item.variant === 'pixie') {
-      add(slotGroup, sphere(0.155, 30), hair, [0, 1.838, -0.025], null, [1.0, 0.55, 0.98]);
-      [
-        [-0.1, 1.83, 0.107, -0.24, 0.7, 0.8, 0.55],
-        [-0.045, 1.838, 0.119, -0.08, 0.75, 0.78, 0.56],
-        [0.015, 1.842, 0.122, 0.05, 0.75, 0.76, 0.55],
-        [0.075, 1.835, 0.114, 0.2, 0.7, 0.72, 0.52],
-        [0.125, 1.82, 0.098, 0.34, 0.62, 0.66, 0.48]
-      ].forEach(([x, y, z, rz, sx, sy, sz], index) => {
-        add(slotGroup, sphere(0.038, 14), index % 2 ? hairHi : hair, [x, y, z], [0.14, 0, rz], [sx, sy, sz]);
-      });
-      add(slotGroup, sphere(0.052, 14), fade, [-0.143, 1.79, 0.01], null, [0.3, 1.2, 0.5]);
-      add(slotGroup, sphere(0.052, 14), fade, [0.143, 1.79, 0.01], null, [0.3, 1.2, 0.5]);
-      add(slotGroup, box(0.018, 0.052, 0.024), hair, [-0.142, 1.756, 0.062], [0.2, 0, -0.18]);
-      add(slotGroup, box(0.018, 0.052, 0.024), hair, [0.142, 1.756, 0.062], [0.2, 0, 0.18]);
-      add(slotGroup, sphere(0.07, 14), hairHi, [-0.03, 1.902, 0.035], [-0.12, 0.1, -0.15], [0.9, 0.16, 0.55]);
-    } else if (item.variant === 'mullet') {
-      add(slotGroup, sphere(0.157, 30), hair, [0, 1.83, -0.028], null, [1.01, 0.66, 1.0]);
-      add(slotGroup, sphere(0.115, 22), hair, [0, 1.7, -0.075], null, [1.05, 1.0, 0.62]);
-      [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.065, 16), hair, [side * 0.14, 1.69, -0.02], [0, 0, side * 0.08], [0.48, 1.5, 0.55]);
-        add(slotGroup, sphere(0.045, 14), hairHi, [side * 0.145, 1.63, -0.04], [0, 0, side * 0.08], [0.4, 1.0, 0.45]);
-        add(slotGroup, box(0.02, 0.06, 0.026), hair, [side * 0.142, 1.755, 0.062], [0.2, 0, side * 0.18]);
-      });
-      add(slotGroup, sphere(0.065, 14), hairHi, [-0.03, 1.9, 0.035], [-0.12, 0.1, -0.15], [0.9, 0.18, 0.55]);
-    } else if (item.variant === 'wolf') {
-      add(slotGroup, sphere(0.162, 30), hair, [0, 1.834, -0.036], null, [1.02, 0.72, 1.01]);
-      add(slotGroup, sphere(0.12, 22), hair, [0, 1.77, -0.07], null, [1.0, 0.9, 0.62]);
-      [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.075, 16), hair, [side * 0.13, 1.72, 0.0], [0, 0, side * 0.1], [0.48, 1.5, 0.55]);
-        add(slotGroup, sphere(0.05, 14), hairHi, [side * 0.14, 1.64, -0.03], [0, 0, side * 0.08], [0.42, 1.1, 0.48]);
-        add(slotGroup, sphere(0.04, 12), hair, [side * 0.15, 1.58, -0.02], [0, 0, side * 0.06], [0.35, 0.8, 0.4]);
-      });
-      [
-        [-0.08, 1.842, 0.118, -0.2, 0.8, 0.75, 0.58],
-        [-0.02, 1.848, 0.128, -0.06, 0.85, 0.7, 0.56],
-        [0.045, 1.842, 0.125, 0.16, 0.8, 0.7, 0.55],
-        [0.11, 1.826, 0.108, 0.32, 0.7, 0.6, 0.5]
-      ].forEach(([x, y, z, rz, sx, sy, sz], index) => {
-        add(slotGroup, sphere(0.04, 14), index % 2 ? hairHi : hair, [x, y, z], [0.14, 0, rz], [sx, sy, sz]);
-      });
-      add(slotGroup, sphere(0.07, 14), hairHi, [-0.035, 1.905, 0.035], [-0.12, 0.1, -0.15], [0.9, 0.18, 0.55]);
-    } else if (item.variant === 'long') {
-      add(slotGroup, sphere(0.165, 30), hair, [0, 1.835, -0.025], null, [1.02, 0.78, 1.02]);
-      add(slotGroup, sphere(0.15, 24), hair, [0, 1.55, -0.16], null, [1.1, 1.8, 0.5]);
-      [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.07, 18), hair, [side * 0.115, 1.6, -0.12], [0, 0, side * 0.03], [0.55, 1.7, 0.55]);
-        add(slotGroup, sphere(0.08, 18), hair, [side * 0.13, 1.62, -0.09], [0, 0, side * 0.05], [0.5, 2.2, 0.6]);
-        add(slotGroup, sphere(0.055, 14), hairHi, [side * 0.135, 1.52, 0.035], [0, 0, side * 0.04], [0.42, 1.6, 0.42]);
-        add(slotGroup, sphere(0.06, 16), hairHi, [side * 0.055, 1.86, 0.11], [0.1, 0, side * 0.3], [0.85, 0.55, 0.45]);
-      });
-      add(slotGroup, sphere(0.075, 14), hairHi, [-0.035, 1.9, 0.04], [-0.12, 0.1, -0.12], [0.95, 0.18, 0.55]);
-      [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.07, 16), hair, [side * 0.105, 1.64, 0.07], [0, 0, side * 0.06], [0.55, 1.7, 0.45]);
-      });
-    } else if (item.variant === 'waves') {
-      add(slotGroup, sphere(0.168, 30), hair, [0, 1.84, -0.025], null, [1.04, 0.82, 1.03]);
-      add(slotGroup, sphere(0.15, 24), hair, [0, 1.56, -0.155], null, [1.08, 1.72, 0.54]);
-      [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.085, 18), hair, [side * 0.135, 1.62, -0.1], [0, 0, side * 0.06], [0.55, 1.95, 0.6]);
-        add(slotGroup, sphere(0.06, 16), hairHi, [side * 0.055, 1.865, 0.11], [0.1, 0, side * 0.32], [0.85, 0.55, 0.45]);
-      });
-      add(slotGroup, sphere(0.08, 14), hairHi, [-0.035, 1.9, 0.04], [-0.12, 0.1, -0.14], [0.95, 0.18, 0.55]);
-      [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.072, 16), hair, [side * 0.108, 1.65, 0.07], [0, 0, side * 0.06], [0.58, 1.65, 0.46]);
-      });
-    } else if (item.variant === 'lob') {
-      add(slotGroup, sphere(0.162, 30), hair, [0, 1.832, -0.028], null, [1.02, 0.72, 1.01]);
-      add(slotGroup, sphere(0.145, 22), hair, [0, 1.71, -0.065], null, [1.0, 1.15, 0.66]);
-      [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.078, 18), hair, [side * 0.125, 1.68, 0.02], [0, 0, side * 0.06], [0.52, 1.45, 0.55]);
-        add(slotGroup, sphere(0.06, 14), hair, [side * 0.135, 1.62, 0.035], [0, 0, side * 0.04], [0.45, 1.0, 0.45]);
-        add(slotGroup, sphere(0.055, 14), hairHi, [side * 0.05, 1.86, 0.11], [0.1, 0, side * 0.28], [0.85, 0.58, 0.45]);
-      });
-      add(slotGroup, sphere(0.072, 14), hairHi, [-0.035, 1.9, 0.04], [-0.12, 0.1, -0.12], [0.9, 0.18, 0.55]);
-      [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.064, 14), hair, [side * 0.105, 1.67, 0.06], [0, 0, side * 0.06], [0.52, 1.25, 0.44]);
-      });
-    } else if (item.variant === 'buzz') {
-      add(slotGroup, sphere(0.153, 26), hair, [0, 1.845, -0.018], null, [1.0, 0.5, 0.99]);
-      add(slotGroup, sphere(0.148, 20), hair, [0, 1.785, -0.045], null, [0.99, 0.34, 0.94]);
-      add(slotGroup, sphere(0.11, 16), hairHi, [0, 1.885, 0.045], [-0.12, 0, 0], [0.9, 0.18, 0.6]);
-      [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.052, 12), fade, [side * 0.145, 1.79, 0.005], null, [0.28, 0.8, 0.5]);
-        for (let index = 0; index < 4; index += 1) {
-          add(slotGroup, sphere(0.009, 6), hairHi, [side * (0.095 + index * 0.014), 1.86 - index * 0.008, 0.105 - index * 0.01], null, [1.3, 0.5, 0.8]);
-        }
-      });
-      addHairLock([[-0.115, 1.885, 0.075], [-0.055, 1.905, 0.115], [0.0, 1.9, 0.128], [0.06, 1.9, 0.115], [0.115, 1.88, 0.075]], material(new THREE.Color(palette.hair).multiplyScalar(0.62)), 0.0035);
-    } else if (item.variant === 'curls') {
-      if (texture === 'curly') {
-        add(slotGroup, sphere(0.158, 20), hair, [0, 1.82, -0.015], null, [1.02, 0.55, 1.02]);
-        const curls = [
-          [-0.11, 1.87, 0.02], [0, 1.91, 0.015], [0.11, 1.87, 0.02],
-          [-0.145, 1.79, -0.01], [0.145, 1.79, -0.01], [-0.1, 1.79, 0.09],
-          [0.1, 1.79, 0.09], [-0.055, 1.9, 0.08], [0.055, 1.9, 0.08],
-          [-0.15, 1.73, 0.02], [0.15, 1.73, 0.02], [0, 1.79, 0.13]
-        ];
-        curls.forEach((position, index) => {
-          add(slotGroup, sphere(index % 3 === 0 ? 0.064 : 0.054, 12), index % 3 === 0 ? curlHi : index % 2 ? curlShadow : hair, position);
-        });
-      } else {
-        add(slotGroup, sphere(0.158, 28), hair, [0, 1.842, -0.02], null, [1.02, 0.6, 1.02]);
-        add(slotGroup, sphere(0.145, 20), hair, [0, 1.8, -0.05], null, [1.0, 0.7, 0.9]);
-        [-1, 1].forEach((side) => {
-          add(slotGroup, sphere(0.07, 16), hair, [side * 0.14, 1.76, 0.02], [0, 0, side * 0.12], [0.5, 1.3, 0.65]);
-        });
-        add(slotGroup, sphere(0.075, 14), hairHi, [-0.03, 1.905, 0.035], [-0.12, 0.1, -0.15], [0.9, 0.18, 0.55]);
-      }
-    } else if (item.variant === 'mohawk') {
-      add(slotGroup, sphere(0.15, 18), hair, [0, 1.82, 0], null, [1, 0.5, 1]);
-      [0.18, 0.1, 0.02, -0.06, -0.14].forEach((z, index) => {
-        add(slotGroup, cone(0.055 - index * 0.005, 0.16 + (index % 2) * 0.04, 8), index % 2 ? hairHi : hair, [0, 1.94 - Math.abs(z) * 0.25, z]);
-      });
-      add(slotGroup, sphere(0.152, 16), hair, [0, 1.81, -0.03], null, [0.96, 0.35, 0.95]);
-    } else {
-      add(slotGroup, sphere(0.162, 20), hair, [0, 1.86, -0.005], null, [1.01, 0.4, 1.02]);
-      add(slotGroup, sphere(0.15, 16), hair, [0, 1.82, -0.04], null, [0.98, 0.52, 0.92]);
-      add(slotGroup, box(0.05, 0.14, 0.045), hair, [-0.12, 1.77, 0.055], [0.2, 0, -0.2]);
-      add(slotGroup, box(0.05, 0.14, 0.045), hair, [0.12, 1.77, 0.055], [0.2, 0, 0.2]);
-      add(slotGroup, box(0.12, 0.022, 0.03), hairHi, [-0.035, 1.91, 0.06], [0, 0, -0.15]);
-      add(slotGroup, box(0.026, 0.08, 0.03), hairHi, [0.11, 1.85, 0.075], [0.2, 0, 0.3]);
+    const style = hairStyleFor(item, texture);
+    style.bobTips = item.variant === 'bob' || item.variant === 'lob';
+    style.grooveWidth = texture === 'curly' ? 0.0048 : 0.0036;
+    const shellColor = new THREE.Color(palette.hair).multiplyScalar(style.buzz || style.mohawk ? 0.45 : 0.82);
+    const shell = new THREE.Mesh(
+      hairShellGeometry(item, style),
+      new THREE.MeshStandardMaterial({
+        color: shellColor,
+        roughness: style.roughness,
+        metalness: texture === 'straight' ? 0.03 : 0,
+        side: THREE.DoubleSide,
+        envMapIntensity: 0.42,
+        bumpMap: hairBump,
+        bumpScale: texture === 'curly' ? 0.002 : 0.001
+      })
+    );
+    shell.castShadow = true;
+    shell.receiveShadow = true;
+    shell.userData.slot = 'hair';
+    slotGroup.add(shell);
+    if (style.grooves || style.clumps) {
+      const grooves = new THREE.Mesh(
+        hairGrooveGeometry(item, palette, texture, style),
+        new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          roughness: style.roughness + 0.04,
+          metalness: 0,
+          side: THREE.DoubleSide,
+          envMapIntensity: 0.5
+        })
+      );
+      grooves.castShadow = false;
+      grooves.receiveShadow = true;
+      grooves.userData.slot = 'hair';
+      slotGroup.add(grooves);
     }
-    if (texture === 'curly') {
-      add(slotGroup, sphere(0.168, 24), hair, [0, 1.855, -0.022], null, [1.06, 0.78, 1.03]);
-      add(slotGroup, sphere(0.14, 20), hair, [0, 1.79, -0.06], null, [1.02, 0.76, 0.82]);
-      [
-        [-0.1, 1.925, 0.055, 0.044], [-0.052, 1.948, 0.048, 0.047], [0, 1.955, 0.04, 0.048],
-        [0.052, 1.948, 0.048, 0.047], [0.1, 1.925, 0.055, 0.044],
-        [-0.142, 1.875, 0.028, 0.041], [0.142, 1.875, 0.028, 0.041],
-        [-0.155, 1.812, 0.008, 0.043], [0.155, 1.812, 0.008, 0.043],
-        [-0.156, 1.75, -0.012, 0.04], [0.156, 1.75, -0.012, 0.04],
-        [-0.146, 1.696, -0.026, 0.034], [0.146, 1.696, -0.026, 0.034],
-        [-0.115, 1.905, 0.098, 0.037], [-0.055, 1.923, 0.108, 0.039],
-        [0.008, 1.928, 0.11, 0.04], [0.068, 1.921, 0.104, 0.038], [0.118, 1.9, 0.09, 0.035],
-        [-0.128, 1.842, 0.072, 0.036], [0.128, 1.842, 0.072, 0.036],
-        [-0.12, 1.768, 0.062, 0.034], [0.12, 1.768, 0.062, 0.034],
-        [-0.095, 1.885, -0.1, 0.042], [0, 1.9, -0.118, 0.046], [0.095, 1.885, -0.1, 0.042],
-        [-0.07, 1.805, -0.118, 0.04], [0.07, 1.805, -0.118, 0.04],
-        [-0.11, 1.73, -0.095, 0.036], [0.11, 1.73, -0.095, 0.036]
-      ].forEach(([x, y, z, r], index) => {
-        add(slotGroup, sphere(r * 1.08, 12), index % 4 === 0 ? curlHi : index % 3 === 0 ? curlShadow : hair, [x, y, z], [index * 0.07, index * 0.11, index * 0.05], [1, 0.92 + (index % 3) * 0.06, 0.94]);
-      });
-      [
-        [-0.078, 1.938, 0.096, 0.024], [-0.02, 1.955, 0.1, 0.023], [0.046, 1.948, 0.098, 0.022],
-        [0.1, 1.918, 0.088, 0.021], [-0.152, 1.83, 0.04, 0.02], [0.152, 1.83, 0.04, 0.02],
-        [-0.136, 1.79, 0.062, 0.019], [0.136, 1.79, 0.062, 0.019],
-        [-0.09, 1.92, -0.09, 0.022], [0.02, 1.934, -0.098, 0.022]
-      ].forEach(([x, y, z, r], index) => {
-        add(slotGroup, sphere(r, 10), index % 3 === 0 ? curlShadow : curlHi, [x, y, z]);
-      });
-      [
-        [-0.12, 1.905, 0.082, -0.35, 0.2, 0],
-        [0.02, 1.94, 0.075, -0.55, -0.1, 0],
-        [0.13, 1.885, 0.07, -0.2, -0.35, 0],
-        [-0.165, 1.845, 0.02, 0, 1.35, 0],
-        [0.165, 1.845, 0.02, 0, -1.35, 0],
-        [-0.16, 1.755, -0.02, 0, 1.45, 0],
-        [0.16, 1.755, -0.02, 0, -1.45, 0],
-        [0, 1.895, -0.13, -0.2, Math.PI, 0]
-      ].forEach(([x, y, z, rx, ry, rz], index) => {
-        add(slotGroup, torus(index % 3 === 0 ? 0.03 : 0.025, 0.011, 12), index % 2 ? curlHi : hair, [x, y, z], [rx, ry, rz], [1, 0.78, 0.55]);
-      });
-    } else if (texture === 'wavy') {
-      [
-        [-0.11, 1.9, 0.05, 0.2], [-0.05, 1.92, 0.06, -0.15], [0.05, 1.92, 0.06, 0.15], [0.12, 1.89, 0.04, -0.2],
-        [-0.14, 1.8, 0.02, 0.3], [0.14, 1.8, 0.02, -0.3], [-0.13, 1.71, 0.02, 0.25], [0.13, 1.71, 0.02, -0.25],
-        [-0.085, 1.848, 0.115, 0.34], [-0.03, 1.856, 0.125, -0.3], [0.028, 1.853, 0.121, 0.28], [0.084, 1.84, 0.112, -0.34]
-      ].forEach(([x, y, z, rz], index) => {
-        add(slotGroup, sphere(0.038, 12), index % 2 ? hairHi : hair, [x, y, z], [0, 0, rz], [0.48, 0.95, 0.42]);
-      });
-    }
-    // Deterministic silhouette variety: some cuts have tight/shaved sides, some keep side mass,
-    // and every cut gets a small extra length offset so the catalog reads more diverse.
-    if (!hasSides) {
-      for (const child of slotGroup.children.slice()) {
-        if (!child.isMesh) continue;
-        const { x, y, z } = child.position;
-        const sidePiece = Math.abs(x) > 0.09 && z < 0.07;
-        const outerFront = Math.abs(x) > 0.14;
-        if ((sidePiece || outerFront) && y < 1.9 && z > -0.24) {
-          child.visible = false;
-          child.raycast = () => {};
+    if (style.mohawk) {
+      const positions = [];
+      const colors = [];
+      const indices = [];
+      const rootColor = new THREE.Color(palette.hair);
+      const tipColor = new THREE.Color(palette.hairHi);
+      let crestSeed = 7;
+      const crestRandom = () => {
+        crestSeed = (crestSeed * 16807) % 2147483647;
+        return crestSeed / 2147483647;
+      };
+      [-1, 0, 1].forEach((row) => {
+        const baseRow = positions.length / 3;
+        const steps = 16;
+        for (let index = 0; index <= steps; index += 1) {
+          const t = index / steps;
+          const phi = 1.24 - t * 2.36;
+          const x = row * 0.012;
+          const base = new THREE.Vector3(x, HAIR_CENTER_Y + Math.cos(phi) * HAIR_RY, Math.sin(phi) * HAIR_RZ);
+          const height = (0.04 + Math.sin(t * Math.PI) * 0.055 + crestRandom() * 0.02 + (index % 2) * 0.008) * (row === 0 ? 1.1 : 1);
+          const top = base.clone().add(new THREE.Vector3(x * 0.15, height, -height * 0.52));
+          positions.push(base.x, base.y, base.z, top.x, top.y, top.z);
+          const root = rootColor.clone().lerp(tipColor, 0.15 + crestRandom() * 0.2).multiplyScalar(0.88 + crestRandom() * 0.12);
+          const tip = rootColor.clone().lerp(tipColor, 0.7 + crestRandom() * 0.3).multiplyScalar(0.9 + crestRandom() * 0.12);
+          colors.push(root.r, root.g, root.b, tip.r, tip.g, tip.b);
         }
-      }
-    }
-    if (lengthBias !== 1) {
-      for (const child of slotGroup.children) {
-        if (!child.isMesh || !child.visible) continue;
-        if (child.position.y < 1.88) {
-          child.scale.y *= lengthBias;
-          child.position.y -= (lengthBias - 1) * 0.055;
-        } else {
-          child.scale.y *= 0.95 + (lengthBias - 1) * 0.6;
+        for (let index = 0; index < steps; index += 1) {
+          const a = baseRow + index * 2;
+          const b = a + 1;
+          const c = a + 2;
+          const d = a + 3;
+          indices.push(a, c, b, b, c, d);
         }
-      }
+      });
+      const crestGeometry = new THREE.BufferGeometry();
+      crestGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      crestGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      crestGeometry.setIndex(indices);
+      crestGeometry.computeVertexNormals();
+      const crest = new THREE.Mesh(
+        crestGeometry,
+        new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.66, metalness: 0, side: THREE.DoubleSide, envMapIntensity: 0.5 })
+      );
+      crest.castShadow = true;
+      crest.receiveShadow = true;
+      crest.userData.slot = 'hair';
+      slotGroup.add(crest);
     }
     tagGroup(slotGroup, 'hair');
     root.add(slotGroup);
@@ -2263,33 +2862,33 @@
     const addGlasses = (shape) => {
       if (shape === 'rect') {
         [-1, 1].forEach((side) => {
-          const cx = side * 0.06;
-          add(slotGroup, box(0.082, 0.06, 0.01), dark, [cx, 1.755, 0.155]);
-          add(slotGroup, box(0.09, 0.008, 0.013), metal, [cx, 1.727, 0.15]);
-          add(slotGroup, box(0.09, 0.008, 0.013), metal, [cx, 1.783, 0.15]);
-          add(slotGroup, box(0.008, 0.064, 0.013), metal, [cx - 0.041, 1.755, 0.15]);
-          add(slotGroup, box(0.008, 0.064, 0.013), metal, [cx + 0.041, 1.755, 0.15]);
-          add(slotGroup, box(0.034, 0.01, 0.012), metal, [side * 0.108, 1.755, 0.12], [0, side * 0.25, 0]);
-          add(slotGroup, box(0.003, 0.035, 0.002), accent, [cx - 0.025, 1.77, 0.162]);
+          const cx = side * 0.048;
+          add(slotGroup, box(0.07, 0.05, 0.01), dark, [cx, 1.748, 0.118]);
+          add(slotGroup, box(0.076, 0.007, 0.012), metal, [cx, 1.724, 0.114]);
+          add(slotGroup, box(0.076, 0.007, 0.012), metal, [cx, 1.772, 0.114]);
+          add(slotGroup, box(0.007, 0.054, 0.012), metal, [cx - 0.035, 1.748, 0.114]);
+          add(slotGroup, box(0.007, 0.054, 0.012), metal, [cx + 0.035, 1.748, 0.114]);
+          add(slotGroup, box(0.03, 0.009, 0.011), metal, [side * 0.094, 1.748, 0.09], [0, side * 0.25, 0]);
+          add(slotGroup, box(0.003, 0.03, 0.002), accent, [cx - 0.021, 1.76, 0.124]);
         });
-        add(slotGroup, box(0.028, 0.01, 0.012), metal, [0, 1.76, 0.156]);
+        add(slotGroup, box(0.024, 0.009, 0.011), metal, [0, 1.752, 0.119]);
       } else if (shape === 'cat') {
         [-1, 1].forEach((side) => {
-          add(slotGroup, torus(0.05, 0.006, 20), metal, [side * 0.058, 1.755, 0.155], [0, 0, side * 0.14], [1.25, 0.88, 1]);
-          add(slotGroup, new THREE.CircleGeometry(0.044, 20), dark, [side * 0.058, 1.755, 0.153], [0, 0, side * 0.14], [1.25, 0.88, 1]);
-          add(slotGroup, box(0.018, 0.008, 0.012), metal, [side * 0.11, 1.79, 0.15], [0, 0, side * 0.45]);
-          add(slotGroup, box(0.034, 0.01, 0.012), metal, [side * 0.108, 1.755, 0.12], [0, side * 0.25, 0]);
+          add(slotGroup, torus(0.042, 0.005, 20), metal, [side * 0.046, 1.748, 0.116], [0, 0, side * 0.14], [1.25, 0.88, 1]);
+          add(slotGroup, new THREE.CircleGeometry(0.037, 20), dark, [side * 0.046, 1.748, 0.114], [0, 0, side * 0.14], [1.25, 0.88, 1]);
+          add(slotGroup, box(0.016, 0.007, 0.011), metal, [side * 0.09, 1.778, 0.112], [0, 0, side * 0.45]);
+          add(slotGroup, box(0.03, 0.009, 0.011), metal, [side * 0.094, 1.748, 0.09], [0, side * 0.25, 0]);
         });
-        add(slotGroup, box(0.028, 0.01, 0.012), metal, [0, 1.76, 0.156]);
+        add(slotGroup, box(0.024, 0.009, 0.011), metal, [0, 1.752, 0.119]);
       } else {
         [-1, 1].forEach((side) => {
-          add(slotGroup, torus(0.05, 0.006, 20), metal, [side * 0.058, 1.755, 0.155]);
-          add(slotGroup, new THREE.CircleGeometry(0.044, 20), dark, [side * 0.058, 1.755, 0.153]);
-          add(slotGroup, box(0.035, 0.01, 0.012), metal, [side * 0.105, 1.755, 0.12], [0, side * 0.25, 0]);
+          add(slotGroup, torus(0.042, 0.005, 20), metal, [side * 0.046, 1.748, 0.116]);
+          add(slotGroup, new THREE.CircleGeometry(0.037, 20), dark, [side * 0.046, 1.748, 0.114]);
+          add(slotGroup, box(0.031, 0.009, 0.011), metal, [side * 0.09, 1.748, 0.09], [0, side * 0.25, 0]);
         });
-        add(slotGroup, box(0.03, 0.01, 0.012), metal, [0, 1.76, 0.156]);
+        add(slotGroup, box(0.025, 0.009, 0.011), metal, [0, 1.752, 0.119]);
       }
-      addBrandMark(slotGroup, item, [-0.108, 1.758, 0.132], 0.42, accent);
+      addBrandMark(slotGroup, item, [-0.094, 1.75, 0.1], 0.36, accent);
     };
 
     const addLayeredChain = (asPearls) => {
@@ -2321,34 +2920,32 @@
       const hands = new Map();
       [-1, 1].forEach((side) => {
         const hand = new THREE.Group();
-        hand.position.set(0, -0.65, 0);
-        const armScaler = new THREE.Group();
-        armScaler.scale.x = state.body === 'slim' ? 0.93 : state.body === 'strong' ? 1.07 : 1;
-        slotGroup.add(armScaler);
-        hand.scale.x = 1 / armScaler.scale.x;
-        armPivot(armScaler, side).add(hand);
+        hand.position.set(0, -BODY.wrist + 0.002, 0.012);
+        hand.rotation.y = -side * 1.42;
+        armPivot(slotGroup, side).add(hand);
         hands.set(side, hand);
-        add(hand, torus(0.05, 0.006, 16), metal, [0, 0.135, 0.02], [Math.PI / 2, 0, 0]);
+        add(hand, torus(0.034, 0.005, 16), metal, [0, 0.012, 0], [Math.PI / 2, 0, 0]);
         [0, 1, 2].forEach((index) => {
-          add(hand, torus(0.015 + index * 0.002, 0.004, 14), index === 1 ? accent : metal, [side * (index * 0.009 - 0.01), 0.005 - index * 0.012, 0.045], [Math.PI / 2, 0, 0]);
-          add(hand, sphere(0.006, 8), index === 2 ? dark : accent, [side * (index * 0.009 - 0.01), 0.005 - index * 0.012, 0.058]);
+          const spec = HAND_FINGERS[index + 1];
+          add(hand, torus(0.009 + index * 0.001, 0.003, 14), index === 1 ? accent : metal, [spec.x, -0.062 - index * 0.008, 0.002], [Math.PI / 2, 0, 0]);
+          add(hand, sphere(0.005, 8), index === 2 ? dark : accent, [spec.x, -0.062 - index * 0.008, 0.004]);
         });
-        add(hand, torus(0.012, 0.0035, 12), accent, [0, 0.03, 0.045], [Math.PI / 2, 0, 0]);
+        add(hand, torus(0.01, 0.003, 12), accent, [HAND_FINGERS[3].x, -0.056, 0.002], [Math.PI / 2, 0, 0]);
       });
-      addBrandMark(hands.get(1), item, [0, 0.03, 0.06], 0.28, accent);
+      addBrandMark(hands.get(1), item, [0, 0.018, 0.026], 0.22, accent);
     };
 
     const addEarrings = () => {
       [-1, 1].forEach((side) => {
-        add(slotGroup, sphere(0.009, 8), metal, [side * 0.146, 1.72, 0.018]);
-        add(slotGroup, torus(0.024, 0.004, 16), metal, [side * 0.146, 1.68, 0.015], [0, Math.PI / 2, 0]);
-        add(slotGroup, sphere(0.008, 8), accent, [side * 0.146, 1.646, 0.015]);
-        const drop = tube([[side * 0.146, 1.68, 0.018], [side * 0.15, 1.62, 0.025], [side * 0.146, 1.58, 0.02]], 0.003, metal);
+        add(slotGroup, sphere(0.008, 8), metal, [side * BODY.head.earX, BODY.head.earY, 0.016]);
+        add(slotGroup, torus(0.021, 0.0035, 16), metal, [side * BODY.head.earX, BODY.head.earY - 0.034, 0.014], [0, Math.PI / 2, 0]);
+        add(slotGroup, sphere(0.007, 8), accent, [side * BODY.head.earX, BODY.head.earY - 0.062, 0.014]);
+        const drop = tube([[side * BODY.head.earX, BODY.head.earY - 0.034, 0.016], [side * 0.104, BODY.head.earY - 0.088, 0.022], [side * BODY.head.earX, BODY.head.earY - 0.14, 0.018]], 0.003, metal);
         drop.userData.slot = 'accessory';
         slotGroup.add(drop);
-        add(slotGroup, sphere(0.012, 10), pearl, [side * 0.146, 1.558, 0.018]);
+        add(slotGroup, sphere(0.011, 10), pearl, [side * BODY.head.earX, BODY.head.earY - 0.148, 0.018]);
       });
-      addBrandMark(slotGroup, item, [0.146, 1.612, 0.028], 0.28, accent);
+      addBrandMark(slotGroup, item, [BODY.head.earX, BODY.head.earY - 0.11, 0.026], 0.24, accent);
     };
 
     const addWatch = () => {
@@ -2367,63 +2964,60 @@
       const face = material(dialConfig.face, { roughness: 0.34, metalness: dialConfig.style === 'digital' ? 0.2 : 0.06 });
       const handMat = material(dialConfig.ink, { roughness: 0.38 });
       const second = material(dialConfig.accent, { roughness: 0.35 });
-      const armScaler = new THREE.Group();
-      armScaler.scale.x = state.body === 'slim' ? 0.93 : state.body === 'strong' ? 1.07 : 1;
-      slotGroup.add(armScaler);
-      const pivot = armPivot(armScaler, -1);
+      const pivot = armPivot(slotGroup, -1);
       const watchGroup = new THREE.Group();
-      watchGroup.position.set(0, -0.595, 0);
+      watchGroup.position.set(0, -0.575, 0);
       pivot.add(watchGroup);
       const wx = 0;
       const wy = 0;
       const wz = 0.045;
-      add(watchGroup, torus(0.052, 0.011, 20), strap, [wx, wy, 0.018], [Math.PI / 2, 0, 0]);
-      add(watchGroup, box(0.062, 0.04, 0.085), strap, [wx, wy + 0.058, 0.034]);
-      add(watchGroup, box(0.062, 0.04, 0.085), strap, [wx, wy - 0.058, 0.034]);
+      add(watchGroup, torus(0.036, 0.009, 20), strap, [wx, wy, 0.012], [Math.PI / 2, 0, 0]);
+      add(watchGroup, box(0.046, 0.03, 0.062), strap, [wx, wy + 0.04, 0.024]);
+      add(watchGroup, box(0.046, 0.03, 0.062), strap, [wx, wy - 0.04, 0.024]);
       if (strapId === 'twotone') {
-        add(watchGroup, box(0.016, 0.038, 0.088), material('#c9a45c', { roughness: 0.32, metalness: 0.6 }), [wx, wy + 0.058, 0.035]);
-        add(watchGroup, box(0.016, 0.038, 0.088), material('#c9a45c', { roughness: 0.32, metalness: 0.6 }), [wx, wy - 0.058, 0.035]);
+        add(watchGroup, box(0.012, 0.028, 0.065), material('#c9a45c', { roughness: 0.32, metalness: 0.6 }), [wx, wy + 0.04, 0.025]);
+        add(watchGroup, box(0.012, 0.028, 0.065), material('#c9a45c', { roughness: 0.32, metalness: 0.6 }), [wx, wy - 0.04, 0.025]);
       } else if (strapId === 'nato') {
-        [0.05, 0.064].forEach((offset) => {
-          add(watchGroup, box(0.06, 0.005, 0.087), material('#b9bcc2', { roughness: 0.6 }), [wx, wy + offset, 0.034]);
-          add(watchGroup, box(0.06, 0.005, 0.087), material('#b9bcc2', { roughness: 0.6 }), [wx, wy - offset, 0.034]);
+        [0.035, 0.046].forEach((offset) => {
+          add(watchGroup, box(0.044, 0.004, 0.064), material('#b9bcc2', { roughness: 0.6 }), [wx, wy + offset, 0.024]);
+          add(watchGroup, box(0.044, 0.004, 0.064), material('#b9bcc2', { roughness: 0.6 }), [wx, wy - offset, 0.024]);
         });
       }
-      add(watchGroup, box(0.01, 0.008, 0.06), accent, [wx - 0.028, wy + 0.03, 0.075]);
-      add(watchGroup, box(0.01, 0.008, 0.06), accent, [wx - 0.028, wy - 0.03, 0.075]);
-      add(watchGroup, cylinder(0.039, 0.039, 0.016, 24), metal, [wx, wy, 0.078], [Math.PI / 2, 0, 0]);
-      add(watchGroup, new THREE.CircleGeometry(0.033, 24), face, [wx, wy, 0.087]);
-      add(watchGroup, torus(0.039, 0.004, 22), metal, [wx, wy, 0.087]);
-      add(watchGroup, cylinder(0.009, 0.009, 0.014, 10), metal, [wx + 0.042, wy, 0.078], [0, 0, Math.PI / 2]);
-      addBrandMark(watchGroup, item, [wx, wy + 0.019, 0.093], 0.3, second);
+      add(watchGroup, box(0.008, 0.006, 0.045), accent, [wx - 0.021, wy + 0.022, 0.056]);
+      add(watchGroup, box(0.008, 0.006, 0.045), accent, [wx - 0.021, wy - 0.022, 0.056]);
+      add(watchGroup, cylinder(0.027, 0.027, 0.012, 24), metal, [wx, wy, 0.058], [Math.PI / 2, 0, 0]);
+      add(watchGroup, new THREE.CircleGeometry(0.023, 24), face, [wx, wy, 0.065]);
+      add(watchGroup, torus(0.027, 0.003, 22), metal, [wx, wy, 0.065]);
+      add(watchGroup, cylinder(0.007, 0.007, 0.011, 10), metal, [wx + 0.03, wy, 0.058], [0, 0, Math.PI / 2]);
+      addBrandMark(watchGroup, item, [wx, wy + 0.014, 0.07], 0.22, second);
       const style = dialConfig.style;
       if (style === 'digital') {
-        add(watchGroup, box(0.042, 0.02, 0.003), material('#1d2622', { roughness: 0.32 }), [wx, wy + 0.008, 0.09]);
-        add(watchGroup, box(0.032, 0.006, 0.003), material(dialConfig.ink, { roughness: 0.3 }), [wx, wy + 0.007, 0.092]);
-        add(watchGroup, box(0.023, 0.004, 0.003), material(dialConfig.ink, { roughness: 0.3 }), [wx, wy - 0.004, 0.092]);
+        add(watchGroup, box(0.03, 0.014, 0.003), material('#1d2622', { roughness: 0.32 }), [wx, wy + 0.006, 0.067]);
+        add(watchGroup, box(0.023, 0.005, 0.003), material(dialConfig.ink, { roughness: 0.3 }), [wx, wy + 0.005, 0.069]);
+        add(watchGroup, box(0.017, 0.003, 0.003), material(dialConfig.ink, { roughness: 0.3 }), [wx, wy - 0.003, 0.069]);
       } else {
         [0, 1, 2, 3].forEach((index) => {
           const angle = index * Math.PI / 2;
-          add(watchGroup, box(0.004, 0.009, 0.003), second, [wx + Math.sin(angle) * 0.025, wy + Math.cos(angle) * 0.025, 0.09], [0, 0, -angle]);
+          add(watchGroup, box(0.003, 0.007, 0.002), second, [wx + Math.sin(angle) * 0.017, wy + Math.cos(angle) * 0.017, 0.067], [0, 0, -angle]);
         });
         if (style === 'chrono' || style === 'panda') {
-          add(watchGroup, cylinder(0.008, 0.008, 0.002, 16), second, [wx - 0.013, wy + 0.012, 0.09], [Math.PI / 2, 0, 0]);
-          add(watchGroup, cylinder(0.008, 0.008, 0.002, 16), second, [wx + 0.013, wy + 0.012, 0.09], [Math.PI / 2, 0, 0]);
-          add(watchGroup, cylinder(0.007, 0.007, 0.002, 16), second, [wx, wy - 0.013, 0.09], [Math.PI / 2, 0, 0]);
+          add(watchGroup, cylinder(0.006, 0.006, 0.002, 16), second, [wx - 0.009, wy + 0.009, 0.067], [Math.PI / 2, 0, 0]);
+          add(watchGroup, cylinder(0.006, 0.006, 0.002, 16), second, [wx + 0.009, wy + 0.009, 0.067], [Math.PI / 2, 0, 0]);
+          add(watchGroup, cylinder(0.005, 0.005, 0.002, 16), second, [wx, wy - 0.009, 0.067], [Math.PI / 2, 0, 0]);
         } else if (style === 'moon') {
-          add(watchGroup, cylinder(0.008, 0.008, 0.002, 16), material('#e8dcc4', { roughness: 0.5 }), [wx, wy - 0.014, 0.09], [Math.PI / 2, 0, 0]);
+          add(watchGroup, cylinder(0.005, 0.005, 0.002, 16), material('#e8dcc4', { roughness: 0.5 }), [wx, wy - 0.01, 0.067], [Math.PI / 2, 0, 0]);
         } else if (style === 'skeleton') {
-          add(watchGroup, torus(0.009, 0.0018, 12), second, [wx - 0.012, wy - 0.006, 0.09]);
-          add(watchGroup, torus(0.006, 0.0015, 12), second, [wx + 0.012, wy + 0.01, 0.09]);
+          add(watchGroup, torus(0.007, 0.0015, 12), second, [wx - 0.009, wy - 0.004, 0.067]);
+          add(watchGroup, torus(0.0045, 0.0012, 12), second, [wx + 0.009, wy + 0.007, 0.067]);
         } else if (style === 'guilloche') {
-          add(watchGroup, torus(0.017, 0.0012, 20), material(dialConfig.accent, { roughness: 0.4 }), [wx, wy, 0.089]);
-          add(watchGroup, torus(0.026, 0.001, 20), material(dialConfig.accent, { roughness: 0.4 }), [wx, wy, 0.089]);
+          add(watchGroup, torus(0.012, 0.001, 20), material(dialConfig.accent, { roughness: 0.4 }), [wx, wy, 0.066]);
+          add(watchGroup, torus(0.019, 0.0009, 20), material(dialConfig.accent, { roughness: 0.4 }), [wx, wy, 0.066]);
         } else if (style === 'gmt') {
-          add(watchGroup, box(0.003, 0.024, 0.003), second, [wx, wy + 0.012, 0.093], [0, 0, -0.5]);
+          add(watchGroup, box(0.002, 0.018, 0.002), second, [wx, wy + 0.009, 0.068], [0, 0, -0.5]);
         }
-        add(watchGroup, box(0.004, 0.021, 0.004), handMat, [wx, wy + 0.01, 0.091], [0, 0, -0.35]);
-        add(watchGroup, box(0.003, 0.029, 0.004), handMat, [wx + 0.008, wy + 0.014, 0.092], [0, 0, -1.1]);
-        add(watchGroup, box(0.002, 0.032, 0.003), second, [wx - 0.006, wy + 0.015, 0.093], [0, 0, -0.7]);
+        add(watchGroup, box(0.003, 0.016, 0.002), handMat, [wx, wy + 0.007, 0.068], [0, 0, -0.35]);
+        add(watchGroup, box(0.002, 0.022, 0.002), handMat, [wx + 0.006, wy + 0.01, 0.069], [0, 0, -1.1]);
+        add(watchGroup, box(0.0015, 0.024, 0.002), second, [wx - 0.004, wy + 0.011, 0.069], [0, 0, -0.7]);
       }
     };
 
@@ -2513,21 +3107,21 @@
     } else if (item.variant === 'beanie') {
       const knit = cloth(palette.main, { roughness: 0.9 });
       const knitHi = cloth(palette.accent, { roughness: 0.84 });
-      add(slotGroup, sphere(0.175, 20), knit, [0, 1.865, -0.012], null, [1.08, 0.9, 1.08]);
-      add(slotGroup, torus(0.158, 0.032, 24), knitHi, [0, 1.79, 0], [Math.PI / 2, 0, 0], [1, 1, 0.92]);
-      add(slotGroup, torus(0.16, 0.007, 24), material(palette.detail, { roughness: 0.8 }), [0, 1.817, 0], [Math.PI / 2, 0, 0], [1, 1, 0.92]);
-      add(slotGroup, sphere(0.03, 12), knitHi, [0, 2.04, 0.005], null, [0.9, 0.72, 0.9]);
-      addBrandMark(slotGroup, item, [0, 1.82, 0.166], 0.62, knitHi);
+      add(slotGroup, sphere(0.148, 20), knit, [0, 1.858, -0.012], null, [1.06, 0.92, 1.06]);
+      add(slotGroup, torus(0.134, 0.028, 24), knitHi, [0, 1.792, 0], [Math.PI / 2, 0, 0], [1, 1, 0.92]);
+      add(slotGroup, torus(0.136, 0.006, 24), material(palette.detail, { roughness: 0.8 }), [0, 1.815, 0], [Math.PI / 2, 0, 0], [1, 1, 0.92]);
+      add(slotGroup, sphere(0.026, 12), knitHi, [0, 1.996, 0.005], null, [0.9, 0.72, 0.9]);
+      addBrandMark(slotGroup, item, [0, 1.826, 0.142], 0.52, knitHi);
     } else if (item.variant === 'scarf') {
       const knit = cloth(palette.main, { roughness: 0.92 });
       const knitHi = cloth(palette.accent, { roughness: 0.86 });
-      add(slotGroup, torus(0.118, 0.035, 24), knit, [0, 1.56, 0.01], [Math.PI / 2, 0, 0], [1, 1, 0.82]);
-      add(slotGroup, box(0.065, 0.36, 0.032), knit, [-0.082, 1.3, 0.19], [0.12, 0, 0.08]);
-      add(slotGroup, box(0.062, 0.3, 0.03), knit, [0.084, 1.25, 0.185], [0.18, 0, -0.08]);
-      add(slotGroup, box(0.018, 0.22, 0.006), knitHi, [0.084, 1.24, 0.202], [0.18, 0, -0.08]);
-      add(slotGroup, torus(0.02, 0.005, 14), knitHi, [-0.082, 1.115, 0.2], [Math.PI / 2, 0, 0]);
-      add(slotGroup, torus(0.018, 0.004, 14), knitHi, [0.084, 1.1, 0.195], [Math.PI / 2, 0, 0]);
-      addBrandMark(slotGroup, item, [-0.082, 1.14, 0.21], 0.42, knitHi);
+      add(slotGroup, torus(0.082, 0.03, 24), knit, [0, 1.575, 0.008], [Math.PI / 2, 0, 0], [1, 1, 0.88]);
+      add(slotGroup, box(0.058, 0.34, 0.028), knit, [-0.072, 1.3, 0.158], [0.12, 0, 0.08]);
+      add(slotGroup, box(0.055, 0.29, 0.026), knit, [0.074, 1.25, 0.152], [0.18, 0, -0.08]);
+      add(slotGroup, box(0.016, 0.2, 0.005), knitHi, [0.074, 1.24, 0.167], [0.18, 0, -0.08]);
+      add(slotGroup, torus(0.018, 0.005, 14), knitHi, [-0.072, 1.13, 0.166], [Math.PI / 2, 0, 0]);
+      add(slotGroup, torus(0.016, 0.004, 14), knitHi, [0.074, 1.115, 0.16], [Math.PI / 2, 0, 0]);
+      addBrandMark(slotGroup, item, [-0.072, 1.15, 0.176], 0.36, knitHi);
     } else if (item.variant === 'bag') {
       const bodyMat = cloth(palette.main, { roughness: 0.62 });
       const strapMat = material(palette.detail, { roughness: 0.5 });
@@ -2539,11 +3133,11 @@
       slotGroup.add(strap);
       addBrandMark(slotGroup, item, [0.215, 0.955, 0.202], 0.65, metal);
     } else if (item.variant === 'visor') {
-      add(slotGroup, box(0.26, 0.078, 0.035), dark, [0, 1.755, 0.152], [0.02, 0, 0]);
-      add(slotGroup, box(0.265, 0.012, 0.04), red, [0, 1.79, 0.152]);
-      add(slotGroup, box(0.012, 0.055, 0.04), metal, [-0.13, 1.75, 0.15]);
-      add(slotGroup, box(0.012, 0.055, 0.04), metal, [0.13, 1.75, 0.15]);
-      add(slotGroup, box(0.02, 0.008, 0.012), accent, [0.1, 1.74, 0.17]);
+      add(slotGroup, box(0.225, 0.068, 0.032), dark, [0, 1.748, 0.122], [0.02, 0, 0]);
+      add(slotGroup, box(0.23, 0.011, 0.036), red, [0, 1.778, 0.122]);
+      add(slotGroup, box(0.011, 0.048, 0.036), metal, [-0.112, 1.745, 0.12]);
+      add(slotGroup, box(0.011, 0.048, 0.036), metal, [0.112, 1.745, 0.12]);
+      add(slotGroup, box(0.018, 0.007, 0.011), accent, [0.086, 1.736, 0.136]);
     } else if (item.variant === 'glasses') {
       addGlasses(item.shape || 'round');
     } else if (item.variant === 'watch') {
@@ -2564,10 +3158,92 @@
     root.add(slotGroup);
   }
 
+  function mergeStaticMeshes() {
+    root.updateMatrixWorld(true);
+    const rootInverse = new THREE.Matrix4().copy(root.matrixWorld).invert();
+    const groups = new Map();
+    const candidates = [];
+    root.traverse((object) => {
+      if (object.isMesh && object.visible && object.material && !Array.isArray(object.material) && object.geometry?.isBufferGeometry) {
+        candidates.push(object);
+      }
+    });
+    candidates.forEach((mesh) => {
+      const geometry = mesh.geometry;
+      const attributes = Object.keys(geometry.attributes).sort().join(',');
+      const slot = mesh.userData.slot || '?';
+      const key = `${slot}|${mesh.material.uuid}|${attributes}|${geometry.index ? 'indexed' : 'raw'}`;
+      if (!groups.has(key)) groups.set(key, { material: mesh.material, slot, meshes: [] });
+      groups.get(key).meshes.push(mesh);
+    });
+    let mergedCount = 0;
+    groups.forEach((group) => {
+      if (group.meshes.length < 3) return;
+      const source = group.meshes[0].geometry;
+      const attributes = Object.keys(source.attributes);
+      const mergedAttributes = {};
+      attributes.forEach((name) => { mergedAttributes[name] = []; });
+      const indices = [];
+      let offset = 0;
+      group.meshes.forEach((mesh) => {
+        const geometry = mesh.geometry;
+        const matrix = new THREE.Matrix4().multiplyMatrices(rootInverse, mesh.matrixWorld);
+        attributes.forEach((name) => {
+          const sourceAttribute = geometry.attributes[name];
+          if (!sourceAttribute) return;
+          const array = sourceAttribute.array;
+          const itemSize = sourceAttribute.itemSize;
+          let values;
+          if (name === 'position') {
+            const temp = new THREE.BufferAttribute(array.slice(), itemSize);
+            temp.applyMatrix4(matrix);
+            values = temp.array;
+          } else if (name === 'normal') {
+            const temp = new THREE.BufferAttribute(array.slice(), itemSize);
+            temp.applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(matrix));
+            values = temp.array;
+          } else {
+            values = array;
+          }
+          for (let index = 0; index < values.length; index += 1) mergedAttributes[name].push(values[index]);
+        });
+        const indexArray = geometry.index ? geometry.index.array : null;
+        const count = geometry.attributes.position.count;
+        if (indexArray) {
+          for (let index = 0; index < indexArray.length; index += 1) indices.push(indexArray[index] + offset);
+        } else {
+          for (let index = 0; index < count; index += 1) indices.push(index + offset);
+        }
+        offset += count;
+      });
+      const mergedGeometry = new THREE.BufferGeometry();
+      Object.entries(mergedAttributes).forEach(([name, values]) => {
+        const itemSize = source.attributes[name].itemSize;
+        mergedGeometry.setAttribute(name, new THREE.Float32BufferAttribute(values, itemSize));
+      });
+      if (indices.length) mergedGeometry.setIndex(indices);
+      mergedGeometry.computeBoundingSphere();
+      const merged = new THREE.Mesh(mergedGeometry, group.material);
+      merged.castShadow = group.meshes.some((mesh) => mesh.castShadow);
+      merged.receiveShadow = group.meshes.some((mesh) => mesh.receiveShadow);
+      merged.userData.slot = group.slot;
+      group.meshes.forEach((mesh) => { if (mesh.parent) mesh.parent.remove(mesh); });
+      root.add(merged);
+      mergedCount += group.meshes.length - 1;
+    });
+    if (mergedCount > 0) {
+      pickables = [];
+      root.traverse((object) => {
+        if (object.isMesh && object.userData.slot) pickables.push(object);
+      });
+    }
+  }
+
   function buildCharacter() {
     rebuildCount += 1;
     if (!reduceMotion && hasBuilt) equipPulse = 1;
     state = API.getState();
+    root.rotation.z = -0.01;
     pickables = [];
     while (root.children.length) {
       const child = root.children[0];
@@ -2578,15 +3254,16 @@
     addBody();
     const topGroup = new THREE.Group();
     addTop(topGroup);
-    topGroup.scale.x *= bodyWidth;
     const bottomGroup = new THREE.Group();
     addBottom(bottomGroup);
     bottomGroup.scale.x *= bodyWidth;
     const shoesGroup = new THREE.Group();
     addShoes(shoesGroup);
     shoesGroup.scale.x *= bodyWidth;
+    shoesGroup.position.y = -0.018;
     addHair(new THREE.Group());
     addAccessory(new THREE.Group());
+    mergeStaticMeshes();
 
     const invalid = [];
     root.traverse((object) => {
@@ -2637,7 +3314,7 @@
   }
 
   function applyCamera() {
-    const targetY = 0.95 + Math.min(0.6, Math.max(0, viewZoom - 1) * 0.62);
+    const targetY = cameraTargetY;
     const sway = Math.sin(viewRotation) * 0.03;
     camera.position.set(sway, targetY + 0.08 + Math.sin(viewRotation * 0.5) * 0.012, BASE_DISTANCE / viewZoom);
     camera.lookAt(0, targetY, 0);
@@ -2833,6 +3510,16 @@
       && !(dropModal && dropModal.classList.contains('is-open'));
     if (!visible) return;
     const delta = Math.min(clock.getDelta(), 0.05);
+    if (frozen) {
+      viewZoom += (zoom - viewZoom) * Math.min(1, delta * 12);
+      viewRotation += (rotation - viewRotation) * Math.min(1, delta * 18);
+      root.position.y = 0;
+      root.scale.setScalar(1);
+      root.rotation.y = viewRotation;
+      applyCamera();
+      renderer.render(scene, camera);
+      return;
+    }
     const idleTarget = !dragStart && performance.now() - lastInteraction > 2600 ? 1 : 0;
     idleBlend += (idleTarget - idleBlend) * Math.min(1, delta * 1.7);
     if (!dragStart) {
@@ -2864,11 +3551,41 @@
   window.lukap3d = {
     sync,
     snapshot,
-    resetView() { rotation = 0; zoom = 1; rotationVelocity = 0; updateCamera(true); },
+    resetView() { rotation = 0; zoom = 1; cameraTargetY = 0.98; rotationVelocity = 0; updateCamera(true); },
     get rotation() { return rotation; },
     get zoom() { return zoom; },
     get rebuilds() { return rebuildCount; },
-    setRotation(value) { rotation = Number(value) || 0; rotationVelocity = 0; updateCamera(); }
+    setRotation(value) { rotation = Number(value) || 0; rotationVelocity = 0; updateCamera(); },
+    freeze(value) { frozen = Boolean(value); if (frozen) rotationVelocity = 0; },
+    stats() {
+      return {
+        triangles: renderer.info.render.triangles,
+        calls: renderer.info.render.calls,
+        textures: renderer.info.memory.textures,
+        geometries: renderer.info.memory.geometries,
+        programs: renderer.info.programs ? renderer.info.programs.length : 0,
+        rebuilds: rebuildCount,
+        frozen
+      };
+    },
+    setCameraPreset(preset) {
+      const presets = {
+        front: { rotation: 0, zoom: 1, targetY: 0.98 },
+        'three-quarter': { rotation: 0.62, zoom: 1, targetY: 0.98 },
+        side: { rotation: Math.PI / 2, zoom: 1, targetY: 0.98 },
+        'closeup-torso': { rotation: 0.45, zoom: 1.85, targetY: 1.2 },
+        'closeup-feet': { rotation: 0.45, zoom: 2.1, targetY: 0.25 },
+        'closeup-hands': { rotation: 0.5, zoom: 1.35, targetY: 0.92 },
+        'closeup-head': { rotation: 0.35, zoom: 2.2, targetY: 1.72 }
+      };
+      const config = presets[preset] || presets.front;
+      rotation = config.rotation;
+      zoom = config.zoom;
+      cameraTargetY = config.targetY;
+      rotationVelocity = 0;
+      updateCamera(true);
+      return config;
+    }
   };
   sync(true);
   animate();

@@ -1,6 +1,6 @@
 # Design: ЛУКАП
 
-The locked system for the Telegram Mini App; catalog 1537, including the Russian 2026 capsule. `light.css` is the palette source; `styles.css` is the structural base. This is a Hallmark-informed audit/polish contract, not a claim that the app passes Hallmark's marketing-page Floor.
+The locked system for the Telegram Mini App; catalog 1537, including the Russian 2026 capsule. `app.css` is the single stylesheet: self-hosted fonts, structural base and palette tokens. This is a Hallmark-informed audit/polish contract, not a claim that the app passes Hallmark's marketing-page Floor.
 
 ## System
 
@@ -50,4 +50,4 @@ Deliberate non-applications: literal color tokenization across item art (48), tr
 
 ## Exports
 
-`light.css` and `styles.css` in this repository. No Tailwind or generated token layer.
+`app.css` in this repository. No Tailwind or generated token layer.

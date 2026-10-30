@@ -7,9 +7,7 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const light = fs.readFileSync(path.join(root, 'light.css'), 'utf8');
-const base = fs.readFileSync(path.join(root, 'styles.css'), 'utf8');
-const css = `${base}\n${light}`;
+const css = fs.readFileSync(path.join(root, 'app.css'), 'utf8');
 
 test('every inline SVG is hidden from assistive tech or named', () => {
   const tags = [...html.matchAll(/<svg\b[^>]*>/g)].map((match) => match[0]);

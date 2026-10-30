@@ -6,13 +6,9 @@
   <meta name="theme-color" content="#f5f0e7">
   <meta name="referrer" content="no-referrer">
   <meta name="lukap-log" content="">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://telegram.org https://*.telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://telegram.org https://*.telegram.org; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://telegram.org https://*.telegram.org; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self' https://telegram.org https://*.telegram.org; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'">
   <title>ЛУКАП — собери свой лук</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700;800&display=swap" rel="stylesheet" referrerpolicy="no-referrer" crossorigin="anonymous">
-  <link rel="stylesheet" href="styles.css?v=24">
-  <link rel="stylesheet" href="light.css?v=24">
+  <link rel="stylesheet" href="app.css?v=24">
 </head>
 <body>
   <div class="page-ambient"></div>
@@ -114,7 +110,6 @@
           </svg>
         </span>
         <span class="brand-name">ЛУКАП</span>
-        <span class="brand-stage">PROTO</span>
       </button>
       <button class="balance-pill" id="balanceBtn" aria-label="Монеты и бонусы">
         <span class="coin-mark"><svg class="icon" aria-hidden="true"><use href="#i-diamond"></use></svg></span>
@@ -125,14 +120,8 @@
 
     <main class="screens" id="screens">
       <section class="screen is-active" data-screen="look">
-        <div class="live-line">
-          <span class="live-dot"></span>
-          <span class="live-label">LIVE</span>
-          <span class="live-text" id="dropStrip">@mira выбила «Минус» · NOIRÉ · ИКОНА</span>
-          <span class="live-tail"><svg class="icon" aria-hidden="true"><use href="#i-chevron"></use></svg></span>
-        </div>
-
-        <div class="look-head">
+        <div class="avatar-stage" id="avatarStage">
+        <div class="look-head stage-look-head">
           <div class="score-readout">
             <span class="eyebrow">ГАРМОНИЯ</span>
             <div class="score-number"><span id="scoreValue">92</span><span class="score-total">/100</span></div>
@@ -145,14 +134,6 @@
           </div>
         </div>
 
-        <div class="avatar-stage" id="avatarStage">
-          <span class="stage-corner tl"></span><span class="stage-corner tr"></span>
-          <span class="stage-corner bl"></span><span class="stage-corner br"></span>
-          <span class="stage-serial">LK / 001</span>
-          <span class="stage-mode">3D · 360°</span>
-          <div class="stage-halo"></div>
-          <div class="stage-orbit"></div>
-          <div class="perfect-aura" id="perfectAura"></div>
           <div class="avatar-3d" id="avatar3d" aria-hidden="true"></div>
           <div class="render-fallback" id="renderFallback" hidden>2D-режим · WebGL недоступен</div>
 
@@ -422,6 +403,8 @@
           </svg>
 
           <div class="stage-floor"></div>
+          <div class="stage-vignette" aria-hidden="true"></div>
+          <div class="stage-grain" aria-hidden="true"></div>
           <div class="avatar-hotspots" id="avatarHotspots" aria-label="Быстрое управление деталями">
             <button class="avatar-hotspot hs-hair" data-slot="hair" aria-label="Волосы"><svg class="icon" aria-hidden="true"><use href="#i-hair"></use></svg></button>
             <button class="avatar-hotspot hs-acc" data-slot="accessory" aria-label="Аксессуар"><svg class="icon" aria-hidden="true"><use href="#i-acc"></use></svg></button>
@@ -503,6 +486,7 @@
         <div class="screen-head">
           <div>
             <span class="eyebrow">ПРОФИЛЬ</span>
+            <!-- TODO(telegram): заменить на имя из Telegram.WebApp -->
             <h1>@lukap_user</h1>
           </div>
           <button class="icon-btn" id="settingsBtn" aria-label="Настройки"><svg class="icon" aria-hidden="true"><use href="#i-settings"></use></svg></button>

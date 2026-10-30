@@ -3,8 +3,8 @@
 const CSP_HEADER = [
   "default-src 'self'",
   "script-src 'self' https://telegram.org https://*.telegram.org",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com data:",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data:",
   "img-src 'self' data: blob:",
   "connect-src 'self' https://telegram.org https://*.telegram.org",
   "object-src 'none'",

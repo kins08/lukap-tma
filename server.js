@@ -21,8 +21,13 @@ const PUBLIC_FILES = new Map([
   ['/lib/outfit.js', { file: 'lib/outfit.js', type: 'text/javascript; charset=utf-8', cache: 'public, max-age=31536000, immutable' }],
   ['/lib/state.js', { file: 'lib/state.js', type: 'text/javascript; charset=utf-8', cache: 'public, max-age=31536000, immutable' }],
   ['/data/leaderboard-mock.js', { file: 'data/leaderboard-mock.js', type: 'text/javascript; charset=utf-8', cache: 'public, max-age=31536000, immutable' }],
-  ['/light.css', { file: 'light.css', type: 'text/css; charset=utf-8', cache: 'public, max-age=31536000, immutable' }],
-  ['/styles.css', { file: 'styles.css', type: 'text/css; charset=utf-8', cache: 'public, max-age=31536000, immutable' }],
+  ['/app.css', { file: 'app.css', type: 'text/css; charset=utf-8', cache: 'public, max-age=31536000, immutable' }],
+  ['/fonts/cormorant-garamond-cyrillic.woff2', { file: 'fonts/cormorant-garamond-cyrillic.woff2', type: 'font/woff2', cache: 'public, max-age=31536000, immutable' }],
+  ['/fonts/cormorant-garamond-latin.woff2', { file: 'fonts/cormorant-garamond-latin.woff2', type: 'font/woff2', cache: 'public, max-age=31536000, immutable' }],
+  ['/fonts/manrope-cyrillic.woff2', { file: 'fonts/manrope-cyrillic.woff2', type: 'font/woff2', cache: 'public, max-age=31536000, immutable' }],
+  ['/fonts/manrope-latin.woff2', { file: 'fonts/manrope-latin.woff2', type: 'font/woff2', cache: 'public, max-age=31536000, immutable' }],
+  ['/fonts/unbounded-cyrillic.woff2', { file: 'fonts/unbounded-cyrillic.woff2', type: 'font/woff2', cache: 'public, max-age=31536000, immutable' }],
+  ['/fonts/unbounded-latin.woff2', { file: 'fonts/unbounded-latin.woff2', type: 'font/woff2', cache: 'public, max-age=31536000, immutable' }],
   ['/vendor/three.min.js', { file: 'vendor/three.min.js', type: 'text/javascript; charset=utf-8', cache: 'public, max-age=31536000, immutable' }],
   ['/robots.txt', { file: 'robots.txt', type: 'text/plain; charset=utf-8', cache: 'public, max-age=86400' }]
 ]);

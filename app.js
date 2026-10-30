@@ -45,12 +45,12 @@ const SLOT_KEYS = SLOTS.map((slot) => slot.id);
 const SLOT_BY_ID = Object.fromEntries(SLOTS.map((slot) => [slot.id, slot]));
 
 const RARITIES = [
-  { id: 'base', label: 'База', color: '#69645D', points: 6, sell: 45 },
-  { id: 'norm', label: 'Норма', color: '#14834A', points: 8, sell: 90 },
-  { id: 'trend', label: 'Тренд', color: '#6C8300', points: 10, sell: 170 },
-  { id: 'couture', label: 'Кутюр', color: '#C95300', points: 12, sell: 550 },
-  { id: 'legend', label: 'Легенда', color: '#986000', points: 14, sell: 1800 },
-  { id: 'icon', label: 'Икона', color: '#C92318', points: 16, sell: 28000 }
+  { id: 'base', label: 'База', color: '#8B8376', points: 6, sell: 45 },
+  { id: 'norm', label: 'Норма', color: '#5E7F63', points: 8, sell: 90 },
+  { id: 'trend', label: 'Тренд', color: '#6F7F2E', points: 10, sell: 170 },
+  { id: 'couture', label: 'Кутюр', color: '#B5651D', points: 12, sell: 550 },
+  { id: 'legend', label: 'Легенда', color: '#A8782F', points: 14, sell: 1800 },
+  { id: 'icon', label: 'Икона', color: '#C8372D', points: 16, sell: 28000 }
 ];
 const RARITY_META = Object.fromEntries(RARITIES.map((rarity) => [rarity.id, rarity]));
 const RARITY_ORDER = Object.fromEntries(RARITIES.map((rarity, index) => [rarity.id, index]));
@@ -2778,10 +2778,13 @@ function itemCardHTML(item) {
   const isEquipped = state.equipped[item.slot] === item.id;
   return `
     <button class="item-card ${isLocked ? 'is-locked' : ''} ${isEquipped ? 'is-equipped' : ''}" data-item-id="${item.id}" data-rarity="${item.rarity}" style="--rarity-color:${rarity.color}; --item-color:${item.palette.main}; --item-accent:${item.palette.accent}" aria-label="${escapeHTML(itemLabel(item))}, ${escapeHTML(collection.name)}, ${rarity.label}${isLocked ? ', не выбит' : ''}">
+      <span class="item-hole" aria-hidden="true"></span>
+      <span class="item-article">№ ${String(item.index).padStart(4, '0')}</span>
+      ${isEquipped ? '<span class="item-equipped" aria-label="Надето"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg></span>' : ''}
       <span class="item-thumb">
         <span class="item-rank">${rarity.label.toUpperCase()}</span>
         ${isLocked ? '<span class="item-lock"><svg class="icon"><use href="#i-lock"></use></svg></span>' : ''}
-        ${isEquipped ? '<span class="item-equipped">НАДЕТО</span>' : count > 1 ? `<span class="item-count">×${count}</span>` : ''}
+        ${count > 1 ? `<span class="item-count">×${count}</span>` : ''}
         <span class="item-art">${itemArt(item)}</span>
       </span>
       <span class="item-name">${escapeHTML(itemLabel(item))}</span>
